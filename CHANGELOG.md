@@ -10,3 +10,4 @@
 - Bezugsquellen je Material: Vorkommen, Gegner, nächste Händler
 - Wegpunkte zu Lehrern und Händlern mit Richtungspfeil, Kartenbeschriftung und Beschreibung im Chat-Link
 - Bedarf in Item-Tooltips und an Erzadern und Kräutern in der Welt
+- Berufe, Kategorien und Materialien alphabetisch sortiert
