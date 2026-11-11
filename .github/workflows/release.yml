@@ -1,11 +1,11 @@
-# Baut bei jedem Versions-Tag (z. B. v1.2.1) das Addon-ZIP, legt es als GitHub-Release ab
+# Baut bei jedem Versions-Tag (z. B. 1.0.1) das Addon-ZIP, legt es als GitHub-Release ab
 # und lädt es auf CurseForge hoch, sobald CF_API_KEY und CF_PROJECT_ID eingerichtet sind.
 name: Release
 
 on:
   push:
     tags:
-      - "v*"
+      - "[0-9]*"
 
 permissions:
   contents: write

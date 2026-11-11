@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.2.0 – erste Veröffentlichung
+## 1.0.0 – erste Veröffentlichung
 
 - Materialbedarf aller Berufe 1–300, aufgelöst bis zu den Grundmaterialien, über alle Charaktere und Banken hinweg
 - Filter nach allen Berufen, gelernten Berufen oder einem Charakter; Sammelberufe ausschließbar
