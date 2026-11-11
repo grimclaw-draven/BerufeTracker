@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.0
+
+- Filter „Alle Berufe“ zählt jetzt den Bedarf jedes Charakters für seine eigenen Berufe zusammen, jeweils mit dessen Skill
+- Neuer Filter „Jeder Beruf einmal“ mit der bisherigen Rechnung: jeder Beruf einmal mit dem besten Charakter, auch ungelernte
+- Bedarf und Bestand zählen nur noch für Charaktere der aktuellen Fraktion, weil sich Materialien nicht zur anderen Fraktion schicken lassen
+
 ## 1.0.0 – erste Veröffentlichung
 
 - Materialbedarf aller Berufe 1–300, aufgelöst bis zu den Grundmaterialien, über alle Charaktere und Banken hinweg

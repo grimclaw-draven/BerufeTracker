@@ -74,6 +74,7 @@ local function Record()
     end
     local _, class = UnitClass("player")
     rec.class = class
+    rec.faction = UnitFactionGroup("player")
     return rec
 end
 
@@ -243,7 +244,8 @@ function BT.ImportBagnon()
     if type(root) == "table" then
         for id, cache in pairs(root) do
             if type(cache) == "table" then
-                local rec = { bags = {}, bank = {}, mail = {}, class = cache.class }
+                local faction = (cache.faction == true and "Alliance") or (cache.faction == false and "Horde") or nil
+                local rec = { bags = {}, bank = {}, mail = {}, class = cache.class, faction = faction }
                 for bag, data in pairs(cache) do
                     if type(bag) == "number" and bag ~= -2 and type(data) == "table" and type(data.items) == "table" then
                         AddCacheItems((bag >= 0 and bag <= NumBags()) and rec.bags or rec.bank, data.items)
@@ -278,6 +280,23 @@ function BT.Source(id, section)
     local imported = BT.imported[id]
     if imported then return imported[section], "bagnon" end
     return nil
+end
+
+-- Fraktion eines Charakters (eigener Login hat Vorrang, sonst Bagnon); nil = unbekannt.
+function BT.CharFaction(id)
+    local own = DB.chars[id]
+    if own and own.faction then return own.faction end
+    local imported = BT.imported and BT.imported[id]
+    return imported and imported.faction or nil
+end
+
+-- Gehört der Charakter zur Fraktion des aktiven Charakters? Unbekannt zählt mit.
+-- Materialien lassen sich nicht zur anderen Fraktion schicken, deshalb zählt nur die eigene.
+function BT.SameFaction(id)
+    local mine = UnitFactionGroup("player")
+    if mine ~= "Alliance" and mine ~= "Horde" then return true end
+    local theirs = BT.CharFaction(id)
+    return theirs == nil or theirs == mine
 end
 
 -- Bagnon speichert Gildenbanken als "Name*"; die zählen nur, wenn man sie aktiv einschaltet.
@@ -545,25 +564,48 @@ end
 function BT.FilterChars()
     local list = {}
     for id, rec in pairs(DB.chars) do
-        if next(rec.skills or {}) and not BT.IsIgnored(id) then list[#list + 1] = id end
+        if next(rec.skills or {}) and not BT.IsIgnored(id) and BT.SameFaction(id) then list[#list + 1] = id end
     end
     table.sort(list)
     return list
 end
 
--- Skill, mit dem ein Beruf in die Materialliste eingeht; nil = vom Filter ausgeschlossen.
-local function FilteredSkill(profKey)
-    if DB.opt.noGather and BT.PROF_BY_KEY[profKey].gather then return nil end
+-- Höchster Skill eines Berufs unter den Charakteren der eigenen Fraktion (manueller Wert hat Vorrang).
+local function BestSkill(profKey)
+    local override = DB.opt.skill[profKey]
+    if override then return override, "manuell" end
+    local best, who = 0, nil
+    for id, rec in pairs(DB.chars) do
+        local rank = not BT.IsIgnored(id) and BT.SameFaction(id) and rec.skills and rec.skills[profKey]
+        if rank and rank > best then best, who = rank, id end
+    end
+    return best, who
+end
+
+-- Skills, mit denen ein Beruf in die Materialliste eingeht (einer je Charakter); leer = vom Filter ausgeschlossen.
+-- Filter: nil = alle Berufe aller Charaktere der eigenen Fraktion, jeder mit seinem eigenen Skill;
+-- "once" = jeder Beruf einmal mit dem besten Charakter, auch ungelernte; "learned" = gelernte Berufe einmal;
+-- sonst ein einzelner Charakter.
+local function FilteredSkills(profKey)
+    if DB.opt.noGather and BT.PROF_BY_KEY[profKey].gather then return {} end
     local filter = DB.opt.matFilter
+    if filter == "once" then return { (BestSkill(profKey)) } end
     if filter == "learned" then
-        local skill, who = BT.Skill(profKey)
-        return who and skill or nil
+        local skill, who = BestSkill(profKey)
+        return who and { skill } or {}
     end
     if filter then
         local rec = DB.chars[filter]
-        if rec then return rec.skills and rec.skills[profKey] or nil end
+        local skill = rec and rec.skills and rec.skills[profKey]
+        return skill and { skill } or {}
     end
-    return (BT.Skill(profKey))
+    local list = {}
+    for _, id in ipairs(BT.CharIds()) do
+        local rec = DB.chars[id]
+        local skill = rec and rec.skills and rec.skills[profKey]
+        if skill and not BT.IsIgnored(id) and BT.SameFaction(id) then list[#list + 1] = skill end
+    end
+    return list
 end
 
 -- Anteil einer Einkaufsliste, der bei diesem Skill noch offen ist.
@@ -586,7 +628,7 @@ end
 function BT.Solve()
     local totals, byChar = {}, {}
     for _, id in ipairs(BT.CharIds()) do
-        if not BT.IsIgnored(id) then
+        if not BT.IsIgnored(id) and BT.SameFaction(id) then
             for _, section in ipairs(SECTIONS) do
                 local src = BT.Source(id, section)
                 for key, count in pairs(src or {}) do
@@ -607,27 +649,29 @@ function BT.Solve()
     for _, prof in ipairs(BT.PROFS) do
         local crafts = 0
         if not DB.opt.off[prof.key] then
-            local skill, filtered = (BT.Skill(prof.key)), FilteredSkill(prof.key)
+            local skill, skills = (BT.Skill(prof.key)), FilteredSkills(prof.key)
             for _, step in ipairs(BT.GuideSteps(prof)) do
-                if step.lump then
-                    local part = filtered and LumpShare(step, filtered) or 0
-                    if part > 0 then
-                        for _, reagent in ipairs(step.r) do
-                            local amount = math.ceil(reagent[2] * part)
-                            demand[reagent[1]] = (demand[reagent[1]] or 0) + amount
-                            AddShare(reagent[1], prof.key, amount)
+                if not step.lump then crafts = crafts + RemainingCrafts(step, skill) end
+                for _, filtered in ipairs(skills) do
+                    if step.lump then
+                        local part = LumpShare(step, filtered)
+                        if part > 0 then
+                            for _, reagent in ipairs(step.r) do
+                                local amount = math.ceil(reagent[2] * part)
+                                demand[reagent[1]] = (demand[reagent[1]] or 0) + amount
+                                AddShare(reagent[1], prof.key, amount)
+                            end
+                        end
+                    else
+                        local c = RemainingCrafts(step, filtered)
+                        if c > 0 then
+                            for _, reagent in ipairs(step.r) do
+                                demand[reagent[1]] = (demand[reagent[1]] or 0) + c * reagent[2]
+                                AddShare(reagent[1], prof.key, c * reagent[2])
+                            end
+                            if step.out then supply[step.out] = (supply[step.out] or 0) + c * step.mk end
                         end
                     end
-                else
-                    crafts = crafts + RemainingCrafts(step, skill)
-                end
-                local c = (not step.lump and filtered) and RemainingCrafts(step, filtered) or 0
-                if c > 0 then
-                    for _, reagent in ipairs(step.r) do
-                        demand[reagent[1]] = (demand[reagent[1]] or 0) + c * reagent[2]
-                        AddShare(reagent[1], prof.key, c * reagent[2])
-                    end
-                    if step.out then supply[step.out] = (supply[step.out] or 0) + c * step.mk end
                 end
             end
         end

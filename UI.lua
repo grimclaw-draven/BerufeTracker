@@ -665,11 +665,16 @@ end
 local function FilterLabel()
     local filter = BT.db.opt.matFilter
     if filter == "learned" then return "Gelernte Berufe" end
+    if filter == "once" then return "Jeder Beruf einmal" end
     return filter or "Alle Berufe"
 end
 
 local function OpenFilterMenu(button)
-    local options = { { text = "Alle Berufe" }, { text = "Gelernte Berufe (alle Charaktere)", value = "learned" } }
+    local options = {
+        { text = "Alle Berufe  |cff999999jeder Charakter mit seinen Berufen|r" },
+        { text = "Gelernte Berufe  |cff999999jeder einmal, bester Charakter|r", value = "learned" },
+        { text = "Jeder Beruf einmal  |cff999999auch ungelernte, bester Charakter|r", value = "once" },
+    }
     for _, id in ipairs(BT.FilterChars()) do
         local names = {}
         for _, prof in ipairs(BT.PROFS) do

@@ -10,8 +10,8 @@ Für **WoW Forever**. Die Oberfläche ist auf Deutsch.
 
 **Materialien**
 - Gesamtbedarf aller Berufe, aufgelöst bis zu den Grundmaterialien. Ein Bronzebarren zählt zum Beispiel als Kupfer- und Zinnbarren und diese wiederum als Erz.
-- Gegengerechnet wird, was du in Taschen, Bank und Post aller Charaktere hast. Wenn [BagBrother/Bagnon](https://www.curseforge.com/wow/addons/bagnon) installiert ist, kommen auch Charaktere dazu, die BerufeTracker noch nicht kennt.
-- Du kannst nach allen Berufen, nach gelernten Berufen oder nach einem bestimmten Charakter filtern und Sammelberufe ausschließen.
+- Gegengerechnet wird, was du in Taschen, Bank und Post aller Charaktere deiner aktuellen Fraktion hast. Wenn [BagBrother/Bagnon](https://www.curseforge.com/wow/addons/bagnon) installiert ist, kommen auch Charaktere dazu, die BerufeTracker noch nicht kennt.
+- Filter: „Alle Berufe“ zählt jeden Charakter deiner Fraktion mit seinen eigenen Berufen und seinem Skill zusammen. „Gelernte Berufe“ zählt jeden gelernten Beruf einmal, „Jeder Beruf einmal“ jeden Beruf einmal, auch ungelernte, oder du wählst einen einzelnen Charakter. Sammelberufe lassen sich ausschließen.
 - Beim Drüberfahren siehst du den Bedarf je Beruf, Preis und Kaufkosten, die Verteilung auf deine Charaktere und woher du das Material bekommst: Vorkommen mit Zonen, Gegner mit Stufen und die nächsten Händler deiner Fraktion.
 - Mit dem Auktionshaus-Scan siehst du, was es kosten würde, alles zu kaufen statt selbst zu farmen.
 
