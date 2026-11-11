@@ -11,6 +11,13 @@ A = sys.argv[1]
 NAME = 'BerufeTracker'
 toc = open(os.path.join(A, NAME + '.toc'), encoding='utf8').read()
 version = re.search(r'^## Version:\s*(\S+)', toc, re.M).group(1)
+if version.startswith('@'):  # Platzhalter für den Packager: lokal die Version aus dem letzten Git-Tag nehmen
+    import subprocess
+    try:
+        version = subprocess.run(['git', '-C', A, 'describe', '--tags', '--always'], capture_output=True, text=True, check=True).stdout.strip()
+    except Exception:
+        version = 'dev'
+    toc = toc.replace('@project-version@', version)
 files = [l.strip() for l in toc.splitlines() if l.strip() and not l.startswith('#')]
 EMPTY_SEED = '''-- Startwerte für Skills, bis sich ein Charakter mit dem Addon einloggt. In der Veröffentlichung leer.
 local _, BT = ...
@@ -40,7 +47,7 @@ out_dir = os.path.join(A, 'dev', 'dist')
 os.makedirs(out_dir, exist_ok=True)
 out = os.path.join(out_dir, f'{NAME}-{version}.zip')
 with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED) as z:
-    z.write(os.path.join(A, NAME + '.toc'), f'{NAME}/{NAME}.toc')
+    z.writestr(f'{NAME}/{NAME}.toc', toc)
     for f in files:
         if f == 'Seed.lua':
             z.writestr(f'{NAME}/Seed.lua', EMPTY_SEED)

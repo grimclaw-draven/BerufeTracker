@@ -1,0 +1,11 @@
+package-as: BerufeTracker
+
+manual-changelog:
+  filename: CHANGELOG.md
+  markup-type: markdown
+
+ignore:
+  - tools
+  - .github
+  - .gitignore
+  - .pkgmeta
