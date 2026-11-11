@@ -1,55 +1,55 @@
 # BerufeTracker
 
-Wie viel Kupfererz, Leinenstoff und Friedensblume brauchst du noch, um deine Berufe auf 300 zu bringen? BerufeTracker rechnet es aus: für alle Berufe, bis hinunter zu den Grundmaterialien und über alle deine Charaktere und Banken hinweg.
+*[Deutsche Version](README.de.md)*
 
-Für **WoW Forever**, deutscher Client.
+How much Copper Ore, Linen Cloth and Peacebloom do you still need to bring your professions to 300? BerufeTracker works it out: for every profession, down to the base materials and across all your characters and banks.
 
-*English: Shows the remaining materials to level every profession to 300, broken down to base materials and counted across all your characters and banks. The interface is German only and node tooltips need a German client.*
+For **WoW Forever**. The interface is in German.
 
-## Funktionen
+## Features
 
-**Materialien**
-- Gesamtbedarf aller Berufe, aufgelöst bis zu den Grundmaterialien. Ein Bronzebarren zählt zum Beispiel als Kupfer- und Zinnbarren und diese wiederum als Erz.
-- Gegengerechnet wird, was du in Taschen, Bank und Post aller Charaktere hast. Wenn [BagBrother/Bagnon](https://www.curseforge.com/wow/addons/bagnon) installiert ist, kommen auch Charaktere dazu, die BerufeTracker noch nicht kennt.
-- Du kannst nach allen Berufen, nach gelernten Berufen oder nach einem bestimmten Charakter filtern und Sammelberufe ausschließen.
-- Beim Drüberfahren siehst du den Bedarf je Beruf, Preis und Kaufkosten, die Verteilung auf deine Charaktere und woher du das Material bekommst: Vorkommen mit Zonen, Gegner mit Stufen und die nächsten Händler deiner Fraktion.
-- Mit dem Auktionshaus-Scan siehst du, was es kosten würde, alles zu kaufen statt selbst zu farmen.
+**Materials**
+- Total need of all professions, broken down to base materials. A Bronze Bar, for example, counts as Copper and Tin Bars, and those in turn as ore.
+- What you hold in the bags, bank and mailbox of all your characters is deducted. If [BagBrother/Bagnon](https://www.curseforge.com/wow/addons/bagnon) is installed, characters that BerufeTracker does not know yet are included as well.
+- You can filter by all professions, by learned professions or by a single character, and leave out gathering professions.
+- Hovering shows the need per profession, price and purchase cost, how the stock is spread across your characters, and where to get the material: nodes with zones, mobs with levels and the nearest vendors of your faction.
+- The auction house scan shows what it would cost to buy everything instead of farming it yourself.
 
 **Route**
-- Die Schritt-für-Schritt-Route jedes Berufs mit dem Stand, wie viel davon noch offen ist.
-- Guides sind wählbar: Metabot, RankedBoost, Wowhead, wowtbc.gg, GoldGoblin und wow-professions, je Beruf oder für alle gemeinsam.
-- Fehlende Rezepte sind mit Fundort markiert.
-- Lehrer-Besuche erscheinen an der richtigen Stelle der Route, mit dem nächstgelegenen Lehrer, der dir die nächste Stufe beibringt.
+- The step-by-step route of each profession, with how much of it is still open.
+- Choose your guide: Metabot, RankedBoost, Wowhead, wowtbc.gg, GoldGoblin or wow-professions, per profession or for all at once.
+- Missing recipes are marked together with where to find them.
+- Trainer visits appear at the right point of the route, with the nearest trainer who teaches you the next rank.
 
-**Wegpunkte**
-- Strg+Linksklick auf einen Lehrer oder ein Material setzt einen Wegpunkt zum nächsten Lehrer oder Händler.
-- Eine Leiste mit Richtungspfeil und Beschreibung zeigt das Ziel. Ein Klick darauf öffnet die Karte beim Ziel.
-- Auch auf der Karte steht eine Beschriftung. Wenn du die Kartenmarkierung im Chat teilst, wird die Beschreibung mitgeschickt.
-- Der Wegpunkt verschwindet, sobald du mit dem NPC sprichst.
+**Waypoints**
+- Ctrl+left-click on a trainer or a material sets a waypoint to the nearest trainer or vendor.
+- A bar with a direction arrow and a description shows the target. Clicking it opens the map at the target.
+- The map shows a label as well. When you share the map pin in chat, the description is sent along.
+- The waypoint disappears as soon as you talk to the NPC.
 
-**Im Spiel**
-- Item-Tooltips (Taschen, Bank, Auktionshaus, Beute) zeigen, wie viel du nach deinem aktuellen Filter noch brauchst.
-- Erzadern und Kräuter in der Welt zeigen, was du daraus noch brauchst.
+**In the game**
+- Item tooltips (bags, bank, auction house, loot) show how much you still need under your current filter.
+- Ore veins and herbs in the world show what you still need from them.
 
-## Bedienung
+## Usage
 
-- `/berufe` oder der Minimap-Button öffnen das Fenster.
-- Für die Preise öffnest du das Auktionshaus und klickst auf „Preise scannen“ (oder `/berufe scan`).
-- `/berufe skill <Beruf> <Wert>` setzt einen Skill von Hand, falls er nicht erkannt wird. Ohne Wert gilt wieder die automatische Erkennung.
-- Jeder Charakter muss sich einmal mit dem Addon einloggen, damit seine Berufe bekannt sind. Seine Bank wird erfasst, sobald du sie einmal öffnest.
+- `/berufe` or the minimap button opens the window.
+- For prices, open the auction house and click "Preise scannen" (or `/berufe scan`).
+- `/berufe skill <profession> <value>` sets a skill by hand if it is not detected. Without a value, automatic detection applies again.
+- Each character has to log in with the addon once so its professions are known. Its bank is recorded as soon as you open it once.
 
-## Grenzen
+## Limitations
 
-- Die Oberfläche ist nur auf Deutsch. Die Erkennung von Erzadern und Kräutern in der Welt funktioniert nur mit einem deutschen Client.
-- Entfernungen sind Luftlinie und gelten nur auf demselben Kontinent.
-- Nicht für jedes Rezept ist ein Fundort bekannt.
-- Händler- und Fundortdaten stammen aus der QuestieDB. Sie können einzelne Fehler enthalten.
+- The interface is German only. Detecting ore veins and herbs in the world only works with a German client.
+- Distances are straight-line and only apply on the same continent.
+- Not every recipe has a known location.
+- Vendor and location data come from QuestieDB and may contain individual errors.
 
-## Quellen und Dank
+## Sources and thanks
 
-- **Routen:** [Metabot](https://metabot.gg/en/wow-forever/professions), [RankedBoost](https://rankedboost.com/world-of-warcraft/forever/), [Wowhead](https://www.wowhead.com/forever/profession-leveling-guides), [wowtbc.gg](https://wowtbc.gg/warcraftforever/), [GoldGoblin](https://classic.goldgoblin.net/berufe/) und [wow-professions](https://www.wow-professions.com/forever/). Die Routen wurden für das Addon zusammengefasst. Die vollständigen Guides mit allen Erklärungen findest du auf den jeweiligen Seiten, der Link steht im Addon bei der Guide-Auswahl.
-- **Lehrer, Händler und Fundorte** wurden aus der QuestieDB (GPLv3) erzeugt. Danke an das Questie-Team und alle Mitwirkenden. BerufeTracker ist kein Projekt des Questie-Teams.
+- **Routes:** [Metabot](https://metabot.gg/en/wow-forever/professions), [RankedBoost](https://rankedboost.com/world-of-warcraft/forever/), [Wowhead](https://www.wowhead.com/forever/profession-leveling-guides), [wowtbc.gg](https://wowtbc.gg/warcraftforever/), [GoldGoblin](https://classic.goldgoblin.net/berufe/) and [wow-professions](https://www.wow-professions.com/forever/). The routes were condensed for the addon. You will find the full guides with all explanations on the respective sites; the link is shown in the addon's guide selection.
+- **Trainers, vendors and locations** were generated from QuestieDB (GPLv3). Thanks to the Questie team and all contributors. BerufeTracker is not a project of the Questie team.
 
-## Lizenz
+## License
 
-GPLv3, siehe `LICENSE.md`.
+GPLv3, see `LICENSE.md`.
