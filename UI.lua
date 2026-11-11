@@ -451,11 +451,7 @@ local function AddItems(list, category, title, onlyMissing, search)
     if #keys == 0 then return end
     local collapsed = BT.db.opt.matCollapsed
     local open = search ~= "" or not collapsed[title]
-    table.sort(keys, function(a, b)
-        local ra, rb = BT.result[a], BT.result[b]
-        if ra.missing ~= rb.missing then return ra.missing > rb.missing end
-        return BT.ITEMS[a].de < BT.ITEMS[b].de
-    end)
+    table.sort(keys, function(a, b) return BT.Before(BT.ITEMS[a].de, BT.ITEMS[b].de) end)
     local openItems = 0
     for _, key in ipairs(keys) do
         if BT.result[key].missing > 0 then openItems = openItems + 1 end
@@ -485,8 +481,11 @@ local function BuildMaterials(list)
     local search = (window.search:GetText() or ""):lower()
     local onlyMissing = BT.db.opt.onlyMissing
     AddCollapseAll(list)
-    for index, title in ipairs(BT.CATS) do AddItems(list, index, title, onlyMissing, search) end
-    AddItems(list, 0, INTERMEDIATES, onlyMissing, search)
+    -- Kategorien alphabetisch, die Zwischenprodukte reihen sich mit ein
+    local categories = { { index = 0, title = INTERMEDIATES } }
+    for index, title in ipairs(BT.CATS) do categories[#categories + 1] = { index = index, title = title } end
+    table.sort(categories, function(a, b) return BT.Before(a.title, b.title) end)
+    for _, category in ipairs(categories) do AddItems(list, category.index, category.title, onlyMissing, search) end
 end
 
 local function RecipeTag(step)

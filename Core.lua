@@ -11,6 +11,22 @@ BT.PROF_BY_KEY = {}
 
 local function Normalize(text) return (text:lower():gsub("[%p%s]", "")) end
 
+-- Sortierschlüssel nach deutscher Gewohnheit: Umlaute wie Grundbuchstaben, ß wie ss, ohne Groß/Klein.
+local FOLD = { ["ä"] = "a", ["ö"] = "o", ["ü"] = "u", ["Ä"] = "a", ["Ö"] = "o", ["Ü"] = "u", ["ß"] = "ss" }
+function BT.SortKey(text)
+    return (text:gsub("\195[\132\150\156\164\182\188\159]", FOLD)):lower()
+end
+
+-- Alphabetisch vergleichen; bei gleichem Schlüssel entscheidet der Originaltext.
+function BT.Before(a, b)
+    local ka, kb = BT.SortKey(a), BT.SortKey(b)
+    if ka ~= kb then return ka < kb end
+    return a < b
+end
+
+-- Berufe überall alphabetisch nach deutschem Namen.
+table.sort(BT.PROFS, function(a, b) return BT.Before(a.title, b.title) end)
+
 for _, prof in ipairs(BT.PROFS) do
     BT.PROF_BY_KEY[prof.key] = prof
     for _, name in ipairs(prof.names) do BT.PROF_BY_NAME[name:lower()] = prof.key end
