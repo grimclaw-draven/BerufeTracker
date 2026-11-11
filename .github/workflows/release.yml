@@ -13,6 +13,7 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    environment: curseforge  # dort liegen Secret CF_API_KEY und Variable CF_PROJECT_ID
     steps:
       - uses: actions/checkout@v4
         with:
