@@ -22,7 +22,8 @@ jobs:
       - name: Paket bauen und veröffentlichen
         uses: BigWigsMods/packager@v2
         with:
-          args: ${{ secrets.CF_PROJECT_ID && format('-p {0}', secrets.CF_PROJECT_ID) || '' }}
+          # -n: Dateiname und Label nur mit der Versionsnummer (ohne den automatischen Zusatz "-forever")
+          args: -n "{package-name}-{project-version}:{project-version}" ${{ secrets.CF_PROJECT_ID && format('-p {0}', secrets.CF_PROJECT_ID) || '' }}
         env:
           CF_API_KEY: ${{ secrets.CF_API_KEY }}
           GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}
