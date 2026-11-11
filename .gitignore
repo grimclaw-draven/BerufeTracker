@@ -1,0 +1,5 @@
+# Entwicklung: Testdaten, Hilfsskripte, lokale Pfade
+dev/
+CLAUDE.md
+.vscode/
+*.zip

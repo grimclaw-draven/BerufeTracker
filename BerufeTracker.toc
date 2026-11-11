@@ -1,0 +1,16 @@
+## Interface: 16001
+## Title: BerufeTracker
+## Notes: Material needs for all professions 1-300 across characters and banks (German UI)
+## Notes-deDE: Materialbedarf aller Berufe 1-300, charakter- und bankuebergreifend
+## Version: 1.2.0
+## IconTexture: Interface\Icons\Trade_BlackSmithing
+## X-License: GPL-3.0
+## OptionalDeps: BagBrother
+## SavedVariables: BerufeTrackerDB
+
+Data.lua
+Sources.lua
+Seed.lua
+Core.lua
+Prices.lua
+UI.lua
