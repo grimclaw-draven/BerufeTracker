@@ -511,16 +511,23 @@ local function TrainerEntry(prof, rank)
     local nearest = BT.NearestNpcs(rank)
     local learned = BT.RankLearned(prof.key, rank)
     local head = "> " .. BT.RankLabel(rank)
+    local how = rank.how and (rank.how .. ": ") or ""
     local text
     if learned then
-        text = "|cff777777" .. head .. "|r"
+        -- abgeschlossen: Lehrer trotzdem nennen, die ganze Zeile grau
+        local target = "kein Lehrer für deine Fraktion"
+        if nearest[1] then
+            local name, place, distance = NpcLine(nearest[1])
+            target = name .. ", " .. place .. (distance and (" (" .. distance .. ")") or "")
+        end
+        text = "|cff777777" .. head .. "  " .. how .. target .. "|r"
     else
         local target = "|cffff6666kein Lehrer für deine Fraktion|r"
         if nearest[1] then
             local name, place, distance = NpcLine(nearest[1])
             target = "|cffffffff" .. name .. "|r, " .. place .. (distance and (" |cff999999(" .. distance .. ")|r") or "")
         end
-        text = "|cff66ccff" .. head .. "|r  " .. (rank.how and (rank.how .. ": ") or "") .. target
+        text = "|cff66ccff" .. head .. "|r  " .. how .. target
     end
     local right = learned and "|cff33cc33gelernt|r"
         or (BT.RankDue(prof.key, rank) and "|cffffcc33fällig|r") or ("ab " .. rank.skill)
