@@ -576,13 +576,18 @@ local function AddProfession(list, prof, onlyMissing)
         list[#list + 1] = { kind = "info", height = 16, text = "|cff999999Ab Skill " .. prof.steps[#prof.steps].t .. " nur noch durchs Sammeln, ohne Materialbedarf|r" }
     end
     local ranks = BT.TRAINERS[prof.key]
+    -- aktueller Rang = höchster gelernter; bleibt auch bei "Nur Offenes" sichtbar
+    local currentRank
+    for index, rank in ipairs(ranks or {}) do
+        if BT.RankLearned(prof.key, rank) then currentRank = index end
+    end
     local nextRank = 1
     local function AddRanksBefore(limit)
         -- ein Rang erscheint vor dem ersten Schritt, der über seine Untergrenze hinausgeht (Lehrling ganz oben)
         local function Bound(rank) return (rank.from or 1) <= 1 and 0 or rank.from end
         while ranks and ranks[nextRank] and (not limit or limit > Bound(ranks[nextRank])) do
             local entry = TrainerEntry(prof, ranks[nextRank])
-            if not onlyMissing or not entry.learned then list[#list + 1] = entry end
+            if not onlyMissing or not entry.learned or nextRank == currentRank then list[#list + 1] = entry end
             nextRank = nextRank + 1
         end
     end
