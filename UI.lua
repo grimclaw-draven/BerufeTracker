@@ -507,13 +507,13 @@ local function RecipeCounts(prof)
     return total, found
 end
 
-local function TrainerEntry(prof, rank)
+local function TrainerEntry(prof, rank, current)
     local nearest = BT.NearestNpcs(rank)
     local learned = BT.RankLearned(prof.key, rank)
     local head = "> " .. BT.RankLabel(rank)
     local how = rank.how and (rank.how .. ": ") or ""
     local text
-    if learned then
+    if learned and not current then
         -- abgeschlossen: Lehrer trotzdem nennen, die ganze Zeile grau
         local target = "kein Lehrer für deine Fraktion"
         if nearest[1] then
@@ -586,7 +586,7 @@ local function AddProfession(list, prof, onlyMissing)
         -- ein Rang erscheint vor dem ersten Schritt, der über seine Untergrenze hinausgeht (Lehrling ganz oben)
         local function Bound(rank) return (rank.from or 1) <= 1 and 0 or rank.from end
         while ranks and ranks[nextRank] and (not limit or limit > Bound(ranks[nextRank])) do
-            local entry = TrainerEntry(prof, ranks[nextRank])
+            local entry = TrainerEntry(prof, ranks[nextRank], nextRank == currentRank)
             if not onlyMissing or not entry.learned or nextRank == currentRank then list[#list + 1] = entry end
             nextRank = nextRank + 1
         end

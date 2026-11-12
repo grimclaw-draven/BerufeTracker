@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.1
+
+- Lehrer-Rang Lehrling (1-75) in der Route ergänzt
+- Alle Ränge zeigen ihren Bereich, z. B. „Geselle (75-150)“
+- Abgeschlossene Ränge nennen weiterhin ihren Lehrer
+- Der aktuelle Rang bleibt farbig und bei „Nur Offenes“ sichtbar
+
 ## 1.0.0 – erste Veröffentlichung
 
 - Materialbedarf aller Berufe 1–300, aufgelöst bis zu den Grundmaterialien, über alle Charaktere und Banken hinweg
