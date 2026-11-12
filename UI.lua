@@ -243,8 +243,8 @@ end
 local function TrainerTooltip(row)
     local rank, list = row.entry.rank, row.entry.nearest
     GameTooltip:SetOwner(row, "ANCHOR_RIGHT")
-    GameTooltip:AddLine(rank.name .. " (bis " .. rank.cap .. ")", 1, 1, 1)
-    GameTooltip:AddLine("Ab Skill " .. rank.skill .. " und Charakterstufe " .. rank.level, 0.7, 0.7, 0.7)
+    GameTooltip:AddLine(BT.RankLabel(rank), 1, 1, 1)
+    GameTooltip:AddLine(rank.skill > 0 and ("Ab Skill " .. rank.skill .. " und Charakterstufe " .. rank.level) or "Ohne Voraussetzung", 0.7, 0.7, 0.7)
     if rank.how then GameTooltip:AddLine(rank.how, 1, 0.82, 0) end
     GameTooltip:AddLine(" ")
     if #list == 0 then GameTooltip:AddLine("Kein Lehrer für deine Fraktion bekannt", 1, 0.4, 0.4) end
@@ -507,12 +507,10 @@ local function RecipeCounts(prof)
     return total, found
 end
 
-local RANK_BOUND = { 75, 150, 225 }
-
 local function TrainerEntry(prof, rank)
     local nearest = BT.NearestNpcs(rank)
     local learned = BT.RankLearned(prof.key, rank)
-    local head = "> " .. rank.name .. " (bis " .. rank.cap .. ")"
+    local head = "> " .. BT.RankLabel(rank)
     local text
     if learned then
         text = "|cff777777" .. head .. "|r"
@@ -526,7 +524,7 @@ local function TrainerEntry(prof, rank)
     end
     local right = learned and "|cff33cc33gelernt|r"
         or (BT.RankDue(prof.key, rank) and "|cffffcc33fällig|r") or ("ab " .. rank.skill)
-    local note = prof.title .. ": " .. rank.name .. " (bis " .. rank.cap .. ") " .. (rank.how and ("- " .. rank.how) or "lernen")
+    local note = prof.title .. ": " .. BT.RankLabel(rank) .. " " .. (rank.how and ("- " .. rank.how) or "lernen")
     return { kind = "trainer", rank = rank, nearest = nearest, text = text, right = right, learned = learned, note = note }
 end
 
@@ -573,7 +571,9 @@ local function AddProfession(list, prof, onlyMissing)
     local ranks = BT.TRAINERS[prof.key]
     local nextRank = 1
     local function AddRanksBefore(limit)
-        while ranks and ranks[nextRank] and (not limit or limit > RANK_BOUND[nextRank]) do
+        -- ein Rang erscheint vor dem ersten Schritt, der über seine Untergrenze hinausgeht (Lehrling ganz oben)
+        local function Bound(rank) return (rank.from or 1) <= 1 and 0 or rank.from end
+        while ranks and ranks[nextRank] and (not limit or limit > Bound(ranks[nextRank])) do
             local entry = TrainerEntry(prof, ranks[nextRank])
             if not onlyMissing or not entry.learned then list[#list + 1] = entry end
             nextRank = nextRank + 1

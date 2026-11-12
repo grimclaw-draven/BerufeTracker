@@ -384,12 +384,20 @@ end
 
 function BT.RankLearned(profKey, rank)
     local rec = ProfessionOwner(profKey)
-    return rec ~= nil and rec.caps ~= nil and (rec.caps[profKey] or 0) >= rank.cap
+    if rec == nil then return false end
+    if rank.skill == 0 and rec.skills and rec.skills[profKey] then return true end -- Lehrling: Beruf ist gelernt
+    return rec.caps ~= nil and (rec.caps[profKey] or 0) >= rank.cap
 end
 
 function BT.RankDue(profKey, rank)
+    if rank.skill == 0 then return true end -- Lehrling geht immer
     local rec = ProfessionOwner(profKey)
     return rec ~= nil and rec.skills ~= nil and (rec.skills[profKey] or 0) >= rank.skill
+end
+
+-- "Geselle (75-150)"
+function BT.RankLabel(rank)
+    return rank.name .. " (" .. (rank.from or 1) .. "-" .. rank.cap .. ")"
 end
 
 local worldCache = {}
