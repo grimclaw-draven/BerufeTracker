@@ -1,6 +1,6 @@
 -- Generiert aus den Metabot-Leveling-Routen (Stand 09.11.2026). Nicht von Hand bearbeiten.
 local _, BT = ...
-BT.DATA_VERSION = 5
+BT.DATA_VERSION = 6
 
 BT.CATS = {"Erze, Kohle & Steine","Stoff","Leder & Bälge","Kräuter","Verzauberungsmaterial","Elementar","Fleisch, Fisch & Tierteile","Händlerwaren & Sonstiges"}
 BT.ITEMS = {

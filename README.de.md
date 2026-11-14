@@ -4,7 +4,7 @@
 
 Wie viel Kupfererz, Leinenstoff und Friedensblume brauchst du noch, um deine Berufe auf 300 zu bringen? BerufeTracker rechnet es aus: für alle Berufe, bis hinunter zu den Grundmaterialien und über alle deine Charaktere und Banken hinweg.
 
-Für **WoW Forever**. Die Oberfläche ist auf Deutsch.
+Für **WoW Forever**, in der Sprache deines Spiel-Clients: Englisch, Deutsch, Französisch, Spanisch, Portugiesisch, Italienisch, Russisch, Koreanisch und Chinesisch (vereinfacht und traditionell).
 
 ## Funktionen
 
@@ -40,7 +40,7 @@ Für **WoW Forever**. Die Oberfläche ist auf Deutsch.
 
 ## Grenzen
 
-- Die Oberfläche ist nur auf Deutsch. Die Erkennung von Erzadern und Kräutern in der Welt funktioniert nur mit einem deutschen Client.
+- Namen von Items, Lehrern, Händlern und Vorkommen kommen aus dem Spiel und aus der QuestieDB. Bei Italienisch und bei den wenigen Rezepten ohne hergestelltes Item (etwa Verzauberungen) stehen sie auf Englisch. Fundorte von Rezepten gibt es nur auf Deutsch und Englisch.
 - Entfernungen sind Luftlinie und gelten nur auf demselben Kontinent.
 - Nicht für jedes Rezept ist ein Fundort bekannt.
 - Händler- und Fundortdaten stammen aus der QuestieDB. Sie können einzelne Fehler enthalten.

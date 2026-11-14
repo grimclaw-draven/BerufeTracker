@@ -1,20 +1,97 @@
 -- BerufeTracker: Scannt Taschen/Bank/Post aller Charaktere und rechnet den offenen Materialbedarf aus.
 local ADDON, BT = ...
+local L = BT.L
+local LD = BT.LD or {}
+local DE = BT.LOCALE == "deDE"
 
+-- Items werden über die ID erkannt (gleich in jeder Sprache), der Name ist nur noch Rückfall.
 BT.NAME = {}
+BT.ITEM_BY_ID = {}
 for key, item in pairs(BT.ITEMS) do
     BT.NAME[item.de] = key
     BT.NAME[item.en] = key
+    if item.id then
+        BT.ITEM_BY_ID[item.id] = key
+        local own = LD.i and LD.i[item.id]
+        if own then BT.NAME[own] = key end
+    end
 end
 BT.PROF_BY_NAME = {}
 BT.PROF_BY_KEY = {}
 
 local function Normalize(text) return (text:lower():gsub("[%p%s]", "")) end
 
+-- Name eines Items in der Spielsprache: Spiel selbst, sonst QuestieDB, sonst Englisch.
+local function GameItemName(id)
+    if not id or DE then return nil end
+    local get = (C_Item and C_Item.GetItemNameByID) or (GetItemInfo and function(i) return (GetItemInfo(i)) end)
+    if not get then return nil end
+    local ok, name = pcall(get, id)
+    if ok and type(name) == "string" and name ~= "" and not (issecretvalue and issecretvalue(name)) then return name end
+    return nil
+end
+
+function BT.ItemName(key)
+    local item = BT.ITEMS[key]
+    if not item then return key end
+    if DE then return item.de end
+    return GameItemName(item.id) or (LD.i and LD.i[item.id]) or item.en
+end
+
+function BT.ProfTitle(prof)
+    if DE then return prof.title end
+    local names = BT.PROF_NAMES and BT.PROF_NAMES[prof.key]
+    return (names and (names[BT.LOCALE] or names.enUS)) or prof.names[2] or prof.title
+end
+
+function BT.StepName(step)
+    if DE then return step.n end
+    if step.lump then return L["Einkaufsliste"] end
+    local id = BT.STEP_ITEM and BT.STEP_ITEM[step.en]
+    return GameItemName(id) or (LD.s and LD.s[step.en]) or step.en
+end
+
+function BT.RecipeItemName(rc)
+    if DE then return rc.de end
+    local id = BT.RC_ITEM and BT.RC_ITEM[rc.en]
+    return GameItemName(id) or (LD.r and LD.r[rc.en]) or rc.en
+end
+
+-- Fundort eines Rezept-Items: deutsch aus den Daten, sonst englisch (dafür gibt es eine Vorlage).
+function BT.RecipeWhere(rc)
+    if not rc.where then return nil end
+    if DE then return rc.where end
+    local en = BT.RECIPE_WHERE_EN and BT.RECIPE_WHERE_EN[rc.slug]
+    if en then return en end
+    local vendor = rc.where:match("^Händler: (.-) %(Wowhead%)$")
+    if vendor then return L["Händler: %s (Wowhead)"]:format(vendor) end
+    return rc.where
+end
+
+function BT.NpcName(npc)
+    if DE then return npc.de or npc.n end
+    return (npc.id and LD.n and LD.n[npc.id]) or npc.n
+end
+
+-- Gegner aus den Bezugsquellen: in den Daten steht der deutsche Name, die ID führt zur Spielsprache.
+function BT.MobName(id, deName)
+    if DE then return deName end
+    return (LD.n and LD.n[id]) or (BT.LD_EN and BT.LD_EN.n[id]) or deName
+end
+
+function BT.NodeName(node)
+    if DE then return node.n end
+    return (node.id and ((LD.o and LD.o[node.id]) or (BT.LD_EN and BT.LD_EN.o[node.id]))) or node.n
+end
+
 -- Sortierschlüssel nach deutscher Gewohnheit: Umlaute wie Grundbuchstaben, ß wie ss, ohne Groß/Klein.
+-- Weitere Akzente (Französisch, Spanisch, Portugiesisch, Italienisch) ebenso auf den Grundbuchstaben.
 local FOLD = { ["ä"] = "a", ["ö"] = "o", ["ü"] = "u", ["Ä"] = "a", ["Ö"] = "o", ["Ü"] = "u", ["ß"] = "ss" }
+for base, letters in pairs({ a = "àáâãåÀÁÂÃÅ", c = "çÇ", e = "èéêëÈÉÊË", i = "ìíîïÌÍÎÏ", n = "ñÑ", o = "òóôõÒÓÔÕ", u = "ùúûÙÚÛ", y = "ýÿÝ" }) do
+    for letter in letters:gmatch("\195[\128-\191]") do FOLD[letter] = base end
+end
 function BT.SortKey(text)
-    return (text:gsub("\195[\132\150\156\164\182\188\159]", FOLD)):lower()
+    return (text:gsub("\195[\128-\191]", FOLD)):lower()
 end
 
 -- Alphabetisch vergleichen; bei gleichem Schlüssel entscheidet der Originaltext.
@@ -24,21 +101,30 @@ function BT.Before(a, b)
     return a < b
 end
 
--- Berufe überall alphabetisch nach deutschem Namen.
-table.sort(BT.PROFS, function(a, b) return BT.Before(a.title, b.title) end)
+-- Berufe überall alphabetisch nach dem Namen in der Spielsprache.
+table.sort(BT.PROFS, function(a, b) return BT.Before(BT.ProfTitle(a), BT.ProfTitle(b)) end)
 
 for _, prof in ipairs(BT.PROFS) do
     BT.PROF_BY_KEY[prof.key] = prof
     for _, name in ipairs(prof.names) do BT.PROF_BY_NAME[name:lower()] = prof.key end
+    for _, name in pairs(BT.PROF_NAMES and BT.PROF_NAMES[prof.key] or {}) do BT.PROF_BY_NAME[name:lower()] = prof.key end
     local allSteps = { prof.steps }
     for _, guide in ipairs(prof.alts or {}) do allSteps[#allSteps + 1] = guide.steps end
     for _, steps in ipairs(allSteps) do for _, step in ipairs(steps) do
         -- Namen, unter denen der Client dieses Rezept melden kann (Rezept-, Ergebnis- oder Rezept-Item-Name).
         step.aliases = { Normalize(step.n), Normalize(step.en) }
+        local own = LD.s and LD.s[step.en]
+        if own then step.aliases[#step.aliases + 1] = Normalize(own) end
+        local made = BT.STEP_ITEM and BT.STEP_ITEM[step.en]
+        if made then step.aliases[#step.aliases + 1] = "#" .. made end -- hergestelltes Item, sprachneutral
         if step.rc then
             BT.NAME[step.rc.de] = step.rc.slug
             BT.NAME[step.rc.en] = step.rc.slug
-            for _, name in ipairs({ step.rc.de, step.rc.en }) do
+            local rcOwn = LD.r and LD.r[step.rc.en]
+            if rcOwn then BT.NAME[rcOwn] = step.rc.slug end
+            local rcId = BT.RC_ITEM and BT.RC_ITEM[step.rc.en]
+            if rcId then BT.ITEM_BY_ID[rcId] = step.rc.slug end
+            for _, name in ipairs({ step.rc.de, step.rc.en, rcOwn }) do
                 step.aliases[#step.aliases + 1] = Normalize((name:gsub("^[^:]+:%s*", "")))
             end
         end
@@ -96,6 +182,7 @@ end
 
 -- Item-Erkennung läuft über den Namen, die Zuordnung ID -> Item wird gemerkt.
 local function KeyFromLink(id, link)
+    if id and BT.ITEM_BY_ID[id] then return BT.ITEM_BY_ID[id] end
     if id and DB.idmap[id] ~= nil then return DB.idmap[id] or nil end
     local name = link and link:match("%[(.-)%]")
     if not name then return nil end
@@ -105,6 +192,7 @@ local function KeyFromLink(id, link)
 end
 
 local function KeyFromID(id)
+    if BT.ITEM_BY_ID[id] then return BT.ITEM_BY_ID[id] end
     local known = DB.idmap[id]
     if known ~= nil then return known or nil end
     local name = GetInfo(id)
@@ -190,8 +278,8 @@ end
 
 local function ScanSkills()
     local found, caps = {}, {}
-    local function note(name, rank, maxRank)
-        local key = type(name) == "string" and BT.PROF_BY_NAME[name:lower()]
+    local function note(name, rank, maxRank, skillLine)
+        local key = (skillLine and BT.SKILL_LINES[skillLine]) or (type(name) == "string" and BT.PROF_BY_NAME[name:lower()])
         if key and tonumber(rank) then found[key] = math.max(found[key] or 0, tonumber(rank)) end
         if key and tonumber(maxRank) then caps[key] = math.max(caps[key] or 0, tonumber(maxRank)) end
     end
@@ -199,8 +287,8 @@ local function ScanSkills()
         local ok, a, b, c, d, e, f = pcall(GetProfessions)
         if ok then
             for _, index in pairs({ a, b, c, d, e, f }) do
-                local ok2, name, _, rank, maxRank = pcall(GetProfessionInfo, index)
-                if ok2 then note(name, rank, maxRank) end
+                local ok2, name, _, rank, maxRank, _, _, skillLine = pcall(GetProfessionInfo, index)
+                if ok2 then note(name, rank, maxRank, skillLine) end
             end
         end
     end
@@ -222,7 +310,9 @@ local function NoteRecipe(rec, recipeID, name)
     local ui = C_TradeSkillUI
     if ui.GetRecipeSchematic then
         local ok, schematic = pcall(ui.GetRecipeSchematic, recipeID, false)
-        local output = ok and schematic and schematic.outputItemID and GetInfo(schematic.outputItemID)
+        local outputID = ok and schematic and schematic.outputItemID
+        if outputID then rec.known["#" .. outputID] = true end
+        local output = outputID and GetInfo(outputID)
         if output then rec.known[Normalize(output)] = true end
     end
 end
@@ -397,7 +487,7 @@ end
 
 -- "Geselle (75-150)"
 function BT.RankLabel(rank)
-    return rank.name .. " (" .. (rank.from or 1) .. "-" .. rank.cap .. ")"
+    return L[rank.name] .. " (" .. (rank.from or 1) .. "-" .. rank.cap .. ")"
 end
 
 local worldCache = {}
@@ -447,14 +537,14 @@ function BT.NearestNpcs(rank)
     table.sort(list, function(a, b)
         if a.distance and b.distance then return a.distance < b.distance end
         if a.distance or b.distance then return a.distance ~= nil end
-        return (a.npc.de or a.npc.n) < (b.npc.de or b.npc.n)
+        return BT.Before(BT.NpcName(a.npc), BT.NpcName(b.npc))
     end)
     return list
 end
 
 function BT.NpcPlace(entry)
     local npc = entry.npc
-    local zone = npc.where
+    local zone = npc.where and L[npc.where]
     if not zone and C_Map and C_Map.GetMapInfo then
         local info = C_Map.GetMapInfo(npc.m)
         zone = info and info.name
@@ -517,11 +607,11 @@ BT.ClearWaypointOnInteraction = ClearWaypointOnInteraction
 -- Setzt die Kartenmarkierung auf einen Lehrer; geht das nicht, stehen die Daten im Chat.
 function BT.SetWaypoint(entry, note)
     local npc, place = entry.npc, BT.NpcPlace(entry)
-    local name = npc.de or npc.n
+    local name = BT.NpcName(npc)
     local tag = "|cffffcc00BerufeTracker:|r "
     local suffix = note and (" - " .. note) or ""
     if not npc.m then
-        print(tag .. name .. ": " .. place .. " (keine Koordinaten für eine Markierung)" .. suffix)
+        print(tag .. name .. ": " .. place .. " " .. L["(keine Koordinaten für eine Markierung)"] .. suffix)
         return false
     end
     if C_Map and C_Map.SetUserWaypoint and UiMapPoint and UiMapPoint.CreateFromCoordinates then
@@ -539,7 +629,7 @@ function BT.SetWaypoint(entry, note)
             if PlaySound and SOUNDKIT and SOUNDKIT.UI_MAP_WAYPOINT_SUPER_TRACK_ON then
                 PlaySound(SOUNDKIT.UI_MAP_WAYPOINT_SUPER_TRACK_ON)
             end
-            print(tag .. "Wegpunkt gesetzt: " .. name .. ", " .. place .. suffix)
+            print(tag .. L["Wegpunkt gesetzt: %s"]:format(name .. ", " .. place) .. suffix)
             if BT.ShowWaypointLabel then BT.ShowWaypointLabel() end
             return true
         end
@@ -858,11 +948,11 @@ SlashCmdList.BERUFETRACKER = function(input)
     elseif cmd == "skill" and arg1 then
         local key = BT.PROF_BY_NAME[arg1:lower()] or (BT.PROF_BY_KEY[arg1:lower()] and arg1:lower())
         if not key then
-            print("|cffffcc00BerufeTracker:|r Beruf unbekannt: " .. arg1)
+            print("|cffffcc00BerufeTracker:|r " .. L["Beruf unbekannt: %s"]:format(arg1))
             return
         end
         DB.opt.skill[key] = tonumber(arg2)
-        print("|cffffcc00BerufeTracker:|r " .. BT.PROF_BY_KEY[key].title .. ": " .. (arg2 and tonumber(arg2) and ("Skill auf " .. arg2 .. " gesetzt") or "wieder automatisch"))
+        print("|cffffcc00BerufeTracker:|r " .. BT.ProfTitle(BT.PROF_BY_KEY[key]) .. ": " .. (arg2 and tonumber(arg2) and L["Skill auf %s gesetzt"]:format(arg2) or L["wieder automatisch"]))
         BT.Update()
     else
         BT.Toggle()

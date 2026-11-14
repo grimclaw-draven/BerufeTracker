@@ -8,7 +8,10 @@
 ## OptionalDeps: BagBrother
 ## SavedVariables: BerufeTrackerDB
 
+Locales.lua
+Translations.lua
 Data.lua
+LocaleData.lua
 Sources.lua
 Seed.lua
 Core.lua

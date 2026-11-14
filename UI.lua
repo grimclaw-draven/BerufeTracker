@@ -1,5 +1,6 @@
 -- BerufeTracker: Fenster mit den Tabs Route, Materialien und Charaktere.
 local ADDON, BT = ...
+local L = BT.L
 
 local WIDTH, ROW_HEIGHT, MATERIALS, ROUTE, CHARS = 640, 22, 1, 2, 3
 local QUESTION = "Interface\\Icons\\INV_Misc_QuestionMark"
@@ -62,8 +63,8 @@ local function OpenGuideMenu(button, prof)
     for _, guide in ipairs(BT.GuideList(prof)) do
         local last = guide.steps[#guide.steps].t
         local notes = {}
-        if guide.lump then notes[#notes + 1] = "Einkaufsliste" end
-        if last < 300 then notes[#notes + 1] = "bis " .. last end
+        if guide.lump then notes[#notes + 1] = L["Einkaufsliste"] end
+        if last < 300 then notes[#notes + 1] = L["bis %d"]:format(last) end
         options[#options + 1] = { value = guide.key,
             text = guide.title .. (#notes > 0 and ("  |cff999999" .. table.concat(notes, ", ") .. "|r") or "") }
     end
@@ -104,9 +105,9 @@ end
 
 local function Ago(ts)
     local sec = time() - ts
-    if sec < 3600 then return "vor " .. math.max(1, math.floor(sec / 60)) .. " Min" end
-    if sec < 86400 then return "vor " .. math.floor(sec / 3600) .. " Std" end
-    return "vor " .. math.floor(sec / 86400) .. " Tagen"
+    if sec < 3600 then return L["vor %d Min"]:format(math.max(1, math.floor(sec / 60))) end
+    if sec < 86400 then return L["vor %d Std"]:format(math.floor(sec / 3600)) end
+    return L["vor %d Tagen"]:format(math.floor(sec / 86400))
 end
 
 local AddSourceLines -- weiter unten, braucht NpcLine
@@ -116,26 +117,26 @@ local function ItemTooltip(row)
     local key, res = row.entry.key, BT.result[row.entry.key]
     local item = BT.ITEMS[key]
     GameTooltip:SetOwner(row, "ANCHOR_RIGHT")
-    GameTooltip:AddLine(item.de, 1, 1, 1)
+    GameTooltip:AddLine(BT.ItemName(key), 1, 1, 1)
     AddNeedLines(GameTooltip, key, true)
     GameTooltip:AddLine(" ")
     local price, source, stamp = BT.Price(key)
     if price then
-        GameTooltip:AddDoubleLine("Preis je Stück", BT.Money(price), 1, 0.82, 0, 1, 1, 1)
-        GameTooltip:AddDoubleLine("Quelle", source .. (stamp and (", " .. Ago(stamp)) or ""), 1, 0.82, 0, 0.7, 0.7, 0.7)
+        GameTooltip:AddDoubleLine(L["Preis je Stück"], BT.Money(price), 1, 0.82, 0, 1, 1, 1)
+        GameTooltip:AddDoubleLine(L["Quelle"], source .. (stamp and (", " .. Ago(stamp)) or ""), 1, 0.82, 0, 0.7, 0.7, 0.7)
         if res.missing > 0 then
-            GameTooltip:AddDoubleLine("Kaufkosten", BT.Money(price * res.missing), 1, 0.82, 0, 1, 1, 1)
+            GameTooltip:AddDoubleLine(L["Kaufkosten"], BT.Money(price * res.missing), 1, 0.82, 0, 1, 1, 1)
         end
-        if BT.RECIPES[key] then GameTooltip:AddLine("Fertig kaufen, zählt nicht zur Summe", 0.7, 0.7, 0.7) end
+        if BT.RECIPES[key] then GameTooltip:AddLine(L["Fertig kaufen, zählt nicht zur Summe"], 0.7, 0.7, 0.7) end
     else
-        GameTooltip:AddLine("Noch kein Preis: im Auktionshaus scannen", 0.7, 0.7, 0.7)
+        GameTooltip:AddLine(L["Noch kein Preis: im Auktionshaus scannen"], 0.7, 0.7, 0.7)
     end
     local recipe = BT.RECIPES[key]
     if recipe then
         GameTooltip:AddLine(" ")
-        GameTooltip:AddLine("Noch " .. BT.Format(res.crafts) .. "× herstellen (ergibt je " .. recipe.makes .. "):", 1, 0.82, 0)
+        GameTooltip:AddLine(L["Noch %s× herstellen (ergibt je %s):"]:format(BT.Format(res.crafts), recipe.makes), 1, 0.82, 0)
         for reagent, amount in pairs(recipe.reag) do
-            GameTooltip:AddLine("  " .. amount .. "× " .. BT.ITEMS[reagent].de, 1, 1, 1)
+            GameTooltip:AddLine("  " .. amount .. "× " .. BT.ItemName(reagent), 1, 1, 1)
         end
     end
     AddSourceLines(key)
@@ -144,7 +145,7 @@ local function ItemTooltip(row)
     if #owners > 0 then
         table.sort(owners, function(a, b) return a.count > b.count end)
         GameTooltip:AddLine(" ")
-        GameTooltip:AddLine("Verteilung:", 1, 0.82, 0)
+        GameTooltip:AddLine(L["Verteilung:"], 1, 0.82, 0)
         for _, owner in ipairs(owners) do
             GameTooltip:AddDoubleLine(owner.id, BT.Format(owner.count), 1, 1, 1, 1, 1, 1)
         end
@@ -155,28 +156,28 @@ end
 local function StepTooltip(row)
     local step, prof = row.entry.step, row.entry.prof
     GameTooltip:SetOwner(row, "ANCHOR_RIGHT")
-    GameTooltip:AddLine(step.n, 1, 1, 1)
-    GameTooltip:AddLine(({ R = "Benötigt ein Rezept-Item", T = "Beim Lehrer", A = "Automatisch gelernt" })[step.src] or " ", 0.7, 0.7, 0.7)
+    GameTooltip:AddLine(BT.StepName(step), 1, 1, 1)
+    GameTooltip:AddLine(({ R = L["Benötigt ein Rezept-Item"], T = L["Beim Lehrer"], A = L["Automatisch gelernt"] })[step.src] or " ", 0.7, 0.7, 0.7)
     if step.src == "R" then
         local state, who = BT.RecipeStatus(step)
         GameTooltip:AddLine(" ")
-        if step.rc then GameTooltip:AddLine(step.rc.de, 1, 0.82, 0) end
+        if step.rc then GameTooltip:AddLine(BT.RecipeItemName(step.rc), 1, 0.82, 0) end
         if state == "known" then
-            GameTooltip:AddLine("Gelernt: " .. who, 0.2, 0.8, 0.2)
+            GameTooltip:AddLine(L["Gelernt: %s"]:format(who), 0.2, 0.8, 0.2)
         elseif state == "owned" then
-            GameTooltip:AddLine("Rezept-Item bei: " .. who, 1, 0.8, 0.2)
+            GameTooltip:AddLine(L["Rezept-Item bei: %s"]:format(who), 1, 0.8, 0.2)
         else
-            GameTooltip:AddLine("Noch nicht gesammelt", 1, 0.4, 0.4)
-            GameTooltip:AddLine((step.rc and step.rc.where) or "Fundort unbekannt", 1, 1, 1, true)
+            GameTooltip:AddLine(L["Noch nicht gesammelt"], 1, 0.4, 0.4)
+            GameTooltip:AddLine((step.rc and BT.RecipeWhere(step.rc)) or L["Fundort unbekannt"], 1, 1, 1, true)
         end
     end
     GameTooltip:AddLine(" ")
-    GameTooltip:AddLine(step.lump and "Menge für diesen Bereich:" or "Je Herstellung:", 1, 0.82, 0)
+    GameTooltip:AddLine(step.lump and L["Menge für diesen Bereich:"] or L["Je Herstellung:"], 1, 0.82, 0)
     for _, reagent in ipairs(step.r) do
-        GameTooltip:AddLine("  " .. reagent[2] .. "× " .. BT.ITEMS[reagent[1]].de, 1, 1, 1)
+        GameTooltip:AddLine("  " .. reagent[2] .. "× " .. BT.ItemName(reagent[1]), 1, 1, 1)
     end
     if not step.lump then
-        GameTooltip:AddDoubleLine("Noch offen", BT.Format(BT.StepRemaining(step, prof)) .. " von " .. step.c, 1, 0.82, 0, 1, 1, 1)
+        GameTooltip:AddDoubleLine(L["Noch offen"], L["%s von %s"]:format(BT.Format(BT.StepRemaining(step, prof)), step.c), 1, 0.82, 0, 1, 1, 1)
     end
     GameTooltip:Show()
 end
@@ -185,13 +186,13 @@ local function NpcLine(entry)
     local place = BT.NpcPlace(entry)
     local npc = entry.npc
     local coords = npc.x and (" " .. string.format("%.1f, %.1f", npc.x, npc.y)) or ""
-    local distance = entry.distance and (BT.Format(entry.distance) .. " m") or (entry.located and npc.m and "anderer Kontinent") or nil
-    return (npc.de or npc.n), place .. coords, distance
+    local distance = entry.distance and (BT.Format(entry.distance) .. " m") or (entry.located and npc.m and L["anderer Kontinent"]) or nil
+    return BT.NpcName(npc), place .. coords, distance
 end
 
 local function ZoneName(mapID)
     local info = C_Map and C_Map.GetMapInfo and C_Map.GetMapInfo(mapID)
-    return info and info.name or ("Karte " .. mapID)
+    return info and info.name or L["Karte %d"]:format(mapID)
 end
 
 -- Händler eines Materials, nächster zuerst, nur die eigene Fraktion.
@@ -208,35 +209,37 @@ AddSourceLines = function(key)
     if BT.RECIPES[key] then return end -- Zwischenprodukte: steht schon unter "herstellen"
     local source = BT.SOURCES and BT.SOURCES[key] or {}
     GameTooltip:AddLine(" ")
-    GameTooltip:AddLine("Bezug:", 1, 0.82, 0)
-    if source.h then GameTooltip:AddLine(source.h, 1, 1, 1, true) end
+    GameTooltip:AddLine(L["Bezug:"], 1, 0.82, 0)
+    if source.h then GameTooltip:AddLine(source.ha and L[source.h]:format(source.ha) or L[source.h], 1, 1, 1, true) end
     for _, node in ipairs(source.o or {}) do
         local zones = {}
         for index, mapID in ipairs(node.z) do zones[index] = ZoneName(mapID) end
-        GameTooltip:AddLine(node.n .. ": " .. table.concat(zones, ", "), 0.8, 0.8, 0.8, true)
+        GameTooltip:AddLine(BT.NodeName(node) .. ": " .. table.concat(zones, ", "), 0.8, 0.8, 0.8, true)
     end
     local drops = source.d
     if drops and drops.n then
-        GameTooltip:AddLine("Beute von: " .. table.concat(drops.n, ", "), 0.8, 0.8, 0.8, true)
+        local names = {}
+        for index, name in ipairs(drops.n) do names[index] = BT.MobName(drops.ids and drops.ids[index], name) end
+        GameTooltip:AddLine(L["Beute von: %s"]:format(table.concat(names, ", ")), 0.8, 0.8, 0.8, true)
     elseif drops then
-        GameTooltip:AddLine("Beute von " .. drops.c .. " Gegnern, meiste in:", 0.8, 0.8, 0.8)
+        GameTooltip:AddLine(L["Beute von %d Gegnern, meiste in:"]:format(drops.c), 0.8, 0.8, 0.8)
         for _, zone in ipairs(drops.z) do
-            local level = zone.lo and (" (Stufe " .. zone.lo .. (zone.hi and zone.hi ~= zone.lo and ("–" .. zone.hi) or "") .. ")") or ""
+            local level = zone.lo and (" (" .. L["Stufe %s"]:format(zone.lo .. (zone.hi and zone.hi ~= zone.lo and ("–" .. zone.hi) or "")) .. ")") or ""
             GameTooltip:AddLine("   " .. ZoneName(zone.m) .. level, 0.8, 0.8, 0.8)
         end
     end
     local vendors = ItemVendors(key)
     if #vendors > 0 then
-        GameTooltip:AddLine("Händler" .. (#vendors > 3 and (" (die nächsten 3 von " .. #vendors .. ")") or "") .. ":", 0.8, 0.8, 0.8)
+        GameTooltip:AddLine((#vendors > 3 and L["Händler (die nächsten 3 von %d):"]:format(#vendors)) or L["Händler:"], 0.8, 0.8, 0.8)
         for index = 1, math.min(#vendors, 3) do
             local name, place, distance = NpcLine(vendors[index])
             GameTooltip:AddDoubleLine("   " .. name, distance or "", 1, 1, 1, 0.7, 0.7, 0.7)
             GameTooltip:AddLine("      " .. place, 0.7, 0.7, 0.7)
         end
-        GameTooltip:AddLine("Strg+Linksklick: Wegpunkt zum nächsten Händler", 0.4, 0.8, 1)
+        GameTooltip:AddLine(L["Strg+Linksklick: Wegpunkt zum nächsten Händler"], 0.4, 0.8, 1)
     end
     if not source.h and not source.o and not drops and #vendors == 0 then
-        GameTooltip:AddLine("Keine Bezugsquelle bekannt", 0.7, 0.7, 0.7)
+        GameTooltip:AddLine(L["Keine Bezugsquelle bekannt"], 0.7, 0.7, 0.7)
     end
 end
 
@@ -244,10 +247,10 @@ local function TrainerTooltip(row)
     local rank, list = row.entry.rank, row.entry.nearest
     GameTooltip:SetOwner(row, "ANCHOR_RIGHT")
     GameTooltip:AddLine(BT.RankLabel(rank), 1, 1, 1)
-    GameTooltip:AddLine(rank.skill > 0 and ("Ab Skill " .. rank.skill .. " und Charakterstufe " .. rank.level) or "Ohne Voraussetzung", 0.7, 0.7, 0.7)
-    if rank.how then GameTooltip:AddLine(rank.how, 1, 0.82, 0) end
+    GameTooltip:AddLine(rank.skill > 0 and L["Ab Skill %d und Charakterstufe %d"]:format(rank.skill, rank.level) or L["Ohne Voraussetzung"], 0.7, 0.7, 0.7)
+    if rank.how then GameTooltip:AddLine(L[rank.how], 1, 0.82, 0) end
     GameTooltip:AddLine(" ")
-    if #list == 0 then GameTooltip:AddLine("Kein Lehrer für deine Fraktion bekannt", 1, 0.4, 0.4) end
+    if #list == 0 then GameTooltip:AddLine(L["Kein Lehrer für deine Fraktion bekannt"], 1, 0.4, 0.4) end
     for index = 1, math.min(#list, 8) do
         local name, place, distance = NpcLine(list[index])
         GameTooltip:AddDoubleLine(name, distance or "", 1, 1, 1, 0.7, 0.7, 0.7)
@@ -255,7 +258,7 @@ local function TrainerTooltip(row)
     end
     if list[1] then
         GameTooltip:AddLine(" ")
-        GameTooltip:AddLine("Strg+Linksklick: Wegpunkt zu " .. (list[1].npc.de or list[1].npc.n), 0.4, 0.8, 1)
+        GameTooltip:AddLine(L["Strg+Linksklick: Wegpunkt zu %s"]:format(BT.NpcName(list[1].npc)), 0.4, 0.8, 1)
     end
     GameTooltip:Show()
 end
@@ -322,7 +325,7 @@ local function CreateRow()
     AddDropArrow(row.guideButton)
     row.guideButton:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_LEFT")
-        GameTooltip:AddLine("Guide wechseln", 1, 1, 1)
+        GameTooltip:AddLine(L["Guide wechseln"], 1, 1, 1)
         GameTooltip:AddLine(row.entry.guideUrl, 0.7, 0.7, 0.7, true)
         GameTooltip:Show()
     end)
@@ -339,7 +342,7 @@ local function CreateRow()
         end
         if self.entry.kind == "item" and IsControlKeyDown() then
             local vendor = ItemVendors(self.entry.key)[1]
-            if vendor then BT.SetWaypoint(vendor, "Händler für " .. BT.ITEMS[self.entry.key].de) end
+            if vendor then BT.SetWaypoint(vendor, L["Händler für %s"]:format(BT.ItemName(self.entry.key))) end
             return
         end
         if self.entry.onClick then
@@ -433,33 +436,36 @@ end
 local function AddCollapseAll(list)
     local anyOpen = AnyOpen()
     list[#list + 1] = { kind = "action", height = 28, onAction = ToggleAll,
-        actionText = anyOpen and "Alle einklappen" or "Alle ausklappen" }
+        actionText = anyOpen and L["Alle einklappen"] or L["Alle ausklappen"] }
 end
 
-local function MatchesSearch(item, search)
+local function MatchesSearch(key, item, search)
     return search == "" or item.de:lower():find(search, 1, true) or item.en:lower():find(search, 1, true)
+        or BT.ItemName(key):lower():find(search, 1, true)
 end
 
 local function AddItems(list, category, title, onlyMissing, search)
     local keys = {}
     for key, item in pairs(BT.ITEMS) do
         local res = BT.result[key]
-        if item.cat == category and res.need > 0 and (not onlyMissing or res.missing > 0) and MatchesSearch(item, search) then
+        if item.cat == category and res.need > 0 and (not onlyMissing or res.missing > 0) and MatchesSearch(key, item, search) then
             keys[#keys + 1] = key
         end
     end
     if #keys == 0 then return end
     local collapsed = BT.db.opt.matCollapsed
     local open = search ~= "" or not collapsed[title]
-    table.sort(keys, function(a, b) return BT.Before(BT.ITEMS[a].de, BT.ITEMS[b].de) end)
+    local names = {}
+    for _, key in ipairs(keys) do names[key] = BT.ItemName(key) end
+    table.sort(keys, function(a, b) return BT.Before(names[a], names[b]) end)
     local openItems = 0
     for _, key in ipairs(keys) do
         if BT.result[key].missing > 0 then openItems = openItems + 1 end
     end
     list[#list + 1] = {
         kind = "head",
-        text = (open and "|cff999999[-]|r " or "|cff999999[+]|r ") .. title,
-        right = openItems > 0 and (openItems .. " offen") or "|cff33cc33fertig|r",
+        text = (open and "|cff999999[-]|r " or "|cff999999[+]|r ") .. L[title],
+        right = openItems > 0 and L["%d offen"]:format(openItems) or ("|cff33cc33" .. L["fertig"] .. "|r"),
         onClick = function() collapsed[title] = (not collapsed[title]) or nil end,
     }
     if not open then return end
@@ -467,13 +473,13 @@ local function AddItems(list, category, title, onlyMissing, search)
         local res = BT.result[key]
         local right
         if res.missing == 0 then
-            right = "|cff33cc33fertig|r"
+            right = "|cff33cc33" .. L["fertig"] .. "|r"
         elseif BT.RECIPES[key] then
-            right = "|cffffcc33" .. BT.Format(res.crafts) .. "× bauen|r"
+            right = "|cffffcc33" .. L["%s× bauen"]:format(BT.Format(res.crafts)) .. "|r"
         else
             right = "|cffff6666-" .. BT.Format(res.missing) .. "|r"
         end
-        list[#list + 1] = { kind = "item", key = key, text = BT.ITEMS[key].de, right = right }
+        list[#list + 1] = { kind = "item", key = key, text = names[key], right = right }
     end
 end
 
@@ -484,16 +490,16 @@ local function BuildMaterials(list)
     -- Kategorien alphabetisch, die Zwischenprodukte reihen sich mit ein
     local categories = { { index = 0, title = INTERMEDIATES } }
     for index, title in ipairs(BT.CATS) do categories[#categories + 1] = { index = index, title = title } end
-    table.sort(categories, function(a, b) return BT.Before(a.title, b.title) end)
+    table.sort(categories, function(a, b) return BT.Before(L[a.title], L[b.title]) end)
     for _, category in ipairs(categories) do AddItems(list, category.index, category.title, onlyMissing, search) end
 end
 
 local function RecipeTag(step)
     if step.src ~= "R" then return "" end
     local state, who = BT.RecipeStatus(step)
-    if state == "known" then return "  |cff33cc33[gelernt]|r" end
-    if state == "owned" then return "  |cffffcc33[im Besitz: " .. who .. "]|r" end
-    return "  |cffff6666[Rezept fehlt]|r"
+    if state == "known" then return "  |cff33cc33[" .. L["gelernt"] .. "]|r" end
+    if state == "owned" then return "  |cffffcc33[" .. L["im Besitz: %s"]:format(who) .. "]|r" end
+    return "  |cffff6666[" .. L["Rezept fehlt"] .. "]|r"
 end
 
 local function RecipeCounts(prof)
@@ -511,27 +517,27 @@ local function TrainerEntry(prof, rank, current)
     local nearest = BT.NearestNpcs(rank)
     local learned = BT.RankLearned(prof.key, rank)
     local head = "> " .. BT.RankLabel(rank)
-    local how = rank.how and (rank.how .. ": ") or ""
+    local how = rank.how and (L[rank.how] .. ": ") or ""
     local text
     if learned and not current then
         -- abgeschlossen: Lehrer trotzdem nennen, die ganze Zeile grau
-        local target = "kein Lehrer für deine Fraktion"
+        local target = L["kein Lehrer für deine Fraktion"]
         if nearest[1] then
             local name, place, distance = NpcLine(nearest[1])
             target = name .. ", " .. place .. (distance and (" (" .. distance .. ")") or "")
         end
         text = "|cff777777" .. head .. "  " .. how .. target .. "|r"
     else
-        local target = "|cffff6666kein Lehrer für deine Fraktion|r"
+        local target = "|cffff6666" .. L["kein Lehrer für deine Fraktion"] .. "|r"
         if nearest[1] then
             local name, place, distance = NpcLine(nearest[1])
             target = "|cffffffff" .. name .. "|r, " .. place .. (distance and (" |cff999999(" .. distance .. ")|r") or "")
         end
         text = "|cff66ccff" .. head .. "|r  " .. how .. target
     end
-    local right = learned and "|cff33cc33gelernt|r"
-        or (BT.RankDue(prof.key, rank) and "|cffffcc33fällig|r") or ("ab " .. rank.skill)
-    local note = prof.title .. ": " .. BT.RankLabel(rank) .. " " .. (rank.how and ("- " .. rank.how) or "lernen")
+    local right = learned and ("|cff33cc33" .. L["gelernt"] .. "|r")
+        or (BT.RankDue(prof.key, rank) and ("|cffffcc33" .. L["fällig"] .. "|r")) or L["ab %d"]:format(rank.skill)
+    local note = BT.ProfTitle(prof) .. ": " .. BT.RankLabel(rank) .. " " .. (rank.how and ("- " .. L[rank.how]) or L["lernen"])
     return { kind = "trainer", rank = rank, nearest = nearest, text = text, right = right, learned = learned, note = note }
 end
 
@@ -543,11 +549,11 @@ local function AddProfession(list, prof, onlyMissing)
     local total, found = RecipeCounts(prof)
     local guide = BT.ActiveGuide(prof)
     local guides = BT.GuideList(prof)
-    local right = off and "|cff999999aus|r" or (guide.lump and "Einkaufsliste" or (BT.Format(prof.remaining) .. " offen"))
-    if not off and total > 0 then right = right .. "  |cffffcc33Rezepte " .. found .. "/" .. total .. "|r" end
+    local right = off and ("|cff999999" .. L["aus"] .. "|r") or (guide.lump and L["Einkaufsliste"] or L["%s offen"]:format(BT.Format(prof.remaining)))
+    if not off and total > 0 then right = right .. "  |cffffcc33" .. L["Rezepte %d/%d"]:format(found, total) .. "|r" end
     list[#list + 1] = {
         kind = "prof",
-        text = (open and "|cff999999[-]|r " or "|cff999999[+]|r ") .. "|cffffd100" .. prof.title .. "|r  Skill " .. skill .. "/300" .. (who == "manuell" and "  |cff999999(manuell)|r" or ""),
+        text = (open and "|cff999999[-]|r " or "|cff999999[+]|r ") .. "|cffffd100" .. BT.ProfTitle(prof) .. "|r  " .. L["Skill %d/300"]:format(skill) .. (who == "manuell" and ("  |cff999999(" .. L["manuell"] .. ")|r") or ""),
         right = right,
         checked = not off,
         onToggle = function(on) BT.db.opt.off[key] = (not on) or nil end,
@@ -562,18 +568,18 @@ local function AddProfession(list, prof, onlyMissing)
         learned[#learned + 1] = entry.id == BT.me and ("|cffffd100" .. label .. "|r") or label
     end
     if #learned > 0 then
-        list[#list + 1] = { kind = "info", height = 16, text = "|cff999999Gelernt:|r " .. table.concat(learned, ", ") }
+        list[#list + 1] = { kind = "info", height = 16, text = "|cff999999" .. L["Gelernt:"] .. "|r " .. table.concat(learned, ", ") }
     end
     if not open or off then return end
  local activeSteps = guide.steps
     if guide.lump then
-        list[#list + 1] = { kind = "info", height = 16, text = "|cff999999Nur Einkaufsliste, keine einzelnen Rezepte|r" }
+        list[#list + 1] = { kind = "info", height = 16, text = "|cff999999" .. L["Nur Einkaufsliste, keine einzelnen Rezepte"] .. "|r" }
     end
     if not prof.gather and activeSteps[#activeSteps].t < 300 then
-        list[#list + 1] = { kind = "info", height = 16, text = "|cffff9933Guide endet bei Skill " .. activeSteps[#activeSteps].t .. "|r" }
+        list[#list + 1] = { kind = "info", height = 16, text = "|cffff9933" .. L["Guide endet bei Skill %d"]:format(activeSteps[#activeSteps].t) .. "|r" }
     end
     if prof.gather then
-        list[#list + 1] = { kind = "info", height = 16, text = "|cff999999Ab Skill " .. prof.steps[#prof.steps].t .. " nur noch durchs Sammeln, ohne Materialbedarf|r" }
+        list[#list + 1] = { kind = "info", height = 16, text = "|cff999999" .. L["Ab Skill %d nur noch durchs Sammeln, ohne Materialbedarf"]:format(prof.steps[#prof.steps].t) .. "|r" }
     end
     local ranks = BT.TRAINERS[prof.key]
     -- aktueller Rang = höchster gelernter; bleibt auch bei "Nur Offenes" sichtbar
@@ -595,10 +601,10 @@ local function AddProfession(list, prof, onlyMissing)
         AddRanksBefore(step.t)
         local remaining = BT.StepRemaining(step, prof.key)
         if not onlyMissing or remaining > 0 then
-            local range = step.f .. "-" .. step.t .. "  " .. step.n
+            local range = step.f .. "-" .. step.t .. "  " .. BT.StepName(step)
             local text = remaining == 0 and ("|cff777777" .. range .. "|r") or (range .. RecipeTag(step))
             list[#list + 1] = { kind = "step", prof = prof.key, step = step, text = text,
-                right = remaining == 0 and "|cff33cc33fertig|r" or (step.lump and "offen" or (remaining .. "×")) }
+                right = remaining == 0 and ("|cff33cc33" .. L["fertig"] .. "|r") or (step.lump and L["offen"] or (remaining .. "×")) }
         end
     end
     AddRanksBefore(nil)
@@ -619,7 +625,7 @@ local function SectionHead(title, profs)
     end
     return {
         kind = "head",
-        text = (anyOpen and "|cff999999[-]|r " or "|cff999999[+]|r ") .. title,
+        text = (anyOpen and "|cff999999[-]|r " or "|cff999999[+]|r ") .. L[title],
         onClick = function()
             for _, prof in ipairs(profs) do expanded[prof.key] = not anyOpen end
         end,
@@ -658,14 +664,14 @@ local function SectionState(id, section)
 end
 
 local function BuildChars(list)
-    list[#list + 1] = { kind = "head", text = "Name  (Taschen / Bank / Post)" }
+    list[#list + 1] = { kind = "head", text = L["Name  (Taschen / Bank / Post)"] }
     for _, id in ipairs(BT.CharIds()) do
         local own, imported = BT.db.chars[id], BT.imported[id]
         local class = (own and own.class) or (imported and imported.class)
         local ignored = BT.IsIgnored(id)
         list[#list + 1] = {
             kind = "char",
-            text = ColorName(id, class) .. (id == BT.me and "  |cffffd100(aktiv)|r" or "") .. (BT.IsGuild(id) and "  |cff999999(Gildenbank)|r" or ""),
+            text = ColorName(id, class) .. (id == BT.me and ("  |cffffd100(" .. L["aktiv"] .. ")|r") or "") .. (BT.IsGuild(id) and ("  |cff999999(" .. L["Gildenbank"] .. ")|r") or ""),
             right = SectionState(id, "bags") .. " / " .. SectionState(id, "bank") .. " / " .. SectionState(id, "mail"),
             checked = not ignored,
             onToggle = function(on) BT.db.opt.ignored[id] = not on end,
@@ -675,21 +681,21 @@ end
 
 local function FilterLabel()
     local filter = BT.db.opt.matFilter
-    if filter == "learned" then return "Gelernte Berufe" end
-    if filter == "once" then return "Jeder Beruf einmal" end
-    return filter or "Alle Berufe"
+    if filter == "learned" then return L["Gelernte Berufe"] end
+    if filter == "once" then return L["Jeder Beruf einmal"] end
+    return filter or L["Alle Berufe"]
 end
 
 local function OpenFilterMenu(button)
     local options = {
-        { text = "Alle Berufe  |cff999999jeder Charakter mit seinen Berufen|r" },
-        { text = "Gelernte Berufe  |cff999999jeder einmal, bester Charakter|r", value = "learned" },
-        { text = "Jeder Beruf einmal  |cff999999auch ungelernte, bester Charakter|r", value = "once" },
+        { text = L["Alle Berufe"] .. "  |cff999999" .. L["jeder Charakter mit seinen Berufen"] .. "|r" },
+        { text = L["Gelernte Berufe"] .. "  |cff999999" .. L["jeder einmal, bester Charakter"] .. "|r", value = "learned" },
+        { text = L["Jeder Beruf einmal"] .. "  |cff999999" .. L["auch ungelernte, bester Charakter"] .. "|r", value = "once" },
     }
     for _, id in ipairs(BT.FilterChars()) do
         local names = {}
         for _, prof in ipairs(BT.PROFS) do
-            if BT.db.chars[id].skills[prof.key] then names[#names + 1] = prof.title end
+            if BT.db.chars[id].skills[prof.key] then names[#names + 1] = BT.ProfTitle(prof) end
         end
         if #names > 0 then options[#options + 1] = { text = id .. "  |cff999999" .. table.concat(names, ", ") .. "|r", value = id } end
     end
@@ -721,18 +727,18 @@ function BT.RefreshUI()
 
     local need, have = BT.needTotal or 0, BT.haveTotal or 0
     local percent = need > 0 and math.floor(have / need * 100) or 100
-    window.summary:SetText("Grundmaterialien: " .. BT.Format(have) .. " / " .. BT.Format(need) .. "  (" .. percent .. " %)")
+    window.summary:SetText(L["Grundmaterialien:"] .. " " .. BT.Format(have) .. " / " .. BT.Format(need) .. "  (" .. percent .. " %)")
     window.search:SetShown(tab == MATERIALS)
     window.searchLabel:SetShown(tab == MATERIALS)
     window.filter:SetShown(tab == MATERIALS)
     window.filter:SetText(FilterLabel())
     window.guideAll:SetShown(tab == ROUTE)
-    window.guideAll:SetText(next(BT.db.opt.guide) and "Guide für alle: gemischt" or ("Guide für alle: " .. BT.GlobalGuideTitle()))
+    window.guideAll:SetText(L["Guide für alle: %s"]:format(next(BT.db.opt.guide) and L["gemischt"] or BT.GlobalGuideTitle()))
     window.scan:SetShown(tab == MATERIALS)
     window.scan:SetEnabled(BT.atAH or BT.scanText ~= nil)
-    window.scan:SetText(BT.scanText or "Preise scannen")
+    window.scan:SetText(BT.scanText or L["Preise scannen"])
     window.cost:SetShown(tab == MATERIALS)
-    window.cost:SetText("Kaufkosten: |cffffd100" .. BT.Money(BT.cost or 0) .. "|r" .. ((BT.unpriced or 0) > 0 and ("  |cff999999(" .. BT.unpriced .. " ohne Preis)|r") or ""))
+    window.cost:SetText(L["Kaufkosten"] .. ": |cffffd100" .. BT.Money(BT.cost or 0) .. "|r" .. ((BT.unpriced or 0) > 0 and ("  |cff999999(" .. L["%d ohne Preis"]:format(BT.unpriced) .. ")|r") or ""))
     window.missing:SetShown(tab ~= CHARS)
     window.missing:ClearAllPoints()
     window.missing:SetPoint("TOPLEFT", tab == MATERIALS and 200 or 12, -80) -- ohne Suchfeld rückt es nach links
@@ -763,7 +769,7 @@ local function CreateWindow()
     if title then title:SetText("BerufeTracker") end
 
     f.tabs = {}
-    local labels = { [MATERIALS] = "Materialien", [ROUTE] = "Route", [CHARS] = "Charaktere" }
+    local labels = { [MATERIALS] = L["Materialien"], [ROUTE] = L["Route"], [CHARS] = L["Charaktere"] }
     for position, index in ipairs({ ROUTE, MATERIALS, CHARS }) do -- Reihenfolge der Tabs von links
         local button = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
         button:SetSize(110, 22)
@@ -783,7 +789,7 @@ local function CreateWindow()
 
     f.searchLabel = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     f.searchLabel:SetPoint("TOPLEFT", 16, -85)
-    f.searchLabel:SetText("Suche:")
+    f.searchLabel:SetText(L["Suche:"])
     f.search = CreateFrame("EditBox", nil, f, "InputBoxTemplate")
     f.search:SetSize(120, 20)
     f.search:SetPoint("LEFT", f.searchLabel, "RIGHT", 10, 0)
@@ -832,7 +838,7 @@ local function CreateWindow()
     end)
     local label = f.missing:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     label:SetPoint("LEFT", f.missing, "RIGHT", 2, 0)
-    label:SetText("Nur Offenes")
+    label:SetText(L["Nur Offenes"])
 
     f.noGather = CreateFrame("CheckButton", nil, f, "UICheckButtonTemplate")
     f.noGather:SetSize(22, 22)
@@ -843,7 +849,7 @@ local function CreateWindow()
     end)
     local noGatherLabel = f.noGather:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     noGatherLabel:SetPoint("LEFT", f.noGather, "RIGHT", 2, 0)
-    noGatherLabel:SetText("Sammelberufe ausschließen")
+    noGatherLabel:SetText(L["Sammelberufe ausschließen"])
 
     f.scroll = CreateFrame("ScrollFrame", nil, f, "UIPanelScrollFrameTemplate")
     f.scroll:SetPoint("TOPLEFT", 12, -106)
@@ -894,7 +900,7 @@ local function CreateMinimapButton()
     button:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_LEFT")
         GameTooltip:AddLine("BerufeTracker")
-        GameTooltip:AddLine("Klicken: Fenster öffnen", 1, 1, 1)
+        GameTooltip:AddLine(L["Klicken: Fenster öffnen"], 1, 1, 1)
         GameTooltip:Show()
     end)
     button:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -927,7 +933,7 @@ local function OpenWaypointMap()
     if not wp then return end
     if C_Map.OpenWorldMap then
         if InCombatLockdown() then
-            print("|cffffcc00BerufeTracker:|r Im Kampf lässt sich die Karte nicht öffnen.")
+            print("|cffffcc00BerufeTracker:|r " .. L["Im Kampf lässt sich die Karte nicht öffnen."])
             return
         end
         C_Map.OpenWorldMap(wp.m)
@@ -966,8 +972,8 @@ local function CreateWaypointLabel()
     end)
     f:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
-        GameTooltip:AddLine("Klicken: Karte beim Ziel öffnen", 1, 1, 1)
-        GameTooltip:AddLine("Ziehen: Leiste verschieben", 0.7, 0.7, 0.7)
+        GameTooltip:AddLine(L["Klicken: Karte beim Ziel öffnen"], 1, 1, 1)
+        GameTooltip:AddLine(L["Ziehen: Leiste verschieben"], 0.7, 0.7, 0.7)
         GameTooltip:Show()
     end)
     f:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -1114,15 +1120,16 @@ local function ItemsOfNode(name)
         itemsByNode = {}
         for key, source in pairs(BT.SOURCES or {}) do
             for index, node in ipairs(source.o or {}) do
-                local list = itemsByNode[node.n] or {}
-                itemsByNode[node.n] = list
+                local name = BT.NodeName(node) -- so heißt das Vorkommen im Tooltip der Spielsprache
+                local list = itemsByNode[name] or {}
+                itemsByNode[name] = list
                 list[#list + 1] = { key = key, rank = index }
             end
         end
         for _, list in pairs(itemsByNode) do
             table.sort(list, function(a, b)
                 if a.rank ~= b.rank then return a.rank < b.rank end
-                return BT.ITEMS[a.key].de < BT.ITEMS[b.key].de
+                return BT.Before(BT.ItemName(a.key), BT.ItemName(b.key))
             end)
         end
     end
@@ -1131,7 +1138,7 @@ end
 
 local function TrackerHeader(tip)
     tip:AddLine(" ")
-    tip:AddLine("BerufeTracker |cff999999(" .. FilterLabel() .. (BT.db.opt.noGather and ", ohne Sammelberufe" or "") .. ")|r", 1, 0.82, 0)
+    tip:AddLine("BerufeTracker |cff999999(" .. FilterLabel() .. (BT.db.opt.noGather and (", " .. L["ohne Sammelberufe"]) or "") .. ")|r", 1, 0.82, 0)
 end
 
 -- Bedarf eines Materials nach den aktuellen Filtern; allProfs = alle Berufe statt der größten vier.
@@ -1140,21 +1147,21 @@ AddNeedLines = function(tip, key, allProfs)
     if not res then return end
     TrackerHeader(tip)
     if res.need == 0 then
-        tip:AddLine("Wird nicht mehr gebraucht", 0.6, 0.6, 0.6)
+        tip:AddLine(L["Wird nicht mehr gebraucht"], 0.6, 0.6, 0.6)
         return
     end
-    tip:AddDoubleLine("Benötigt", BT.Format(res.need), 1, 1, 1, 1, 1, 1)
-    tip:AddDoubleLine("Im Besitz", BT.Format(res.have), 1, 1, 1, 1, 1, 1)
+    tip:AddDoubleLine(L["Benötigt"], BT.Format(res.need), 1, 1, 1, 1, 1, 1)
+    tip:AddDoubleLine(L["Im Besitz"], BT.Format(res.have), 1, 1, 1, 1, 1, 1)
     if res.missing > 0 then
-        tip:AddDoubleLine("Fehlt noch", BT.Format(res.missing), 1, 1, 1, 1, 0.4, 0.4)
+        tip:AddDoubleLine(L["Fehlt noch"], BT.Format(res.missing), 1, 1, 1, 1, 0.4, 0.4)
     else
-        tip:AddLine("Genug vorhanden", 0.2, 0.8, 0.2)
+        tip:AddLine(L["Genug vorhanden"], 0.2, 0.8, 0.2)
     end
     local shown = 0
     for _, part in ipairs(ProfessionShares(res)) do
         if part.amount > 0 and (allProfs or shown < 4) then
             shown = shown + 1
-            tip:AddDoubleLine("   " .. BT.PROF_BY_KEY[part.key].title, BT.Format(part.amount), 0.7, 0.7, 0.7, 0.7, 0.7, 0.7)
+            tip:AddDoubleLine("   " .. BT.ProfTitle(BT.PROF_BY_KEY[part.key]), BT.Format(part.amount), 0.7, 0.7, 0.7, 0.7, 0.7, 0.7)
         end
     end
 end
@@ -1199,13 +1206,13 @@ local function HookItemTooltips()
             local res = BT.result[entry.key]
             if res and res.need > 0 then
                 if not any then TrackerHeader(tip) any = true end
-                local state = res.missing > 0 and ("|cffff6666fehlt " .. BT.Format(res.missing) .. "|r") or "|cff33cc33genug|r"
-                tip:AddDoubleLine(BT.ITEMS[entry.key].de, state .. " |cff999999(" .. BT.Format(res.have) .. "/" .. BT.Format(res.need) .. ")|r", 1, 1, 1, 1, 1, 1)
+                local state = res.missing > 0 and ("|cffff6666" .. L["fehlt %s"]:format(BT.Format(res.missing)) .. "|r") or ("|cff33cc33" .. L["genug"] .. "|r")
+                tip:AddDoubleLine(BT.ItemName(entry.key), state .. " |cff999999(" .. BT.Format(res.have) .. "/" .. BT.Format(res.need) .. ")|r", 1, 1, 1, 1, 1, 1)
             end
         end
         if not any then
             TrackerHeader(tip)
-            tip:AddLine("Wird nicht mehr gebraucht", 0.6, 0.6, 0.6)
+            tip:AddLine(L["Wird nicht mehr gebraucht"], 0.6, 0.6, 0.6)
         end
         tip:Show()
     end)

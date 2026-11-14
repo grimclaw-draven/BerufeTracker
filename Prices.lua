@@ -23,8 +23,8 @@ end
 function BT.Price(key)
     local entry = BT.db and BT.db.prices[key]
     if not entry then return nil end
-    if entry.vendor and (not entry.ah or entry.vendor <= entry.ah) then return entry.vendor, "Händler", entry.vendorTs end
-    if entry.ah then return entry.ah, "Auktionshaus", entry.ahTs end
+    if entry.vendor and (not entry.ah or entry.vendor <= entry.ah) then return entry.vendor, BT.L["Händler"], entry.vendorTs end
+    if entry.ah then return entry.ah, BT.L["Auktionshaus"], entry.ahTs end
     return nil
 end
 
@@ -48,7 +48,7 @@ local function ItemKey(id)
 end
 
 local function Progress()
-    BT.scanText = scan and ("Scan " .. scan.done .. "/" .. scan.total) or nil
+    BT.scanText = scan and (BT.L["Scan"] .. " " .. scan.done .. "/" .. scan.total) or nil
     if BT.RefreshUI then BT.RefreshUI() end
 end
 
@@ -57,7 +57,7 @@ local function EndScan(reason)
     scan = nil
     BT.scanText = nil
     if result then
-        print("|cffffcc00BerufeTracker:|r " .. reason .. " " .. result.priced .. " von " .. result.total .. " Items mit Preis.")
+        print("|cffffcc00BerufeTracker:|r " .. BT.L[reason] .. " " .. BT.L["%d von %d Items mit Preis."]:format(result.priced, result.total))
     end
     BT.Update()
 end
@@ -145,7 +145,7 @@ function BT.StartScan()
         return
     end
     if not BT.atAH then
-        print("|cffffcc00BerufeTracker:|r Öffne zuerst das Auktionshaus.")
+        print("|cffffcc00BerufeTracker:|r " .. BT.L["Öffne zuerst das Auktionshaus."])
         return
     end
     local ids = {}
@@ -169,7 +169,8 @@ local function ScanMerchant()
     local now = time()
     for index = 1, GetMerchantNumItems() or 0 do
         local link = GetMerchantItemLink(index)
-        local key = link and BT.NAME[link:match("%[(.-)%]") or ""]
+        local id = link and tonumber(link:match("item:(%d+)"))
+        local key = (id and BT.ITEM_BY_ID[id]) or (link and BT.NAME[link:match("%[(.-)%]") or ""])
         if key and BT.ITEMS[key] then
             local price, stack
             if C_MerchantFrame and C_MerchantFrame.GetItemInfo then
