@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.2
+## 1.1.0
 
 - Alle Spielsprachen: Englisch, Deutsch, Französisch, Spanisch, Portugiesisch, Italienisch, Russisch, Koreanisch und Chinesisch (vereinfacht und traditionell)
 - Namen von Items, Rezepten, Lehrern, Händlern und Vorkommen in der Sprache des Spiels
