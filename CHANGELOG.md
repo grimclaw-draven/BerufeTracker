@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.2
+
+- Alle Spielsprachen: Englisch, Deutsch, Französisch, Spanisch, Portugiesisch, Italienisch, Russisch, Koreanisch und Chinesisch (vereinfacht und traditionell)
+- Namen von Items, Rezepten, Lehrern, Händlern und Vorkommen in der Sprache des Spiels
+- Berufe, Items und Rezepte werden unabhängig von der Spielsprache erkannt
+
 ## 1.0.1
 
 - Lehrer-Rang Lehrling (1-75) in der Route ergänzt
