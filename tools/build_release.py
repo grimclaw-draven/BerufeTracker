@@ -38,7 +38,7 @@ for f in files:
     path = os.path.join(A, f)
     if not os.path.isfile(path): problems.append('fehlt: ' + f)
     elif private.search(open(path, encoding='utf8').read()): problems.append('private Daten in ' + f)
-for f in ['LICENSE.md', 'README.md', 'README.de.md', 'CHANGELOG.md']:
+for f in ['LICENSE.md', 'CHANGELOG.md'] + sorted(f for f in os.listdir(A) if f.startswith('README') and f.endswith('.md')):
     if not os.path.isfile(os.path.join(A, f)): problems.append('fehlt: ' + f)
 if problems:
     sys.exit('Abbruch:\n  ' + '\n  '.join(problems))
@@ -53,7 +53,7 @@ with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED) as z:
             z.writestr(f'{NAME}/Seed.lua', EMPTY_SEED)
         else:
             z.write(os.path.join(A, f), f'{NAME}/{f}')
-    for f in ['LICENSE.md', 'README.md', 'README.de.md', 'CHANGELOG.md']:
+    for f in ['LICENSE.md', 'CHANGELOG.md'] + sorted(f for f in os.listdir(A) if f.startswith('README') and f.endswith('.md')):
         z.write(os.path.join(A, f), f'{NAME}/{f}')
 with zipfile.ZipFile(out) as z:
     for i in z.infolist(): print(f'{i.file_size:>9}  {i.filename}')

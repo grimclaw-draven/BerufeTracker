@@ -1,6 +1,6 @@
 # BerufeTracker
 
-*[Deutsche Version](README.de.md)*
+[English](README.md) · [Deutsch](README.de.md) · [Français](README.fr.md) · [Español](README.es.md) · [Português](README.pt-BR.md) · [Italiano](README.it.md) · [Русский](README.ru.md) · [한국어](README.ko.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md)
 
 How much Copper Ore, Linen Cloth and Peacebloom do you still need to bring your professions to 300? BerufeTracker works it out: for every profession, down to the base materials and across all your characters and banks.
 
