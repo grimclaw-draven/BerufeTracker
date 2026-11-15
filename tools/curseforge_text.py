@@ -1,12 +1,16 @@
 # Texte für CurseForge im gleichen Format: Klartext, alle Sprachen untereinander, getrennt durch eine Strichlinie.
-#   python3 tools/curseforge_text.py description <Ausgabedatei>          Projektbeschreibung aus allen README*.md
-#   python3 tools/curseforge_text.py changelog <Version> <Ausgabedatei>  Changelog einer Version aus allen CHANGELOG*.md
+#   python3 tools/curseforge_text.py description <Ausgabedatei>          Projektbeschreibung aus README.md + readme/<Sprache>.md
+#   python3 tools/curseforge_text.py changelog <Version> <Ausgabedatei>  Changelog einer Version aus CHANGELOG.md + changelog/<Sprache>.md
 # Beim Changelog bricht das Skript ab, wenn eine Sprache den Abschnitt der Version nicht hat.
 import os, re, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-LANGS = [('', 'English'), ('.de', 'Deutsch'), ('.fr', 'Français'), ('.es', 'Español'), ('.pt-BR', 'Português'),
-         ('.it', 'Italiano'), ('.ru', 'Русский'), ('.ko', '한국어'), ('.zh-CN', '简体中文'), ('.zh-TW', '繁體中文')]
+# Englisch liegt im Hauptordner, die anderen Sprachen in readme/ und changelog/
+LANGS = [(None, 'English'), ('de', 'Deutsch'), ('fr', 'Français'), ('es', 'Español'), ('pt-BR', 'Português'),
+         ('it', 'Italiano'), ('ru', 'Русский'), ('ko', '한국어'), ('zh-CN', '简体中文'), ('zh-TW', '繁體中文')]
+
+def path_of(kind, code):
+    return f'{kind.upper()}.md' if code is None else f'{kind}/{code}.md'
 SEP = '\n\n\n--------------------------------------------------\n\n\n'
 OTHERS = ' · '.join(name for _, name in LANGS[1:])
 
@@ -35,7 +39,7 @@ def join(sections):
 def description():
     sections = []
     for suffix, name in LANGS:
-        lines = read(f'README{suffix}.md')
+        lines = read(path_of('readme', suffix))
         body = plain(lines[3:])          # Zeile 1 Titel, Zeile 3 Sprachleiste mit Links zu den anderen Dateien
         sections.append(('BerufeTracker', name, body))
     return join(sections)
@@ -43,7 +47,7 @@ def description():
 def changelog(version):
     sections, missing = [], []
     for suffix, name in LANGS:
-        path = f'CHANGELOG{suffix}.md'
+        path = path_of('changelog', suffix)
         lines = read(path) if os.path.exists(os.path.join(ROOT, path)) else []
         body, inside = [], False
         for line in lines:

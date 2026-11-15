@@ -1,6 +1,6 @@
 # BerufeTracker
 
-[English](README.md) · [Deutsch](README.de.md) · [Français](README.fr.md) · [Español](README.es.md) · [Português](README.pt-BR.md) · [Italiano](README.it.md) · [Русский](README.ru.md) · [한국어](README.ko.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md)
+[English](../README.md) · [Deutsch](de.md) · [Français](fr.md) · [Español](es.md) · [Português](pt-BR.md) · [Italiano](it.md) · [Русский](ru.md) · [한국어](ko.md) · [简体中文](zh-CN.md) · [繁體中文](zh-TW.md)
 
 전문 기술을 300까지 올리려면 구리 광석, 리넨 옷감, 평온초 꽃잎이 아직 얼마나 필요할까요? BerufeTracker가 계산해 드립니다. 모든 전문 기술을 기본 재료까지, 모든 캐릭터와 은행을 통틀어서요.
 

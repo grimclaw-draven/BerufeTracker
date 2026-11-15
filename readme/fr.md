@@ -1,6 +1,6 @@
 # BerufeTracker
 
-[English](README.md) · [Deutsch](README.de.md) · [Français](README.fr.md) · [Español](README.es.md) · [Português](README.pt-BR.md) · [Italiano](README.it.md) · [Русский](README.ru.md) · [한국어](README.ko.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md)
+[English](../README.md) · [Deutsch](de.md) · [Français](fr.md) · [Español](es.md) · [Português](pt-BR.md) · [Italiano](it.md) · [Русский](ru.md) · [한국어](ko.md) · [简体中文](zh-CN.md) · [繁體中文](zh-TW.md)
 
 Combien de Minerai de cuivre, d'Etoffe de lin et de Pacifique vous faut-il encore pour monter vos métiers à 300 ? BerufeTracker fait le calcul : pour chaque métier, jusqu'aux matériaux de base et sur tous vos personnages et toutes vos banques.
 

@@ -1,6 +1,6 @@
 # BerufeTracker
 
-[English](README.md) · [Deutsch](README.de.md) · [Français](README.fr.md) · [Español](README.es.md) · [Português](README.pt-BR.md) · [Italiano](README.it.md) · [Русский](README.ru.md) · [한국어](README.ko.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md)
+[English](../README.md) · [Deutsch](de.md) · [Français](fr.md) · [Español](es.md) · [Português](pt-BR.md) · [Italiano](it.md) · [Русский](ru.md) · [한국어](ko.md) · [简体中文](zh-CN.md) · [繁體中文](zh-TW.md)
 
 Quanto Minerale di Rame, Stoffa di Lino e Fiorpace ti servono ancora per portare le tue professioni a 300? BerufeTracker fa il calcolo: per ogni professione, fino ai materiali di base e su tutti i tuoi personaggi e le tue banche.
 
