@@ -10,5 +10,6 @@ ignore:
   - .gitignore
   - .pkgmeta
   - CHANGELOG-CurseForge.txt
+  - RELEASE-NOTES.md
   - readme
   - changelog
