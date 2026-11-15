@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.1
+
+- Bedarf an Erzadern und Kräutern erscheint jetzt zuverlässig, auch beim direkten Wechsel von einem Vorkommen zum nächsten
+- Portugiesisch: Knopf „Escanear preços“ statt „Varrer preços“
+- READMEs in allen Spielsprachen
+
 ## 1.1.0
 
 - Alle Spielsprachen: Englisch, Deutsch, Französisch, Spanisch, Portugiesisch, Italienisch, Russisch, Koreanisch und Chinesisch (vereinfacht und traditionell)
