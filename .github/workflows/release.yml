@@ -19,6 +19,10 @@ jobs:
         with:
           fetch-depth: 0
 
+      # Changelog der Version in allen Sprachen (aus CHANGELOG*.md); fehlt eine Sprache, bricht der Release ab
+      - name: Changelog in allen Sprachen
+        run: python3 tools/curseforge_changelog.py "${{ github.ref_name }}" CHANGELOG-CurseForge.md
+
       - name: Paket bauen und veröffentlichen
         uses: BigWigsMods/packager@v2
         with:

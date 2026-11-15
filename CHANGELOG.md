@@ -2,31 +2,31 @@
 
 ## 1.1.1
 
-- Bedarf an Erzadern und Kräutern erscheint jetzt zuverlässig, auch beim direkten Wechsel von einem Vorkommen zum nächsten
-- Portugiesisch: Knopf „Escanear preços“ statt „Varrer preços“
-- READMEs in allen Spielsprachen
+- The need at ore veins and herbs now shows reliably, also when moving straight from one node to the next
+- Portuguese: button "Escanear preços" instead of "Varrer preços"
+- READMEs in all game languages
 
 ## 1.1.0
 
-- Alle Spielsprachen: Englisch, Deutsch, Französisch, Spanisch, Portugiesisch, Italienisch, Russisch, Koreanisch und Chinesisch (vereinfacht und traditionell)
-- Namen von Items, Rezepten, Lehrern, Händlern und Vorkommen in der Sprache des Spiels
-- Berufe, Items und Rezepte werden unabhängig von der Spielsprache erkannt
+- All game languages: English, German, French, Spanish, Portuguese, Italian, Russian, Korean and Chinese (simplified and traditional)
+- Names of items, recipes, trainers, vendors and nodes in the language of the game
+- Professions, items and recipes are recognized regardless of the game language
 
 ## 1.0.1
 
-- Lehrer-Rang Lehrling (1-75) in der Route ergänzt
-- Alle Ränge zeigen ihren Bereich, z. B. „Geselle (75-150)“
-- Abgeschlossene Ränge nennen weiterhin ihren Lehrer
-- Der aktuelle Rang bleibt farbig und bei „Nur Offenes“ sichtbar
+- Trainer rank Apprentice (1-75) added to the route
+- All ranks show their range, e.g. "Journeyman (75-150)"
+- Completed ranks still name their trainer
+- The current rank stays colored and visible with "Open only"
 
-## 1.0.0 – erste Veröffentlichung
+## 1.0.0 – first release
 
-- Materialbedarf aller Berufe 1–300, aufgelöst bis zu den Grundmaterialien, über alle Charaktere und Banken hinweg
-- Filter „Alle Berufe“ zählt jeden Charakter mit seinen eigenen Berufen und seinem Skill zusammen; außerdem „Gelernte Berufe“, „Jeder Beruf einmal“ (auch ungelernte) und einzelne Charaktere; Sammelberufe ausschließbar
-- Bedarf und Bestand zählen nur für Charaktere der aktuellen Fraktion
-- Routen aus sechs Guides wählbar, mit Rezeptstatus und Lehrer-Besuchen
-- Auktionshaus-Scan mit Kostenanzeige
-- Bezugsquellen je Material: Vorkommen, Gegner, nächste Händler
-- Wegpunkte zu Lehrern und Händlern mit Richtungspfeil, Kartenbeschriftung und Beschreibung im Chat-Link
-- Bedarf in Item-Tooltips und an Erzadern und Kräutern in der Welt
-- Berufe, Kategorien und Materialien alphabetisch sortiert
+- Material need of all professions 1–300, broken down to base materials, across all characters and banks
+- Filter "All professions" adds up every character with their own professions and skill; also "Learned professions", "Each profession once" (including unlearned ones) and single characters; gathering professions can be left out
+- Need and stock only count for characters of the current faction
+- Routes from six guides to choose from, with recipe status and trainer visits
+- Auction House scan with cost display
+- Sources per material: nodes, mobs, nearest vendors
+- Waypoints to trainers and vendors with direction arrow, map label and description in the chat link
+- Need in item tooltips and at ore veins and herbs in the world
+- Professions, categories and materials sorted alphabetically

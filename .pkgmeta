@@ -1,7 +1,7 @@
 package-as: BerufeTracker
 
 manual-changelog:
-  filename: CHANGELOG.md
+  filename: CHANGELOG-CurseForge.md
   markup-type: markdown
 
 ignore:
@@ -9,3 +9,4 @@ ignore:
   - .github
   - .gitignore
   - .pkgmeta
+  - CHANGELOG-CurseForge.md
