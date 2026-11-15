@@ -1188,16 +1188,18 @@ local function HookItemTooltips()
         end
     end
 
+    -- Vorkommen in der Welt: Bleibt der Tooltip beim Wechsel von einem Vorkommen zum nächsten offen, kommt kein
+    -- OnShow mehr, nur neuer Inhalt. Deshalb zusätzlich nach jedem Setzen des Inhalts (TooltipDataProcessor) prüfen;
+    -- nodeDone verhindert doppelte Zeilen und wird mit jedem neuen Inhalt zurückgesetzt.
     local nodeDone = false
-    GameTooltip:HookScript("OnTooltipCleared", function() nodeDone = false end)
-    GameTooltip:HookScript("OnShow", function(tip)
+    local function AddNodeLines(tip, name)
         if nodeDone or not BT.result then return end
         if tip.GetItem and tip:GetItem() then return end
         if tip.GetUnit and tip:GetUnit() then return end
         local owner = tip.GetOwner and tip:GetOwner()
         if owner and window and owner.GetParent and owner:GetParent() == window.content then return end -- eigenes Fenster
         local line = _G.GameTooltipTextLeft1
-        local text = line and Plain(line:GetText())
+        local text = Plain(name) or (line and Plain(line:GetText()))
         local list = text and ItemsOfNode(text)
         if not list then return end
         nodeDone = true
@@ -1215,7 +1217,18 @@ local function HookItemTooltips()
             tip:AddLine(L["Wird nicht mehr gebraucht"], 0.6, 0.6, 0.6)
         end
         tip:Show()
-    end)
+    end
+    GameTooltip:HookScript("OnTooltipCleared", function() nodeDone = false end)
+    GameTooltip:HookScript("OnShow", function(tip) AddNodeLines(tip) end)
+    local kind = TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall
+        and (TooltipDataProcessor.AllTypes or (Enum and Enum.TooltipDataType and Enum.TooltipDataType.Object))
+    if kind then
+        TooltipDataProcessor.AddTooltipPostCall(kind, function(tip, data)
+            if tip ~= GameTooltip then return end
+            local first = data and data.lines and data.lines[1]
+            AddNodeLines(tip, first and first.leftText)
+        end)
+    end
 end
 
 -- Fügt hinter dem Chat-Link des aktiven Wegpunkts dessen Beschreibung als normalen Text ein.
