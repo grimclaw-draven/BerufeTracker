@@ -943,6 +943,8 @@ SlashCmdList.BERUFETRACKER = function(input)
     cmd = (cmd or ""):lower()
     if cmd == "chatdebug" then
         BT.PrintChatDebug()
+    elseif cmd == "mobdebug" then
+        BT.PrintMobDebug()
     elseif cmd == "scan" then
         BT.StartScan()
     elseif cmd == "skill" and arg1 then

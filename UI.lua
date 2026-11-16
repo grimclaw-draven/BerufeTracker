@@ -1311,7 +1311,8 @@ local function HookItemTooltips()
         if tip ~= GameTooltip or mobBusy or mobDone then return end
         mobBusy, mobDone = true, true
         local ok, _, unit = pcall(tip.GetUnit, tip)
-        if ok then pcall(AddMobLines, tip, Plain(unit) or "mouseover") end
+        local ok2, err = pcall(AddMobLines, tip, (ok and Plain(unit)) or "mouseover")
+        BT.mobDebug = { at = time(), unit = ok and Plain(unit) or "?", error = not ok2 and tostring(err) or nil }
         mobBusy = false
     end
     GameTooltip:HookScript("OnTooltipCleared", function() mobDone = false end)
@@ -1444,6 +1445,30 @@ local function HookChatBoxes()
     for _, name in ipairs({ "ChatEdit_InsertLink", "ChatFrame_OpenChat" }) do
         if _G[name] then hooksecurefunc(name, CheckActiveBox) end
     end
+end
+
+-- /berufe mobdebug: zeigt, was der Gegner-Tooltip über den Gegner unter der Maus sieht.
+local function DebugValue(value)
+    if issecretvalue and issecretvalue(value) then return "|cffff6666geschützt|r" end
+    return tostring(value)
+end
+function BT.PrintMobDebug()
+    local tag = "|cffffcc00BerufeTracker:|r "
+    local unit = "mouseover"
+    print(tag .. "mouseover vorhanden: " .. DebugValue(UnitExists and UnitExists(unit)))
+    if not (UnitExists and UnitExists(unit)) then
+        print(tag .. "Maus über einen Gegner halten und /berufe mobdebug per Tastenkürzel oder Makro ausführen.")
+    end
+    print(tag .. "Spieler: " .. DebugValue(UnitIsPlayer and UnitIsPlayer(unit)) .. ", angreifbar: " .. DebugValue(UnitCanAttack and UnitCanAttack("player", unit)))
+    local guid = UnitGUID and UnitGUID(unit)
+    print(tag .. "GUID: " .. DebugValue(guid) .. ", Stufe: " .. DebugValue(UnitLevel and UnitLevel(unit)) .. ", Typ: " .. DebugValue(UnitCreatureType and UnitCreatureType(unit)))
+    local plainGuid = Plain(guid)
+    local npcID = type(plainGuid) == "string" and tonumber(plainGuid:match("^Creature%-%d+%-%d+%-%d+%-%d+%-(%d+)%-"))
+    local drops = npcID and BT.MOB_DROPS and BT.MOB_DROPS[npcID]
+    print(tag .. "NPC-ID: " .. tostring(npcID) .. ", Beute-Einträge: " .. (drops and table.concat(drops, ", ") or "-"))
+    print(tag .. "Wildtier: " .. tostring(IsCreatureType(unit, 1)) .. ", Humanoid: " .. tostring(IsCreatureType(unit, 7)))
+    local info = BT.mobDebug
+    print(tag .. "Letzter Gegner-Tooltip: " .. (info and ("vor " .. (time() - info.at) .. " s, Einheit " .. tostring(info.unit) .. ", Fehler: " .. tostring(info.error or "keiner")) or "noch keiner"))
 end
 
 function BT.PrintChatDebug()
