@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.2.0
+
+- Zwei eigene Guides: „Günstigster berechneter Weg“ (aus allen Rezepten des Berufs in den Forever-Spieldaten: je Skillpunkt das billigste Rezept nach Farbe und Chance) und „Günstigster Guide-Weg“ (aus den Schritten der anderen Guides)
+- Kosten ab jetzt für jeden Guide in den Guide-Menüs und neben „Guide für alle:“, mit Lehrer- und Rezeptkosten; vorhandene Materialien zählen gratis
+- Händlerware mit begrenztem Vorrat zählt nur, wenn sie im Auktionshaus ist; der Preisscan erfasst jetzt auch Rezept-Items
+- Zwischenprodukte (Ballen, Barren …) werden im Auktionshaus gekauft, wenn das billiger ist als Herstellen
+- Die Route folgt dem im Filter gewählten Charakter; zuerst die Hauptberufe, dann Erste Hilfe und Kochkunst, Angeln zuletzt
+- Schritte mit langer Abklingzeit oder nur über eine Quest werden markiert
+- Das Fenster lässt sich in der Größe ziehen
+- Gegner-Tooltips zeigen, welche benötigten Materialien sie droppen, mit Chance und Menge (Daten: cMaNGOS)
+- Entzaubern: Der Item-Tooltip zeigt die möglichen Ergebnisse mit Chance und Menge
+- Handwerksmaterial, das keine Route braucht, zeigt „Für keine Route gebraucht“
+
 ## 1.1.1
 
 - Bedarf an Erzadern und Kräutern erscheint jetzt zuverlässig, auch beim direkten Wechsel von einem Vorkommen zum nächsten

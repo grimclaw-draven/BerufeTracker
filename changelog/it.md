@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.2.0
+
+- Due guide proprie: «Percorso calcolato più economico» (da tutte le ricette della professione nei dati di gioco di Forever: per ogni punto abilità la ricetta più economica per colore e probabilità) e «Percorso più economico delle guide» (dai passi delle altre guide)
+- Costo da ora per ogni guida nei menu delle guide e accanto a «Guida per tutte:», con i costi di istruttori e ricette; i materiali già posseduti contano come gratuiti
+- Gli oggetti dei mercanti con scorte limitate contano solo se sono nella casa d'aste; la scansione dei prezzi include ora anche le ricette
+- I prodotti intermedi (rotoli, lingotti …) vengono comprati nella casa d'aste quando costa meno che crearli
+- Il percorso segue il personaggio scelto nel filtro; prima le professioni principali, poi Primo Soccorso e Cucina, Pesca per ultima
+- I passi con un lungo tempo di recupero o ottenibili solo tramite missione sono segnalati
+- La finestra si può ridimensionare
+- I tooltip dei nemici mostrano quali materiali necessari rilasciano, con probabilità e quantità (dati: cMaNGOS)
+- Disincantare: il tooltip dell'oggetto mostra i risultati possibili con probabilità e quantità
+- I materiali di artigianato che non servono a nessun percorso mostrano «Non serve a nessun percorso»
+
 ## 1.1.1
 
 - Il fabbisogno su vene di minerale ed erbe ora appare in modo affidabile, anche passando direttamente da un nodo al successivo

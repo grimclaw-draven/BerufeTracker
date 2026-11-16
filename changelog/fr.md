@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.2.0
+
+- Deux guides propres : « Chemin calculé le moins cher » (à partir de toutes les recettes du métier dans les données de jeu de Forever : pour chaque point de compétence la recette la moins chère selon la couleur et la chance) et « Chemin le moins cher des guides » (à partir des étapes des autres guides)
+- Coût à partir de maintenant pour chaque guide dans les menus de guide et à côté de « Guide pour tous : », avec les coûts des maîtres et des recettes ; les composants déjà possédés sont gratuits
+- Les articles de marchand en stock limité ne comptent que s'ils sont à l'hôtel des ventes ; l'analyse des prix couvre aussi les recettes
+- Les produits intermédiaires (rouleaux, barres …) sont achetés à l'hôtel des ventes quand c'est moins cher que de les fabriquer
+- Le parcours suit le personnage choisi dans le filtre ; d'abord les métiers principaux, puis Secourisme et Cuisine, Pêche en dernier
+- Les étapes avec un long temps de recharge ou disponibles uniquement par une quête sont signalées
+- La fenêtre peut être redimensionnée
+- Les infobulles des ennemis indiquent les composants nécessaires qu'ils lâchent, avec chance et quantité (données : cMaNGOS)
+- Désenchantement : l'infobulle de l'objet indique les résultats possibles avec chance et quantité
+- Les composants d'artisanat dont aucun parcours n'a besoin indiquent « Requis par aucun parcours »
+
 ## 1.1.1
 
 - Le besoin s’affiche désormais de façon fiable sur les filons de minerai et les herbes, même en passant directement d’un point de récolte au suivant

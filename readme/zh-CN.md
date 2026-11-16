@@ -53,6 +53,7 @@
 - **路线：** [Metabot](https://metabot.gg/en/wow-forever/professions)、[RankedBoost](https://rankedboost.com/world-of-warcraft/forever/)、[Wowhead](https://www.wowhead.com/forever/profession-leveling-guides)、[wowtbc.gg](https://wowtbc.gg/warcraftforever/)、[GoldGoblin](https://classic.goldgoblin.net/berufe/) 和 [wow-professions](https://www.wow-professions.com/forever/)。这些路线已为插件做了精简。包含全部说明的完整指南请见各网站；链接显示在插件的指南选择中。
 - **训练师、商人和地点**由 QuestieDB（GPLv3）生成。感谢 Questie 团队和所有贡献者。BerufeTracker 不是 Questie 团队的项目。
 - 敌人的**掉落几率和数量**来自 [cMaNGOS Classic 数据库](https://github.com/cmangos/classic-db)（GPLv3）。这些是经典旧世 1.12 的数值，在 WoW Forever 中可能有所不同。
+- “最便宜的计算路线”的**配方、技能颜色和材料**来自通过 [wago.tools](https://wago.tools) 获取的 WoW Forever 游戏数据；训练师费用和商人库存来自 cMaNGOS Classic 数据库。
 
 ## 许可证
 

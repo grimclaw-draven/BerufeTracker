@@ -53,6 +53,7 @@
 - **Маршруты:** [Metabot](https://metabot.gg/en/wow-forever/professions), [RankedBoost](https://rankedboost.com/world-of-warcraft/forever/), [Wowhead](https://www.wowhead.com/forever/profession-leveling-guides), [wowtbc.gg](https://wowtbc.gg/warcraftforever/), [GoldGoblin](https://classic.goldgoblin.net/berufe/) и [wow-professions](https://www.wow-professions.com/forever/). Маршруты сокращены для аддона. Полные руководства со всеми пояснениями вы найдёте на соответствующих сайтах; ссылка показана в выборе руководства в аддоне.
 - **Учителя, торговцы и места** сгенерированы из QuestieDB (GPLv3). Спасибо команде Questie и всем участникам. BerufeTracker не является проектом команды Questie.
 - **Шансы и количество добычи** с противников взяты из [базы данных cMaNGOS Classic](https://github.com/cmangos/classic-db) (GPLv3). Это значения Classic 1.12, в WoW Forever они могут отличаться.
+- **Рецепты, цвета навыка и реагенты** для «Самого дешёвого расчётного пути» взяты из игровых данных WoW Forever через [wago.tools](https://wago.tools); стоимость обучения и запас торговцев — из базы данных cMaNGOS Classic.
 
 ## Лицензия
 

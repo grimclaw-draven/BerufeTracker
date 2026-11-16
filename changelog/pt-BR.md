@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.2.0
+
+- Dois guias próprios: "Caminho calculado mais barato" (a partir de todas as receitas da profissão nos dados de jogo do Forever: para cada ponto de perícia a receita mais barata por cor e chance) e "Caminho mais barato dos guias" (a partir dos passos dos outros guias)
+- Custo a partir de agora para cada guia nos menus de guia e ao lado de "Guia para todas:", com custos de instrutores e receitas; materiais que você já tem contam como grátis
+- Itens de vendedor com estoque limitado só contam se estiverem na casa de leilões; a varredura de preços agora inclui as receitas
+- Produtos intermediários (tecidos, barras …) são comprados na casa de leilões quando isso é mais barato do que fabricar
+- A rota segue o personagem escolhido no filtro; primeiro as profissões principais, depois Primeiros Socorros e Culinária, Pesca por último
+- Passos com recarga longa ou que só se obtêm por missão são marcados
+- A janela pode ser redimensionada
+- As dicas dos inimigos mostram quais materiais necessários eles soltam, com chance e quantidade (dados: cMaNGOS)
+- Desencantar: a dica do item mostra os resultados possíveis com chance e quantidade
+- Materiais de artesanato que nenhuma rota usa mostram "Não é usado em nenhuma rota"
+
 ## 1.1.1
 
 - A necessidade em veios de minério e ervas agora aparece de forma confiável, também ao passar diretamente de um nodo para o próximo

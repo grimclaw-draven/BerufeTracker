@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.2.0
+
+- Dos guías propias: «Ruta calculada más barata» (a partir de todas las recetas de la profesión en los datos de juego de Forever: para cada punto de habilidad la receta más barata según color y probabilidad) y «Ruta más barata de las guías» (a partir de los pasos de las demás guías)
+- Coste desde ahora para cada guía en los menús de guía y junto a «Guía para todas:», con costes de instructores y recetas; los materiales que ya tienes cuentan como gratis
+- Los artículos de vendedor con existencias limitadas solo cuentan si están en la casa de subastas; el escaneo de precios también incluye las recetas
+- Los productos intermedios (rollos, lingotes …) se compran en la casa de subastas cuando es más barato que fabricarlos
+- La ruta sigue al personaje elegido en el filtro; primero las profesiones principales, luego Primeros auxilios y Cocina, Pesca al final
+- Se marcan los pasos con un tiempo de reutilización largo o que solo se consiguen con una misión
+- La ventana se puede redimensionar
+- Las descripciones de los enemigos muestran qué materiales necesarios sueltan, con probabilidad y cantidad (datos: cMaNGOS)
+- Desencantar: la descripción del objeto muestra los resultados posibles con probabilidad y cantidad
+- Los materiales de artesanía que ninguna ruta necesita muestran «No lo necesita ninguna ruta»
+
 ## 1.1.1
 
 - La necesidad en las vetas de mineral y las hierbas ahora se muestra de forma fiable, también al pasar directamente de un nodo al siguiente

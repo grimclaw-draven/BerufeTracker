@@ -53,6 +53,7 @@ Para **WoW Forever**, en el idioma de tu cliente de juego: inglés, alemán, fra
 - **Rutas:** [Metabot](https://metabot.gg/en/wow-forever/professions), [RankedBoost](https://rankedboost.com/world-of-warcraft/forever/), [Wowhead](https://www.wowhead.com/forever/profession-leveling-guides), [wowtbc.gg](https://wowtbc.gg/warcraftforever/), [GoldGoblin](https://classic.goldgoblin.net/berufe/) y [wow-professions](https://www.wow-professions.com/forever/). Las rutas se han resumido para el addon. Encontrarás las guías completas con todas las explicaciones en los sitios respectivos; el enlace se muestra en la selección de guía del addon.
 - **Instructores, vendedores y ubicaciones** se generaron a partir de QuestieDB (GPLv3). Gracias al equipo de Questie y a todos los colaboradores. BerufeTracker no es un proyecto del equipo de Questie.
 - Las **probabilidades y cantidades de botín** de los enemigos proceden de la [base de datos cMaNGOS Classic](https://github.com/cmangos/classic-db) (GPLv3). Son valores de Classic 1.12 y pueden variar en WoW Forever.
+- **Recetas, colores de habilidad y componentes** de la «Ruta calculada más barata» proceden de los datos de juego de WoW Forever a través de [wago.tools](https://wago.tools); costes de instructores y existencias de vendedores de la base de datos cMaNGOS Classic.
 
 ## Licencia
 

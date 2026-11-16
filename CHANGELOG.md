@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.2.0
+
+- Two own guides: "Cheapest calculated route" (from all recipes of the profession in the Forever game data: for every skill point the cheapest recipe by color and skill-up chance) and "Cheapest guide route" (from the steps of the other guides)
+- Cost from now on for every guide in the guide menus and next to "Guide for all:", including trainer and recipe costs; materials you already have count as free
+- Vendor goods with limited stock only count if they are on the auction house; the price scan now also covers recipe items
+- Intermediate products (bolts, bars …) are bought on the auction house when that is cheaper than crafting them
+- Route follows the character chosen in the filter; main professions first, then First Aid and Cooking, Fishing last
+- Steps with a long cooldown or only available through a quest are marked
+- The window can be resized
+- Enemy tooltips show which needed materials they drop, with chance and amount (data: cMaNGOS)
+- Disenchanting: the item tooltip shows the possible results with chance and amount
+- Trade goods that no route needs say "Not needed by any route"
+
 ## 1.1.1
 
 - The need at ore veins and herbs now shows reliably, also when moving straight from one node to the next
