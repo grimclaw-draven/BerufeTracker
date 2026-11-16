@@ -1183,7 +1183,6 @@ end
 -- Stoff von Humanoiden, Leder von Wildtieren (Kürschnern), Verzauberungsmaterial nach Gegenstandsstufe.
 local CLOTH_HINT = "Beute von humanoiden Gegnern, Stufe %s"
 local LEATHER_HINT = "Kürschnerei: Tiere häuten, Stufe %s"
-local DISENCHANT_HINT = "Entzaubern grüner Gegenstände, Gegenstandsstufe ca. %s"
 local hintRanges = {}
 local function KeysForLevel(hint, level)
     local ranges = hintRanges[hint]
@@ -1253,7 +1252,7 @@ end
 
 -- Beute-Eintrag {Material, Chance %, Menge von, bis, Kürschnern} -> "11 %, 1-2" bzw. "39 %, Kürschnern"
 local function DropTag(drop)
-    local chance = drop[2] >= 10 and ("%.0f"):format(drop[2]) or ("%.1f"):format(drop[2])
+    local chance = (drop[2] >= 10 or drop[2] == math.floor(drop[2])) and ("%.0f"):format(drop[2]) or ("%.1f"):format(drop[2])
     local count = drop[3] == drop[4] and tostring(drop[3]) or (drop[3] .. "-" .. drop[4])
     return chance .. " %, " .. count .. (drop[5] and (", " .. L["Kürschnern"]) or "")
 end
@@ -1401,7 +1400,98 @@ do
 end
 BT.SecretMob = SecretMob
 
--- Ausrüstung: welches Verzauberungsmaterial Entzaubern ungefähr ergibt (grün: Staub/Essenz, blau/lila: Splitter).
+-- Entzaubern (Classic-Tabelle): Ergebnisse je Gegenstandsstufe mit Chance und Menge.
+-- Grün: Staub/Essenz/Splitter (Rüstung 75 % Staub, Waffe 75 % Essenz), Blau: Splitter, Lila: Splitter bzw. Nexuskristall.
+local DE_MATS = { -- Schlüssel -> Item-ID, Ersatzname deutsch, englisch (wenn das Spiel den Namen noch nicht kennt)
+    ["strange-dust"] = { 10940, "Seltsamer Staub", "Strange Dust" },
+    ["soul-dust"] = { 11083, "Seelenstaub", "Soul Dust" },
+    ["vision-dust"] = { 11137, "Visionenstaub", "Vision Dust" },
+    ["dream-dust"] = { 11176, "Traumstaub", "Dream Dust" },
+    ["illusion-dust"] = { 16204, "Illusionsstaub", "Illusion Dust" },
+    ["lesser-magic-essence"] = { 10938, "Geringe Magieessenz", "Lesser Magic Essence" },
+    ["greater-magic-essence"] = { 10939, "Große Magieessenz", "Greater Magic Essence" },
+    ["lesser-astral-essence"] = { 10998, "Geringe Astralessenz", "Lesser Astral Essence" },
+    ["greater-astral-essence"] = { 11082, "Große Astralessenz", "Greater Astral Essence" },
+    ["lesser-mystic-essence"] = { 11134, "Geringe Mystikeressenz", "Lesser Mystic Essence" },
+    ["greater-mystic-essence"] = { 11135, "Große Mystikeressenz", "Greater Mystic Essence" },
+    ["lesser-nether-essence"] = { 11174, "Geringe Netheressenz", "Lesser Nether Essence" },
+    ["greater-nether-essence"] = { 11175, "Große Netheressenz", "Greater Nether Essence" },
+    ["lesser-eternal-essence"] = { 16202, "Geringe ewige Essenz", "Lesser Eternal Essence" },
+    ["greater-eternal-essence"] = { 16203, "Große ewige Essenz", "Greater Eternal Essence" },
+    ["small-glimmering-shard"] = { 10978, "Kleiner gleißender Splitter", "Small Glimmering Shard" },
+    ["large-glimmering-shard"] = { 11084, "Großer gleißender Splitter", "Large Glimmering Shard" },
+    ["small-glowing-shard"] = { 11138, "Kleiner leuchtender Splitter", "Small Glowing Shard" },
+    ["large-glowing-shard"] = { 11139, "Großer leuchtender Splitter", "Large Glowing Shard" },
+    ["small-radiant-shard"] = { 11177, "Kleiner strahlender Splitter", "Small Radiant Shard" },
+    ["large-radiant-shard"] = { 11178, "Großer strahlender Splitter", "Large Radiant Shard" },
+    ["small-brilliant-shard"] = { 14343, "Kleiner glänzender Splitter", "Small Brilliant Shard" },
+    ["large-brilliant-shard"] = { 14344, "Großer glänzender Splitter", "Large Brilliant Shard" },
+    ["nexus-crystal"] = { 20725, "Nexuskristall", "Nexus Crystal" },
+}
+-- Grün: Stufe von, bis, Staub {von, bis}, Essenz {von, bis}, Splitter, Anteile Staub/Essenz/Splitter (Rüstung)
+local DE_GREEN = {
+    { 5, 15, "strange-dust", 1, 2, "lesser-magic-essence", 1, 2, nil, 80, 20, 0 },
+    { 16, 20, "strange-dust", 2, 3, "greater-magic-essence", 1, 2, "small-glimmering-shard", 75, 20, 5 },
+    { 21, 25, "strange-dust", 4, 6, "lesser-astral-essence", 1, 2, "small-glimmering-shard", 75, 15, 10 },
+    { 26, 30, "soul-dust", 1, 2, "greater-astral-essence", 1, 2, "large-glimmering-shard", 75, 20, 5 },
+    { 31, 35, "soul-dust", 2, 5, "lesser-mystic-essence", 1, 2, "small-glowing-shard", 75, 20, 5 },
+    { 36, 40, "vision-dust", 1, 2, "greater-mystic-essence", 1, 2, "large-glowing-shard", 75, 20, 5 },
+    { 41, 45, "vision-dust", 2, 5, "lesser-nether-essence", 1, 2, "small-radiant-shard", 75, 20, 5 },
+    { 46, 50, "dream-dust", 1, 2, "greater-nether-essence", 1, 2, "large-radiant-shard", 75, 20, 5 },
+    { 51, 55, "dream-dust", 2, 5, "lesser-eternal-essence", 1, 2, "small-brilliant-shard", 75, 20, 5 },
+    { 56, 60, "illusion-dust", 1, 2, "greater-eternal-essence", 1, 2, "large-brilliant-shard", 75, 20, 5 },
+    { 61, 65, "illusion-dust", 2, 5, "greater-eternal-essence", 2, 3, "large-brilliant-shard", 75, 20, 5 },
+}
+-- Blau: Stufe von, bis, Splitter (immer 1 Stück)
+local DE_BLUE = {
+    { 1, 25, "small-glimmering-shard" }, { 26, 30, "large-glimmering-shard" }, { 31, 35, "small-glowing-shard" },
+    { 36, 40, "large-glowing-shard" }, { 41, 45, "small-radiant-shard" }, { 46, 50, "large-radiant-shard" },
+    { 51, 55, "small-brilliant-shard" }, { 56, 65, "large-brilliant-shard" },
+}
+-- Lila: Stufe von, bis, Ergebnis, Menge von, bis
+local DE_PURPLE = {
+    { 40, 45, "small-radiant-shard", 2, 4 }, { 46, 50, "large-radiant-shard", 2, 4 },
+    { 51, 55, "small-brilliant-shard", 2, 4 }, { 56, 60, "nexus-crystal", 1, 1 }, { 61, 94, "nexus-crystal", 1, 2 },
+}
+
+local function DisenchantResults(quality, itemLevel, isWeapon)
+    local results = {}
+    local function add(key, chance, lo, hi) if key and chance > 0 then results[#results + 1] = { key, chance, lo, hi } end end
+    if quality == 2 then
+        for _, row in ipairs(DE_GREEN) do
+            if itemLevel >= row[1] and itemLevel <= row[2] then
+                local dust, essence = row[10], row[11]
+                if isWeapon then dust, essence = essence, dust end -- Waffen geben vor allem Essenz
+                add(row[3], dust, row[4], row[5])
+                add(row[6], essence, row[7], row[8])
+                add(row[9], row[12], 1, 1)
+            end
+        end
+    elseif quality == 3 then
+        for _, row in ipairs(DE_BLUE) do
+            if itemLevel >= row[1] and itemLevel <= row[2] then add(row[3], 100, 1, 1) end
+        end
+    elseif quality == 4 then
+        for _, row in ipairs(DE_PURPLE) do
+            if itemLevel >= row[1] and itemLevel <= row[2] then add(row[3], 100, row[4], row[5]) end
+        end
+    end
+    table.sort(results, function(a, b) return a[2] > b[2] end)
+    return results
+end
+BT.DisenchantResults = DisenchantResults
+
+local function DisenchantName(key)
+    if BT.ITEMS[key] then return BT.ItemName(key) end
+    local mat = DE_MATS[key]
+    local get = C_Item and C_Item.GetItemNameByID
+    local ok, name = pcall(get or function() end, mat[1])
+    if ok and type(name) == "string" and name ~= "" and not (issecretvalue and issecretvalue(name)) then return name end
+    return BT.LOCALE == "deDE" and mat[2] or mat[3]
+end
+
+-- Waffen und Rüstung (grün und besser): alle Entzauber-Ergebnisse mit Chance und Menge.
+-- Erscheint, sobald mindestens ein Ergebnis gebraucht wird; benötigte farbig mit Bedarf, die anderen grau.
 local function AddDisenchantLines(tip, id)
     local instant = (C_Item and C_Item.GetItemInfoInstant) or GetItemInfoInstant
     local get = (C_Item and C_Item.GetItemInfo) or GetItemInfo
@@ -1410,12 +1500,22 @@ local function AddDisenchantLines(tip, id)
     if not ok or (classID ~= 2 and classID ~= 4) then return end -- nur Waffen und Rüstung
     local ok2, _, _, quality, itemLevel = pcall(get, id)
     if not ok2 or type(quality) ~= "number" or quality < 2 or quality > 4 or type(itemLevel) ~= "number" then return end
-    local entries = {}
-    for _, key in ipairs(KeysForLevel(DISENCHANT_HINT, itemLevel)) do
-        local isShard = key:find("shard", 1, true) ~= nil
-        if (quality == 2) ~= isShard then entries[#entries + 1] = { key = key } end
+    local results = DisenchantResults(quality, itemLevel, classID == 2)
+    local needed = false
+    for _, result in ipairs(results) do
+        local res = BT.result and BT.result[result[1]]
+        if res and res.need > 0 then needed = true end
     end
-    NeedBlock(tip, entries, L["Entzaubern ergibt ca.:"])
+    if not needed then return end
+    TrackerHeader(tip)
+    tip:AddLine(L["Entzaubern ergibt ca.:"], 0.8, 0.8, 0.8)
+    for _, result in ipairs(results) do
+        local tag = DropTag(result)
+        local res = BT.result and BT.result[result[1]]
+        if not (res and res.need > 0 and NeedLine(tip, result[1], tag)) then
+            tip:AddLine(DisenchantName(result[1]) .. " (" .. tag .. ")", 0.6, 0.6, 0.6)
+        end
+    end
 end
 
 local function HookItemTooltips()
