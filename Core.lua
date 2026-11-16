@@ -419,9 +419,22 @@ function BT.IsIgnored(id)
     return ignored
 end
 
+-- Im Filter gewählter Charakter (Materialien-Filter); nil bei "Alle Berufe", "Gelernte Berufe", "Jeder Beruf einmal".
+function BT.FocusChar()
+    local filter = DB and DB.opt.matFilter
+    if filter and filter ~= "once" and filter ~= "learned" and DB.chars[filter] then return filter end
+    return nil
+end
+
+-- Skill für Route und Guides: manueller Wert, sonst der gewählte Charakter, sonst der beste Charakter.
 function BT.Skill(profKey)
     local override = DB.opt.skill[profKey]
     if override then return override, "manuell" end
+    local focus = BT.FocusChar()
+    if focus then
+        local skills = DB.chars[focus].skills
+        return (skills and skills[profKey]) or 0, focus
+    end
     local best, who = 0, nil
     for id, rec in pairs(DB.chars) do
         local rank = not BT.IsIgnored(id) and rec.skills and rec.skills[profKey]
@@ -431,7 +444,7 @@ function BT.Skill(profKey)
 end
 
 function BT.IsCurrentProf(profKey)
-    local rec = DB.chars[BT.me]
+    local rec = DB.chars[BT.FocusChar() or BT.me]
     return rec ~= nil and rec.skills ~= nil and rec.skills[profKey] ~= nil
 end
 
@@ -471,6 +484,8 @@ end
 
 -- Lehrer: maßgeblich ist der aktive Charakter, wenn er den Beruf hat, sonst der mit dem höchsten Skill.
 local function ProfessionOwner(profKey)
+    local focus = BT.FocusChar()
+    if focus then return DB.chars[focus] end
     local me = DB.chars[BT.me]
     if me and me.skills and me.skills[profKey] then return me end
     local _, who = BT.Skill(profKey)

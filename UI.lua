@@ -717,7 +717,8 @@ local function BuildRoute(list)
         group[#group + 1] = prof
     end
     if #current > 0 then
-        list[#list + 1] = SectionHead("Dieser Charakter", current)
+        local focus = BT.FocusChar()
+        list[#list + 1] = SectionHead(focus and focus ~= BT.me and L["Charakter: %s"]:format(focus) or "Dieser Charakter", current)
         AddGroup(list, current, onlyMissing)
         list[#list + 1] = { kind = "gap", height = 12 }
         list[#list + 1] = { kind = "divider", height = 6 }

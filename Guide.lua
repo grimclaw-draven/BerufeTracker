@@ -503,7 +503,7 @@ function BT.ComputeAllRecipes()
                 step.costMat = craftCost * open
                 step.costLearn = seg.to > skill and src.learn or 0
                 step.learnHow, step.estimated = src.how, src.est
-                step.fromGuide = seg.block and seg.block.guide or nil
+                step.fromGuide = nil -- bei "alle Rezepte" spielt die Herkunft keine Rolle
                 if seg.block then step.y, step.l, step.g = nil, nil, nil end
                 if step.costLearn >= UNAVAILABLE then step.unavailable = true step.costLearn = 0 end
                 total = total + step.costMat + step.costLearn
