@@ -18,6 +18,7 @@ Per **WoW Forever**, nella lingua del tuo client di gioco: inglese, tedesco, fra
 **Percorso**
 - Il percorso passo per passo di ogni professione, con quanto ne resta da fare.
 - Scegli la tua guida: Metabot, RankedBoost, Wowhead, wowtbc.gg, GoldGoblin o wow-professions, per singola professione o per tutte insieme.
+- **Percorso più economico:** una guida propria costruita da tutte le guide. Sceglie le ricette più economiche secondo i prezzi della casa d'aste, dei mercanti, degli istruttori e delle ricette; i materiali già posseduti contano come gratuiti. Gli oggetti dei mercanti con scorte limitate contano solo se sono nella casa d'aste. Si aggiorna appena cambiano le tue borse.
 - Le ricette mancanti sono segnalate insieme a dove trovarle.
 - Le visite all'istruttore compaiono nel punto giusto del percorso, con l'istruttore più vicino che ti insegna il grado successivo.
 

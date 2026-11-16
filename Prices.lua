@@ -9,6 +9,10 @@ BT.ID_TO_KEY = {}
 for key, item in pairs(BT.ITEMS) do
     if item.id then BT.ID_TO_KEY[item.id] = key end
 end
+-- Rezept-Items mitscannen (für den Guide "Günstigster Weg")
+for slug, recipe in pairs(BT.COSTS and BT.COSTS.recipe or {}) do
+    if recipe.id and not BT.ID_TO_KEY[recipe.id] then BT.ID_TO_KEY[recipe.id] = slug end
+end
 
 local function Entry(key)
     local entry = BT.db.prices[key]
@@ -170,19 +174,21 @@ local function ScanMerchant()
     for index = 1, GetMerchantNumItems() or 0 do
         local link = GetMerchantItemLink(index)
         local id = link and tonumber(link:match("item:(%d+)"))
-        local key = (id and BT.ITEM_BY_ID[id]) or (link and BT.NAME[link:match("%[(.-)%]") or ""])
-        if key and BT.ITEMS[key] then
-            local price, stack
+        local key = (id and (BT.ITEM_BY_ID[id] or BT.ID_TO_KEY[id])) or (link and BT.NAME[link:match("%[(.-)%]") or ""])
+        if key and (BT.ITEMS[key] or BT.ID_TO_KEY[id or 0] == key) then
+            local price, stack, available
             if C_MerchantFrame and C_MerchantFrame.GetItemInfo then
                 local info = C_MerchantFrame.GetItemInfo(index)
-                if info then price, stack = info.price, info.stackCount end
+                if info then price, stack, available = info.price, info.stackCount, info.numAvailable end
             elseif GetMerchantItemInfo then
-                local _, _, itemPrice, quantity = GetMerchantItemInfo(index)
-                price, stack = itemPrice, quantity
+                local _, _, itemPrice, quantity, numAvailable = GetMerchantItemInfo(index)
+                price, stack, available = itemPrice, quantity, numAvailable
             end
             if price and price > 0 then
                 local entry = Entry(key)
                 entry.vendor, entry.vendorTs = price / math.max(1, stack or 1), now
+                -- begrenzter Vorrat (z. B. 1×): zählt im Guide "Günstigster Weg" nicht als Händlerquelle
+                entry.vendorLim = (type(available) == "number" and available >= 0) or nil
             end
         end
     end

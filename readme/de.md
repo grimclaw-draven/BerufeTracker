@@ -18,6 +18,7 @@ Für **WoW Forever**, in der Sprache deines Spiel-Clients: Englisch, Deutsch, Fr
 **Route**
 - Die Schritt-für-Schritt-Route jedes Berufs mit dem Stand, wie viel davon noch offen ist.
 - Guides sind wählbar: Metabot, RankedBoost, Wowhead, wowtbc.gg, GoldGoblin und wow-professions, je Beruf oder für alle gemeinsam.
+- **Günstigster Weg:** eigener Guide aus allen Guides. Er wählt die billigsten Rezepte nach Auktionshaus-, Händler-, Lehrer- und Rezeptpreisen; vorhandene Materialien zählen gratis. Händlerware mit begrenztem Vorrat zählt nur, wenn sie im Auktionshaus zu haben ist. Er aktualisiert sich, sobald sich deine Taschen ändern.
 - Fehlende Rezepte sind mit Fundort markiert.
 - Lehrer-Besuche erscheinen an der richtigen Stelle der Route, mit dem nächstgelegenen Lehrer, der dir die nächste Stufe beibringt.
 

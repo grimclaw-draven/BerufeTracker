@@ -18,6 +18,7 @@ Pour **WoW Forever**, dans la langue de votre client de jeu : anglais, allemand,
 **Parcours**
 - Le parcours pas à pas de chaque métier, avec ce qu'il en reste à faire.
 - Choisissez votre guide : Metabot, RankedBoost, Wowhead, wowtbc.gg, GoldGoblin ou wow-professions, par métier ou pour tous à la fois.
+- **Chemin le moins cher :** un guide propre construit à partir de tous les guides. Il choisit les recettes les moins chères selon les prix de l'hôtel des ventes, des marchands, des maîtres et des recettes ; les composants que vous possédez déjà sont gratuits. Les articles de marchand en stock limité ne comptent que s'ils sont à l'hôtel des ventes. Il se met à jour dès que vos sacs changent.
 - Les recettes manquantes sont signalées avec l'endroit où les trouver.
 - Les visites chez le maître apparaissent au bon moment du parcours, avec le maître le plus proche qui vous enseigne le rang suivant.
 

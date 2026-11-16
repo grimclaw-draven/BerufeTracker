@@ -65,6 +65,7 @@ local function OpenGuideMenu(button, prof)
         local notes = {}
         if guide.lump then notes[#notes + 1] = L["Einkaufsliste"] end
         if last < 300 then notes[#notes + 1] = L["bis %d"]:format(last) end
+        if guide.cheapest and guide.plan then notes[#notes + 1] = L["ca. %s"]:format(BT.Money(guide.plan.total)) end
         options[#options + 1] = { value = guide.key,
             text = guide.title .. (#notes > 0 and ("  |cff999999" .. table.concat(notes, ", ") .. "|r") or "") }
     end
@@ -178,6 +179,16 @@ local function StepTooltip(row)
     end
     if not step.lump then
         GameTooltip:AddDoubleLine(L["Noch offen"], L["%s von %s"]:format(BT.Format(BT.StepRemaining(step, prof)), step.c), 1, 0.82, 0, 1, 1, 1)
+    end
+    if step.costMat then
+        -- Guide "Günstigster Weg": Kosten ab dem aktuellen Skill
+        GameTooltip:AddLine(" ")
+        GameTooltip:AddDoubleLine(L["Materialkosten offen"], BT.Money(step.costMat) .. (step.estimated and (" " .. L["(geschätzt)"]) or ""), 1, 0.82, 0, 1, 1, 1)
+        local how = ({ trainer = L["Lehrer"], ["trainer?"] = L["Lehrer, Preis unbekannt"], ah = L["Auktionshaus"], vendor = L["Händler"],
+            known = L["schon gelernt oder im Besitz"], auto = L["Automatisch gelernt"], limited = L["nur begrenzt beim Händler, nicht im AH"],
+            unavailable = L["nicht im AH gefunden"] })[step.learnHow] or ""
+        GameTooltip:AddDoubleLine(L["Rezept"], (step.costLearn > 0 and (BT.Money(step.costLearn) .. ", ") or "") .. how, 1, 0.82, 0, 1, 1, 1)
+        if step.fromGuide then GameTooltip:AddDoubleLine(L["Aus Guide"], step.fromGuide, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7) end
     end
     GameTooltip:Show()
 end
@@ -574,6 +585,15 @@ local function AddProfession(list, prof, onlyMissing)
  local activeSteps = guide.steps
     if guide.lump then
         list[#list + 1] = { kind = "info", height = 16, text = "|cff999999" .. L["Nur Einkaufsliste, keine einzelnen Rezepte"] .. "|r" }
+    end
+    local plan = guide.cheapest and guide.plan
+    if plan then
+        local text = L["Kosten ab jetzt ca. %s (vorhandene Materialien gratis)"]:format(BT.Money(plan.total))
+        if plan.estimated then text = text .. ", " .. L["teils geschätzt: im AH scannen"] end
+        list[#list + 1] = { kind = "info", height = 16, text = "|cff999999" .. text .. "|r" }
+        if plan.missing then
+            list[#list + 1] = { kind = "info", height = 16, text = "|cffff9933" .. L["Ein Rezept ist weder beim Händler noch im AH zu haben"] .. "|r" }
+        end
     end
     if not prof.gather and activeSteps[#activeSteps].t < 300 then
         list[#list + 1] = { kind = "info", height = 16, text = "|cffff9933" .. L["Guide endet bei Skill %d"]:format(activeSteps[#activeSteps].t) .. "|r" }

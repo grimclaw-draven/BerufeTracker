@@ -639,9 +639,12 @@ function BT.SetWaypoint(entry, note)
     return false
 end
 
-function BT.GuideList(prof)
+-- raw = nur die Guides aus den Daten, ohne den eigenen "Günstigster Weg" (Bausteine für ihn).
+function BT.GuideList(prof, raw)
     local list = { { key = "metabot", title = "Metabot", url = "https://metabot.gg/en/wow-forever/professions", steps = prof.steps } }
     for _, guide in ipairs(prof.alts or {}) do list[#list + 1] = guide end
+    local own = not raw and BT.CheapestGuide and BT.CheapestGuide(prof)
+    if own then list[#list + 1] = own end
     return list
 end
 
@@ -658,6 +661,7 @@ function BT.GuideSteps(prof) return BT.ActiveGuide(prof).steps end
 BT.ALL_GUIDES = {
     { key = "metabot", title = "Metabot" }, { key = "rankedboost", title = "RankedBoost" }, { key = "wowhead", title = "Wowhead" },
     { key = "wowtbc", title = "wowtbc.gg" }, { key = "goldgoblin", title = "GoldGoblin" }, { key = "wowprofessions", title = "wow-professions" },
+    { key = "cheapest", title = L["Günstigster Weg"] },
 }
 
 function BT.GlobalGuideTitle()
@@ -753,6 +757,10 @@ function BT.Solve()
             end
         end
     end
+
+    -- Bestand schon jetzt bereitstellen: der Guide "Günstigster Weg" rechnet damit
+    BT.totals, BT.byChar = totals, byChar
+    BT.solveStamp = (BT.solveStamp or 0) + 1
 
     local demand, supply, share = {}, {}, {}
     local function AddShare(key, profKey, amount)

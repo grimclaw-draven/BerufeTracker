@@ -13,7 +13,9 @@ Translations.lua
 Data.lua
 LocaleData.lua
 Sources.lua
+Costs.lua
 Seed.lua
 Core.lua
+Guide.lua
 Prices.lua
 UI.lua

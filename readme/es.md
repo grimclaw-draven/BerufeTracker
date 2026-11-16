@@ -18,6 +18,7 @@ Para **WoW Forever**, en el idioma de tu cliente de juego: inglés, alemán, fra
 **Ruta**
 - La ruta paso a paso de cada profesión, con cuánto queda pendiente.
 - Elige tu guía: Metabot, RankedBoost, Wowhead, wowtbc.gg, GoldGoblin o wow-professions, por profesión o para todas a la vez.
+- **Ruta más barata:** una guía propia creada a partir de todas las guías. Elige las recetas más baratas según los precios de la casa de subastas, vendedores, instructores y recetas; los materiales que ya tienes cuentan como gratis. Los artículos de vendedor con existencias limitadas solo cuentan si están en la casa de subastas. Se actualiza en cuanto cambian tus bolsas.
 - Las recetas que faltan se marcan junto con dónde encontrarlas.
 - Las visitas al instructor aparecen en el punto adecuado de la ruta, con el instructor más cercano que te enseña el siguiente rango.
 
