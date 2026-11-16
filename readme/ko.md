@@ -51,6 +51,7 @@
 
 - **경로:** [Metabot](https://metabot.gg/en/wow-forever/professions), [RankedBoost](https://rankedboost.com/world-of-warcraft/forever/), [Wowhead](https://www.wowhead.com/forever/profession-leveling-guides), [wowtbc.gg](https://wowtbc.gg/warcraftforever/), [GoldGoblin](https://classic.goldgoblin.net/berufe/), [wow-professions](https://www.wow-professions.com/forever/). 경로는 애드온에 맞게 요약되었습니다. 모든 설명이 담긴 전체 가이드는 각 사이트에서 볼 수 있으며, 링크는 애드온의 가이드 선택에 표시됩니다.
 - **기술 전문가, 상인, 위치**는 QuestieDB(GPLv3)에서 생성했습니다. Questie 팀과 모든 기여자에게 감사드립니다. BerufeTracker는 Questie 팀의 프로젝트가 아닙니다.
+- 적의 **전리품 확률과 수량**은 [cMaNGOS Classic 데이터베이스](https://github.com/cmangos/classic-db)(GPLv3)에서 가져왔습니다. 클래식 1.12 기준 값이므로 WoW Forever에서는 다를 수 있습니다.
 
 ## 라이선스
 

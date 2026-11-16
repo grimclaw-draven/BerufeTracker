@@ -51,6 +51,7 @@ Für **WoW Forever**, in der Sprache deines Spiel-Clients: Englisch, Deutsch, Fr
 
 - **Routen:** [Metabot](https://metabot.gg/en/wow-forever/professions), [RankedBoost](https://rankedboost.com/world-of-warcraft/forever/), [Wowhead](https://www.wowhead.com/forever/profession-leveling-guides), [wowtbc.gg](https://wowtbc.gg/warcraftforever/), [GoldGoblin](https://classic.goldgoblin.net/berufe/) und [wow-professions](https://www.wow-professions.com/forever/). Die Routen wurden für das Addon zusammengefasst. Die vollständigen Guides mit allen Erklärungen findest du auf den jeweiligen Seiten, der Link steht im Addon bei der Guide-Auswahl.
 - **Lehrer, Händler und Fundorte** wurden aus der QuestieDB (GPLv3) erzeugt. Danke an das Questie-Team und alle Mitwirkenden. BerufeTracker ist kein Projekt des Questie-Teams.
+- **Beutechancen und Mengen** der Gegner stammen aus der [cMaNGOS-Classic-Datenbank](https://github.com/cmangos/classic-db) (GPLv3). Es sind Werte aus Classic 1.12, in WoW Forever können sie abweichen.
 
 ## Lizenz
 

@@ -1251,6 +1251,14 @@ local function IsCreatureType(unit, typeID)
     return false
 end
 
+-- Beute-Eintrag {Material, Chance %, Menge von, bis, Kürschnern} -> "11 %, 1-2" bzw. "39 %, Kürschnern"
+local function DropTag(drop)
+    local chance = drop[2] >= 10 and ("%.0f"):format(drop[2]) or ("%.1f"):format(drop[2])
+    local count = drop[3] == drop[4] and tostring(drop[3]) or (drop[3] .. "-" .. drop[4])
+    return chance .. " %, " .. count .. (drop[5] and (", " .. L["Kürschnern"]) or "")
+end
+BT.DropTag = DropTag
+
 -- Stoff (Humanoide) und Leder zum Kürschnern (Wildtiere) nach Stufe; nur wenn Stufe und Typ lesbar sind.
 local function LevelEntries(unit, entries)
     local level = UnitLevel and Plain(UnitLevel(unit))
@@ -1269,7 +1277,7 @@ local function AddMobLines(tip, unit, guid)
     if Plain(UnitCanAttack and UnitCanAttack("player", unit)) == false then return end
     local npcID = type(guid) == "string" and tonumber(guid:match("^Creature%-%d+%-%d+%-%d+%-%d+%-(%d+)%-"))
     local entries = {}
-    for _, key in ipairs(npcID and BT.MOB_DROPS and BT.MOB_DROPS[npcID] or {}) do entries[#entries + 1] = { key = key } end
+    for _, drop in ipairs(npcID and BT.MOB_DROPS and BT.MOB_DROPS[npcID] or {}) do entries[#entries + 1] = { key = drop[1], tag = DropTag(drop) } end
     LevelEntries(unit, entries)
     NeedBlock(tip, entries) -- kein tip:Show() hier: das stößt bei Gegnern die nächste Verarbeitung an (Endlosschleife)
 end
@@ -1344,12 +1352,12 @@ do
                 local name = BT.MobName(id, info.de)
                 local entry = byName[name]
                 if not entry then
-                    entry = { name = name, keys = {}, seen = {} }
+                    entry = { name = name, drops = {}, seen = {} }
                     byName[name] = entry
                     order[#order + 1] = entry
                 end
-                for _, key in ipairs(drops) do
-                    if not entry.seen[key] then entry.seen[key] = true entry.keys[#entry.keys + 1] = key end
+                for _, drop in ipairs(drops) do
+                    if not entry.seen[drop[1]] then entry.seen[drop[1]] = true entry.drops[#entry.drops + 1] = drop end
                 end
             end
         end
@@ -1357,15 +1365,16 @@ do
         local header = "|cffffd100BerufeTracker|r |cff999999(" .. BT.FilterLabel() .. ")|r"
         for _, entry in ipairs(order) do
             local lefts, rights = { header }, { " " }
-            for _, key in ipairs(entry.keys) do
+            for _, drop in ipairs(entry.drops) do
+                local key = drop[1]
                 local res = BT.result and BT.result[key]
                 if res and res.need > 0 then
-                    lefts[#lefts + 1] = BT.ItemName(key)
+                    lefts[#lefts + 1] = BT.ItemName(key) .. " |cff999999(" .. DropTag(drop) .. ")|r"
                     rights[#rights + 1] = (res.missing > 0 and ("|cffff6666" .. L["fehlt %s"]:format(BT.Format(res.missing)) .. "|r") or ("|cff33cc33" .. L["genug"] .. "|r"))
                         .. " |cff999999(" .. BT.Format(res.have) .. "/" .. BT.Format(res.need) .. ")|r"
                 end
             end
-            if #lefts > 1 and #list < 150 then
+            if #lefts > 1 and (maps or #list < 150) then -- ohne Karte gekappt, damit das Hovern flüssig bleibt
                 list[#list + 1] = { name = entry.name, left = table.concat(lefts, "\n"), right = table.concat(rights, "\n") }
             end
         end
@@ -1612,7 +1621,9 @@ function BT.PrintMobDebug()
     local plainGuid = Plain(guid)
     local npcID = type(plainGuid) == "string" and tonumber(plainGuid:match("^Creature%-%d+%-%d+%-%d+%-%d+%-(%d+)%-"))
     local drops = npcID and BT.MOB_DROPS and BT.MOB_DROPS[npcID]
-    print(tag .. "NPC-ID: " .. tostring(npcID) .. ", Beute-Einträge: " .. (drops and table.concat(drops, ", ") or "-"))
+    local names = {}
+    for index, drop in ipairs(drops or {}) do names[index] = drop[1] .. " " .. DropTag(drop) end
+    print(tag .. "NPC-ID: " .. tostring(npcID) .. ", Beute-Einträge: " .. (#names > 0 and table.concat(names, ", ") or "-"))
     print(tag .. "Wildtier: " .. tostring(IsCreatureType(unit, 1)) .. ", Humanoid: " .. tostring(IsCreatureType(unit, 7)))
     local info = BT.mobDebug
     print(tag .. "Sichere Namensauswahl verfügbar: " .. tostring(SecretMob.CanSelect() and true or false))
