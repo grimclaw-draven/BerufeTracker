@@ -77,6 +77,120 @@ local function MakePricer(factor)
     return Price
 end
 
+
+-- Marktpreis mit Schätzung, wenn es keinen gibt (ohne Bestand, ohne Herstellen).
+local function BaseMarket(key)
+    local price, how = Market(key)
+    if price then return price, how end
+    local sell = COSTS.sell[key]
+    if sell then return sell * ESTIMATE_FACTOR, "est" end
+    return UNKNOWN_PRICE, "none"
+end
+
+-- Spielt den Materialverbrauch nach: zuerst aus dem Bestand, was fehlt, wird gekauft oder - wenn billiger -
+-- aus Rohstoffen hergestellt (auch aus eigenen, z. B. Leinenstoffballen aus vorhandenem Leinenstoff).
+-- ranOut[key] = Skill, bei dem der Bestand eines Materials aufgebraucht war.
+local function NewConsumer(stock)
+    local self = { stock = stock, bought = 0, estimated = false, ranOut = {}, at = 0 }
+    local function Unit(key, depth) -- Kosten je Stück im Moment
+        if (stock[key] or 0) > 1e-9 then return 0 end
+        local price = BaseMarket(key)
+        local recipe = BT.RECIPES[key]
+        if recipe and depth < 5 then
+            local sum = 0
+            for reagent, amount in pairs(recipe.reag) do sum = sum + Unit(reagent, depth + 1) * amount end
+            sum = sum / recipe.makes
+            if sum < price then return sum end
+        end
+        return price
+    end
+    function self.Take(key, amount, depth)
+        depth = depth or 0
+        local have = stock[key] or 0
+        local used = math.min(have, amount)
+        if used > 0 then
+            stock[key] = have - used
+            if stock[key] <= 1e-9 and not self.ranOut[key] then self.ranOut[key] = self.at end
+        end
+        local rest = amount - used
+        if rest <= 1e-9 then return end
+        local price, how = BaseMarket(key)
+        local recipe = BT.RECIPES[key]
+        if recipe and depth < 5 then
+            local sum = 0
+            for reagent, n in pairs(recipe.reag) do sum = sum + Unit(reagent, depth + 1) * n end
+            if sum / recipe.makes < price then
+                for reagent, n in pairs(recipe.reag) do self.Take(reagent, rest * n / recipe.makes, depth + 1) end
+                return
+            end
+        end
+        self.bought = self.bought + rest * price
+        if how == "est" or how == "none" then self.estimated = true end
+    end
+    return self
+end
+BT.NewConsumer = NewConsumer
+
+-- Stückpreis je Skill: gratis, solange der Bestand laut letzter Simulation reicht (freeUntil[key] = ab diesem
+-- Skill aufgebraucht), sonst Markt oder Herstellen. Zwischenergebnisse je Skill zwischengespeichert.
+local function MakeTimedPricer(freeUntil)
+    local memoS, memo = nil, {}
+    local function Price(key, s, depth)
+        if memoS ~= s then memoS, memo = s, {} end
+        local hit = memo[key]
+        if hit then return hit[1], hit[2] end
+        local price, how
+        local free = freeUntil[key]
+        if free and s < free then
+            price, how = 0, "stock"
+        else
+            price, how = BaseMarket(key)
+            local recipe = BT.RECIPES[key]
+            if recipe and (depth or 0) < 5 then
+                local sum, est = 0, false
+                for reagent, amount in pairs(recipe.reag) do
+                    local p, h = Price(reagent, s, (depth or 0) + 1)
+                    sum = sum + p * amount
+                    est = est or h == "est" or h == "none"
+                end
+                sum = sum / recipe.makes
+                if sum < price then price, how = sum, est and "est" or "craft" end
+            end
+        end
+        memo[key] = { price, how }
+        return price, how
+    end
+    return Price
+end
+
+-- Verbrauch einer geplanten Route nachspielen. Abschnitte: { cand = {step}, from, to } (Rezept, Chance je Punkt)
+-- oder { block = {step, perPoint}, from, to } (Guide-Abschnitt). Setzt seg.cost und seg.est.
+local function Simulate(segments, skill, stock, crafts)
+    local consumer = NewConsumer(stock)
+    for _, seg in ipairs(segments) do
+        local step = (seg.block or seg.cand).step
+        local before, est = consumer.bought, consumer.estimated
+        consumer.estimated = false
+        for s = math.max(seg.from, skill), seg.to - 1 do
+            consumer.at = s
+            local c = seg.block and seg.block.perPoint or crafts(step, s)
+            for _, reagent in ipairs(step.r) do consumer.Take(reagent[1], c * reagent[2]) end
+        end
+        seg.cost, seg.est = consumer.bought - before, consumer.estimated
+        consumer.estimated = est or consumer.estimated
+    end
+    return consumer
+end
+
+-- Bestand, der bis zu welchem Skill gratis ist (nach einer Simulation).
+local function FreeUntil(stock, consumer, maxSkill)
+    local out = {}
+    for key, count in pairs(stock) do
+        if count > 0 then out[key] = consumer and consumer.ranOut[key] or (maxSkill + 1) end
+    end
+    return out
+end
+
 -- Alle Schritte aller Guides eines Berufs, doppelte zusammengefasst.
 local function Candidates(prof)
     local list, seen = {}, {}
@@ -232,30 +346,32 @@ function BT.ComputeCheapest()
                 end
                 if not changed then break end
             end
-            local Price = MakePricer(factor)
-            local steps, total, estimated, missing = {}, 0, false, 0
+            local segments = {}
             for _, block in ipairs(blocks) do
+                segments[#segments + 1] = { block = { step = block.cand.step, perPoint = block.cand.perPoint }, from = block.s, to = block.e }
+            end
+            local copy = {}
+            for key, count in pairs(stock) do copy[key] = count end
+            local consumer = Simulate(segments, skill, copy, nil)
+            local steps, total, estimated, missing = {}, 0, false, 0
+            for index, block in ipairs(blocks) do
                 local cand, orig = block.cand, block.cand.step
                 local step = {}
                 for k, v in pairs(orig) do step[k] = v end
                 step.f, step.t = block.s, block.e
                 step.c = math.max(1, math.ceil(orig.c * (block.e - block.s) / (orig.t - orig.f)))
                 local above = math.max(0, block.e - math.max(block.s, skill))
-                local craftCost = 0
-                for _, reagent in ipairs(orig.r) do craftCost = craftCost + Price(reagent[1]) * reagent[2] end
-                step.costMat = craftCost * cand.perPoint * above
+                step.costMat = segments[index].cost or 0
                 step.costLearn = above > 0 and cand.learn or 0
                 step.learnHow = cand.learnHow
                 step.fromGuide = cand.guide
-                step.estimated = cand.est
+                step.estimated = segments[index].est
                 if step.costLearn >= UNAVAILABLE then step.unavailable = true step.costLearn = 0 end
                 total = total + step.costMat + step.costLearn
                 estimated = estimated or (cand.est and above > 0)
                 steps[#steps + 1] = step
             end
-            for key, used in pairs(usage or {}) do
-                if stock[key] then stock[key] = math.max(0, stock[key] - used) end
-            end
+            stock = consumer.stock
             out[prof.key] = Finish(steps)
         end
     end
@@ -336,31 +452,32 @@ local MAX_SKILL = 300
 --  * Rezepte (Zustand = zuletzt benutztes Rezept, Herstellungen je Punkt nach Farbe und Chance)
 --  * Abschnitte der anderen Guides (mit deren Herstellungszahlen), Start bei jedem Skill, Ende an einer Abschnittsgrenze.
 -- So ist das Ergebnis nie teurer als die beste Zusammensetzung aus den Guides.
-local function PlanAll(steps, blocks, skill, Price, withUnavailable)
+local function PlanAll(steps, blocks, skill, Price, withUnavailable, breaks)
+    -- Kosten einer Herstellung bei Skill s; ändern sich nur dort, wo ein Material aufgebraucht ist (breaks)
+    local craftCache, cacheFrom = {}, nil
+    local function Craft(step, s)
+        if cacheFrom == nil or s < cacheFrom or (breaks and breaks[s]) then
+            if cacheFrom ~= s then craftCache, cacheFrom = {}, s end
+        end
+        local hit = craftCache[step]
+        if hit then return hit end
+        local sum = 0
+        for _, reagent in ipairs(step.r) do sum = sum + Price(reagent[1], s) * reagent[2] end
+        craftCache[step] = sum
+        return sum
+    end
     local usable = {}
     for _, step in ipairs(steps) do
         local learn, how = LearnCost(step)
         if withUnavailable or learn < UNAVAILABLE then
-            local craft, est = 0, false
-            for _, reagent in ipairs(step.r) do
-                local p, h = Price(reagent[1])
-                craft = craft + p * reagent[2]
-                est = est or h == "est" or h == "none"
-            end
-            usable[#usable + 1] = { step = step, learn = learn, how = how, craft = craft, est = est }
+            usable[#usable + 1] = { step = step, learn = learn, how = how }
         end
     end
     local guideBlocks, ends = {}, {}
     for _, cand in ipairs(blocks) do
         local learn, how = LearnCost(cand.step)
         if withUnavailable or learn < UNAVAILABLE then
-            local craft, est = 0, false
-            for _, reagent in ipairs(cand.step.r) do
-                local p, h = Price(reagent[1])
-                craft = craft + p * reagent[2]
-                est = est or h == "est" or h == "none"
-            end
-            guideBlocks[#guideBlocks + 1] = { step = cand.step, guide = cand.guide, learn = learn, how = how, craft = craft, est = est,
+            guideBlocks[#guideBlocks + 1] = { step = cand.step, guide = cand.guide, learn = learn, how = how,
                 perPoint = cand.step.c / (cand.step.t - cand.step.f) }
             ends[cand.step.f], ends[cand.step.t] = true, true
         end
@@ -389,7 +506,7 @@ local function PlanAll(steps, blocks, skill, Price, withUnavailable)
             if step.f <= s and s < step.t then
                 for _, e in ipairs(endList) do
                     if e > s and e <= step.t then
-                        local total = base + block.craft * block.perPoint * W(s, e) + block.learn * weight
+                        local total = base + Craft(step, s) * block.perPoint * W(s, e) + block.learn * weight
                         if not pend[e] or total < pend[e][1] then pend[e] = { total, s, block } end
                     end
                 end
@@ -404,7 +521,7 @@ local function PlanAll(steps, blocks, skill, Price, withUnavailable)
                 local switch = base + cand.learn * weight
                 local start
                 if cont and cont <= switch then start = cont else start, sw[index] = switch, true end
-                local total = start + cand.craft * crafts * weight
+                local total = start + Craft(cand.step, s) * crafts * weight
                 new[index] = total
                 if not best or total < best then best, arg = total, index end
             end
@@ -468,51 +585,38 @@ function BT.ComputeAllRecipes()
         if templates and not prof.gather then
             local skill = BT.Skill(prof.key) or 0
             local blocks = Candidates(prof)
-            local factor = {}
-            for key, count in pairs(stock) do if count > 0 then factor[key] = 0 end end
-            local segments, reached, usage
-            for _ = 1, 3 do
-                local Price = MakePricer(factor)
-                segments, reached = PlanAll(templates, blocks, skill, Price, false)
-                if reached < MAX_SKILL then segments, reached = PlanAll(templates, blocks, skill, Price, true) end
-                usage = {}
-                for _, seg in ipairs(segments) do
-                    local _, open = SegmentCrafts(seg, skill)
-                    local step = (seg.block or seg.cand).step
-                    for _, reagent in ipairs(step.r) do usage[reagent[1]] = (usage[reagent[1]] or 0) + open * reagent[2] end
-                end
-                local changed = false
-                for key, used in pairs(usage) do
-                    local have = stock[key] or 0
-                    local f = have == 0 and 1 or (used <= have and 0 or (used - have) / used)
-                    if math.abs((factor[key] or 1) - f) > 0.01 then changed = true end
-                    factor[key] = f
-                end
+            local freeUntil = FreeUntil(stock, nil, MAX_SKILL)
+            local segments, reached, consumer
+            for _ = 1, 4 do
+                local Price = MakeTimedPricer(freeUntil)
+                local breaks = {}
+                for _, at in pairs(freeUntil) do breaks[at] = true end
+                segments, reached = PlanAll(templates, blocks, skill, Price, false, breaks)
+                if reached < MAX_SKILL then segments, reached = PlanAll(templates, blocks, skill, Price, true, breaks) end
+                local copy = {}
+                for key, count in pairs(stock) do copy[key] = count end
+                consumer = Simulate(segments, skill, copy, CraftsPerPoint)
+                local nextFree, changed = FreeUntil(stock, consumer, MAX_SKILL), false
+                for key, value in pairs(nextFree) do if freeUntil[key] ~= value then changed = true end end
+                freeUntil = nextFree
                 if not changed then break end
             end
-            local Price = MakePricer(factor)
-            local steps, total, estimated, missing = {}, 0, false, 0
+            local steps = {}
             for _, seg in ipairs(segments) do
                 local src = seg.block or seg.cand
-                local all, open = SegmentCrafts(seg, skill)
+                local all = SegmentCrafts(seg, skill)
                 local step = {}
                 for k, v in pairs(src.step) do step[k] = v end
                 step.f, step.t, step.c = seg.from, seg.to, math.max(1, math.ceil(all - 1e-9))
-                local craftCost = 0
-                for _, reagent in ipairs(step.r) do craftCost = craftCost + Price(reagent[1]) * reagent[2] end
-                step.costMat = craftCost * open
+                step.costMat = seg.cost or 0
                 step.costLearn = seg.to > skill and src.learn or 0
-                step.learnHow, step.estimated = src.how, src.est
+                step.learnHow, step.estimated = src.how, seg.est
                 step.fromGuide = nil -- bei "alle Rezepte" spielt die Herkunft keine Rolle
                 if seg.block then step.y, step.l, step.g = nil, nil, nil end
                 if step.costLearn >= UNAVAILABLE then step.unavailable = true step.costLearn = 0 end
-                total = total + step.costMat + step.costLearn
-                estimated = estimated or (src.est and open > 0)
                 steps[#steps + 1] = step
             end
-            for key, used in pairs(usage or {}) do
-                if stock[key] then stock[key] = math.max(0, stock[key] - used) end
-            end
+            stock = consumer.stock -- Rest geht an den nächsten Beruf
             out[prof.key] = Finish(steps)
         end
     end
@@ -534,8 +638,9 @@ end
 -- ===== Kosten jedes Guides ab dem aktuellen Skill (für Auswahlmenüs und "Guide für alle") =====
 -- Gleiche Rechnung für alle Guides: Material zum Marktpreis, vorhandene Materialien zuerst (über die Berufe
 -- nacheinander verteilt), Lernkosten je Rezept einmal, nicht erhältliche Rezepte gezählt statt bezahlt.
-local function EvalSteps(steps, profKey, stock, Price)
-    local cost, missing, learned, estimated = 0, 0, {}, false
+local function EvalSteps(steps, profKey, stock)
+    local missing, learned, learnCost = 0, {}, 0
+    local consumer = NewConsumer(stock)
     local skill = BT.Skill(profKey) or 0
     for _, step in ipairs(steps) do
         local amounts = {}
@@ -547,23 +652,17 @@ local function EvalSteps(steps, profKey, stock, Price)
             if c > 0 then for _, r in ipairs(step.r) do amounts[#amounts + 1] = { r[1], c * r[2] } end end
         end
         if #amounts > 0 then
-            for _, a in ipairs(amounts) do
-                local have = stock[a[1]] or 0
-                local free = math.min(have, a[2])
-                stock[a[1]] = have - free
-                local price, how = Price(a[1])
-                cost = cost + (a[2] - free) * price
-                estimated = estimated or ((a[2] - free) > 0 and (how == "est" or how == "none"))
-            end
+            consumer.at = step.f
+            for _, a in ipairs(amounts) do consumer.Take(a[1], a[2]) end
             if not step.lump and not learned[step.en] then
                 learned[step.en] = true
                 local learn = LearnCost(step)
                 -- lange Abklingzeit oder nur über Quest: so nicht machbar, wie ein fehlendes Rezept zählen
-                if learn >= UNAVAILABLE or (BT.CRAFT_EXCLUDE and BT.CRAFT_EXCLUDE[step.en]) then missing = missing + 1 else cost = cost + learn end
+                if learn >= UNAVAILABLE or (BT.CRAFT_EXCLUDE and BT.CRAFT_EXCLUDE[step.en]) then missing = missing + 1 else learnCost = learnCost + learn end
             end
         end
     end
-    return cost, missing, estimated
+    return consumer.bought + learnCost, missing, consumer.estimated
 end
 
 local costCache = {}
@@ -573,7 +672,6 @@ local costCache = {}
 function BT.GuideCosts()
     if costCache.stamp == BT.solveStamp then return costCache end
     local out = { stamp = BT.solveStamp }
-    local Price = MakePricer({})
     local function Run(pickGuide)
         local stock = {}
         for key, count in pairs(BT.totals or {}) do stock[key] = count end
@@ -587,7 +685,7 @@ function BT.GuideCosts()
                     local guide = pickGuide(prof)
                     local own = pass == 1 and stock or {}
                     if pass == 2 then for key, count in pairs(stock) do own[key] = count end end
-                    local cost, missing, est = EvalSteps(guide.steps, prof.key, own, Price)
+                    local cost, missing, est = EvalSteps(guide.steps, prof.key, own)
                     res.prof[prof.key] = { cost = cost, missing = missing, counted = counted }
                     if counted then
                         res.total, res.missing = res.total + cost, res.missing + missing
