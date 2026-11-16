@@ -1265,7 +1265,7 @@ local function AddMobLines(tip, unit)
             for _, key in ipairs(KeysForLevel(LEATHER_HINT, level)) do entries[#entries + 1] = { key = key, tag = L["Kürschnern"] } end
         end
     end
-    if NeedBlock(tip, entries) then tip:Show() end
+    NeedBlock(tip, entries) -- kein tip:Show() hier: das stößt bei Gegnern die nächste Verarbeitung an (Endlosschleife)
 end
 
 -- Ausrüstung: welches Verzauberungsmaterial Entzaubern ungefähr ergibt (grün: Staub/Essenz, blau/lila: Splitter).
@@ -1305,12 +1305,16 @@ local function HookItemTooltips()
             AddDisenchantLines(tip, id)
         end
     end
-    -- Gegner-Tooltips
+    -- Gegner-Tooltips: das Spiel baut sie laufend neu auf. Sperre gegen Wiedereintritt, Zeilen nur einmal je Inhalt.
+    local mobBusy, mobDone = false, false
     local function OnUnit(tip)
-        if tip ~= GameTooltip then return end
-        local _, unit = tip:GetUnit()
-        AddMobLines(tip, unit or "mouseover")
+        if tip ~= GameTooltip or mobBusy or mobDone then return end
+        mobBusy, mobDone = true, true
+        local ok, _, unit = pcall(tip.GetUnit, tip)
+        if ok then pcall(AddMobLines, tip, Plain(unit) or "mouseover") end
+        mobBusy = false
     end
+    GameTooltip:HookScript("OnTooltipCleared", function() mobDone = false end)
     if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall and Enum and Enum.TooltipDataType and Enum.TooltipDataType.Unit then
         TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Unit, OnUnit)
     else
@@ -1328,7 +1332,7 @@ local function HookItemTooltips()
     -- OnShow mehr, nur neuer Inhalt. Deshalb zusätzlich nach jedem Setzen des Inhalts (TooltipDataProcessor) prüfen;
     -- nodeDone verhindert doppelte Zeilen und wird mit jedem neuen Inhalt zurückgesetzt.
     local nodeDone = false
-    local function AddNodeLines(tip, name)
+    local function AddNodeLines(tip, name, fromShow)
         if nodeDone or not BT.result then return end
         if tip.GetItem and tip:GetItem() then return end
         if tip.GetUnit and tip:GetUnit() then return end
@@ -1352,10 +1356,11 @@ local function HookItemTooltips()
             TrackerHeader(tip)
             tip:AddLine(L["Wird nicht mehr gebraucht"], 0.6, 0.6, 0.6)
         end
-        tip:Show()
+        -- Größe nur auf dem OnShow-Weg anpassen; während der Verarbeitung des Inhalts macht das Spiel es selbst
+        if fromShow then tip:Show() end
     end
     GameTooltip:HookScript("OnTooltipCleared", function() nodeDone = false end)
-    GameTooltip:HookScript("OnShow", function(tip) AddNodeLines(tip) end)
+    GameTooltip:HookScript("OnShow", function(tip) AddNodeLines(tip, nil, true) end)
     local kind = TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall
         and (TooltipDataProcessor.AllTypes or (Enum and Enum.TooltipDataType and Enum.TooltipDataType.Object))
     if kind then
