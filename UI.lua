@@ -174,7 +174,11 @@ local function ItemTooltip(row)
         if res.missing > 0 then
             GameTooltip:AddDoubleLine(L["Kaufkosten"], BT.Money(price * res.missing), 1, 0.82, 0, 1, 1, 1)
         end
-        if BT.RECIPES[key] then GameTooltip:AddLine(L["Fertig kaufen, zählt nicht zur Summe"], 0.7, 0.7, 0.7) end
+        if BT.RECIPES[key] and res.buy then
+            GameTooltip:AddLine(L["Im AH günstiger als selbst herstellen"], 0.2, 0.8, 0.2)
+        elseif BT.RECIPES[key] then
+            GameTooltip:AddLine(L["Fertig kaufen, zählt nicht zur Summe"], 0.7, 0.7, 0.7)
+        end
     else
         GameTooltip:AddLine(L["Noch kein Preis: im Auktionshaus scannen"], 0.7, 0.7, 0.7)
     end
@@ -821,6 +825,7 @@ function BT.RefreshUI()
     if tab == ROUTE and BT.GuideCosts then
         local active = BT.GuideCosts().active
         local text = L["ca. %s"]:format(BT.Money(active.total))
+        if (active.learn or 0) > 0 then text = text .. " |cff999999(" .. L["davon Lehrer/Rezepte %s"]:format(BT.Money(active.learn)) .. ")|r" end
         if active.missing > 0 then text = text .. "  |cffff9933" .. MissingText(active.missing) .. "|r" end
         window.guideAllCost:SetText(text)
     end
@@ -828,7 +833,12 @@ function BT.RefreshUI()
     window.scan:SetEnabled(BT.atAH or BT.scanText ~= nil)
     window.scan:SetText(BT.scanText or L["Preise scannen"])
     window.cost:SetShown(tab == MATERIALS)
-    window.cost:SetText(L["Kaufkosten"] .. ": |cffffd100" .. BT.Money(BT.cost or 0) .. "|r" .. ((BT.unpriced or 0) > 0 and ("  |cff999999(" .. L["%d ohne Preis"]:format(BT.unpriced) .. ")|r") or ""))
+    local learnText = ""
+    if tab == MATERIALS and BT.GuideCosts then
+        local learn = BT.GuideCosts().active.learn or 0
+        if learn > 0 then learnText = "  |cff999999+ " .. L["Lehrer/Rezepte %s"]:format(BT.Money(learn)) .. "|r" end
+    end
+    window.cost:SetText(L["Kaufkosten"] .. ": |cffffd100" .. BT.Money(BT.cost or 0) .. "|r" .. learnText .. ((BT.unpriced or 0) > 0 and ("  |cff999999(" .. L["%d ohne Preis"]:format(BT.unpriced) .. ")|r") or ""))
     window.missing:SetShown(tab ~= CHARS)
     window.missing:ClearAllPoints()
     window.missing:SetPoint("TOPLEFT", tab == MATERIALS and 200 or 12, -80) -- ohne Suchfeld rückt es nach links

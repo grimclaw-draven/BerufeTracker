@@ -29,10 +29,14 @@ local function Entry(key)
 end
 
 -- Günstigster bekannter Preis pro Stück: Kupfer, Quelle, Zeitpunkt.
+-- Gleiche Preise wie die Guides: Händler nur mit unbegrenztem Vorrat (gescannt oder aus den Daten), sonst AH.
 function BT.Price(key)
-    local entry = BT.db and BT.db.prices[key]
-    if not entry then return nil end
-    if entry.vendor and (not entry.ah or entry.vendor <= entry.ah) then return entry.vendor, BT.L["Händler"], entry.vendorTs end
+    local entry = (BT.db and BT.db.prices[key]) or {}
+    local data = BT.COSTS and BT.COSTS.vendor and BT.COSTS.vendor[key]
+    local vendor, vendorTs
+    if entry.vendor and not entry.vendorLim then vendor, vendorTs = entry.vendor, entry.vendorTs
+    elseif data and not data.lim and not entry.vendorLim then vendor = data.p end
+    if vendor and (not entry.ah or vendor <= entry.ah) then return vendor, BT.L["Händler"], vendorTs end
     if entry.ah then return entry.ah, BT.L["Auktionshaus"], entry.ahTs end
     return nil
 end

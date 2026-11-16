@@ -94,15 +94,15 @@ local function NewConsumer(stock)
     local self = { stock = stock, bought = 0, estimated = false, ranOut = {}, at = 0 }
     local function Unit(key, depth) -- Kosten je Stück im Moment
         if (stock[key] or 0) > 1e-9 then return 0 end
-        local price = BaseMarket(key)
+        local price = Market(key) -- ohne echten Preis: Zwischenprodukte herstellen statt Schätzpreis
         local recipe = BT.RECIPES[key]
         if recipe and depth < 5 then
             local sum = 0
             for reagent, amount in pairs(recipe.reag) do sum = sum + Unit(reagent, depth + 1) * amount end
             sum = sum / recipe.makes
-            if sum < price then return sum end
+            if not price or sum < price then return sum end
         end
-        return price
+        return price or (BaseMarket(key))
     end
     function self.Take(key, amount, depth)
         depth = depth or 0
@@ -114,16 +114,18 @@ local function NewConsumer(stock)
         end
         local rest = amount - used
         if rest <= 1e-9 then return end
-        local price, how = BaseMarket(key)
+        local price, how = Market(key)
         local recipe = BT.RECIPES[key]
         if recipe and depth < 5 then
             local sum = 0
             for reagent, n in pairs(recipe.reag) do sum = sum + Unit(reagent, depth + 1) * n end
-            if sum / recipe.makes < price then
+            if not price or sum / recipe.makes < price then
                 for reagent, n in pairs(recipe.reag) do self.Take(reagent, rest * n / recipe.makes, depth + 1) end
                 return
             end
         end
+        if not price then price, how = BaseMarket(key) end
+        if self.log then self.log[key] = (self.log[key] or 0) + rest end
         self.bought = self.bought + rest * price
         if how == "est" or how == "none" then self.estimated = true end
     end
@@ -144,7 +146,7 @@ local function MakeTimedPricer(freeUntil)
         if free and s < free then
             price, how = 0, "stock"
         else
-            price, how = BaseMarket(key)
+            price, how = Market(key)
             local recipe = BT.RECIPES[key]
             if recipe and (depth or 0) < 5 then
                 local sum, est = 0, false
@@ -154,8 +156,9 @@ local function MakeTimedPricer(freeUntil)
                     est = est or h == "est" or h == "none"
                 end
                 sum = sum / recipe.makes
-                if sum < price then price, how = sum, est and "est" or "craft" end
+                if not price or sum < price then price, how = sum, est and "est" or "craft" end
             end
+            if not price then price, how = BaseMarket(key) end
         end
         memo[key] = { price, how }
         return price, how
@@ -175,6 +178,8 @@ local function Simulate(segments, skill, stock, crafts)
             consumer.at = s
             local c = seg.block and seg.block.perPoint or crafts(step, s)
             for _, reagent in ipairs(step.r) do consumer.Take(reagent[1], c * reagent[2]) end
+            -- hergestellte Zwischenprodukte (z. B. Seidenstoffballen) stehen später wieder zur Verfügung
+            if step.out then consumer.stock[step.out] = (consumer.stock[step.out] or 0) + c * (step.mk or 1) end
         end
         seg.cost, seg.est = consumer.bought - before, consumer.estimated
         consumer.estimated = est or consumer.estimated
@@ -638,22 +643,27 @@ end
 -- ===== Kosten jedes Guides ab dem aktuellen Skill (für Auswahlmenüs und "Guide für alle") =====
 -- Gleiche Rechnung für alle Guides: Material zum Marktpreis, vorhandene Materialien zuerst (über die Berufe
 -- nacheinander verteilt), Lernkosten je Rezept einmal, nicht erhältliche Rezepte gezählt statt bezahlt.
-local function EvalSteps(steps, profKey, stock)
+local function EvalSteps(steps, profKey, stock, skill)
     local missing, learned, learnCost = 0, {}, 0
     local consumer = NewConsumer(stock)
-    local skill = BT.Skill(profKey) or 0
+    consumer.log = BT.costLog -- nur zur Diagnose
+    skill = skill or BT.Skill(profKey) or 0
     for _, step in ipairs(steps) do
         local amounts = {}
         if step.lump then
             local part = skill >= step.t and 0 or (skill <= step.f and 1 or (step.t - skill) / (step.t - step.f))
             if part > 0 then for _, r in ipairs(step.r) do amounts[#amounts + 1] = { r[1], math.ceil(r[2] * part) } end end
         else
-            local c = BT.StepRemaining(step, profKey)
-            if c > 0 then for _, r in ipairs(step.r) do amounts[#amounts + 1] = { r[1], c * r[2] } end end
+            local c = skill >= step.t and 0 or (skill <= step.f and step.c or math.ceil(step.c * (step.t - skill) / (step.t - step.f)))
+            if c > 0 then
+                for _, r in ipairs(step.r) do amounts[#amounts + 1] = { r[1], c * r[2] } end
+                if step.out then amounts.out = c * (step.mk or 1) end
+            end
         end
         if #amounts > 0 then
             consumer.at = step.f
             for _, a in ipairs(amounts) do consumer.Take(a[1], a[2]) end
+            if amounts.out then stock[step.out] = (stock[step.out] or 0) + amounts.out end
             if not step.lump and not learned[step.en] then
                 learned[step.en] = true
                 local learn = LearnCost(step)
@@ -662,7 +672,7 @@ local function EvalSteps(steps, profKey, stock)
             end
         end
     end
-    return consumer.bought + learnCost, missing, consumer.estimated
+    return consumer.bought + learnCost, missing, consumer.estimated, learnCost
 end
 
 local costCache = {}
@@ -678,17 +688,27 @@ function BT.GuideCosts()
         local res = { total = 0, missing = 0, estimated = false, prof = {} }
         -- zuerst die Berufe, die beim Filter mitzählen (sie bilden die Summe und teilen sich den Bestand),
         -- danach die übrigen nur für das Auswahlmenü des einzelnen Berufs
+        local log = BT.costLog
         for pass = 1, 2 do
+            BT.costLog = pass == 1 and log or nil
             for _, prof in ipairs(BT.PROFS) do
                 local counted = BT.ProfCounted(prof.key)
+                -- Sammelberufe zählen nicht (ihr Material sammelt man selbst), wie in der Materialliste
                 if not prof.gather and not BT.db.opt.off[prof.key] and counted == (pass == 1) then
                     local guide = pickGuide(prof)
                     local own = pass == 1 and stock or {}
                     if pass == 2 then for key, count in pairs(stock) do own[key] = count end end
-                    local cost, missing, est = EvalSteps(guide.steps, prof.key, own)
-                    res.prof[prof.key] = { cost = cost, missing = missing, counted = counted }
+                    -- wie die Materialliste: bei mehreren Charakteren jeder mit seinem eigenen Skill
+                    local skills = counted and BT.FilteredSkills(prof.key) or { BT.Skill(prof.key) or 0 }
+                    local cost, missing, est, learn = 0, 0, false, 0
+                    for _, skill in ipairs(skills) do
+                        local c, m, e, l = EvalSteps(guide.steps, prof.key, own, skill)
+                        cost, missing, est, learn = cost + c, math.max(missing, m), est or e, learn + l
+                    end
+                    res.prof[prof.key] = { cost = cost, missing = missing, counted = counted, learn = learn }
                     if counted then
                         res.total, res.missing = res.total + cost, res.missing + missing
+                        res.learn = (res.learn or 0) + learn
                         res.estimated = res.estimated or est
                     end
                 end
@@ -703,7 +723,9 @@ function BT.GuideCosts()
             return list[1]
         end)
     end
+    BT.costLog = BT.diagLog -- Diagnose: Einkäufe der aktiven Auswahl je Material
     out.active = Run(BT.ActiveGuide)
+    BT.costLog = nil
     costCache = out
     return out
 end

@@ -762,6 +762,8 @@ local function RemainingCrafts(step, skill)
 end
 
 -- Zählt der Beruf beim aktuellen Filter mit (wie in der Materialliste)?
+BT.FilteredSkills = function(profKey) return FilteredSkills(profKey) end
+
 function BT.ProfCounted(profKey)
     return not DB.opt.off[profKey] and #FilteredSkills(profKey) > 0
 end
@@ -839,7 +841,19 @@ function BT.Solve()
         if need > 0 then
             for profKey, amount in pairs(share[key] or {}) do byProf[profKey] = amount * need / wanted end
         end
+        -- Kaufen oder herstellen: Zwischenprodukt im AH billiger als die Herstellung? Eigene Rohstoffe zählen gratis.
+        local buy = false
         if recipe and missing > 0 then
+            local price, unit = BT.Price(key), 0
+            for reagent, amount in pairs(recipe.reag) do
+                if unit and (totals[reagent] or 0) < 1 then
+                    local p = BT.Price(reagent)
+                    unit = p and (unit + p * amount) or nil
+                end
+            end
+            buy = price ~= nil and unit ~= nil and price < unit / recipe.makes
+        end
+        if recipe and missing > 0 and not buy then
             crafts = math.ceil(missing / recipe.makes)
             for reagent, amount in pairs(recipe.reag) do
                 local total = crafts * amount
@@ -847,7 +861,7 @@ function BT.Solve()
                 for profKey, part in pairs(byProf) do AddShare(reagent, profKey, total * part / need) end
             end
         end
-        result[key] = { need = need, have = have, missing = missing, crafts = crafts, byProf = byProf }
+        result[key] = { need = need, have = have, missing = missing, crafts = crafts, byProf = byProf, buy = buy or nil }
         if not recipe then
             needTotal = needTotal + need
             haveTotal = haveTotal + math.min(have, need)
@@ -857,12 +871,34 @@ function BT.Solve()
     BT.needTotal, BT.haveTotal = needTotal, haveTotal
     local cost, unpriced = 0, 0
     for key, res in pairs(result) do
-        if not BT.RECIPES[key] and res.missing > 0 then
+        local share = BT.CraftShare(res)
+        if (not BT.RECIPES[key] or res.buy) and res.missing > 0 and share > 0 then
             local price = BT.Price(key)
-            if price then cost = cost + price * res.missing else unpriced = unpriced + 1 end
+            if price then cost = cost + price * res.missing * share else unpriced = unpriced + 1 end
         end
     end
     BT.cost, BT.unpriced = cost, unpriced
+end
+
+-- Anteil eines Materials, der auf Herstellungsberufe entfällt: Sammelberufe (Bergbau, Kräuterkunde ...)
+-- zählen nicht zu den Kosten, ihr Material sammelt man selbst.
+function BT.CraftShare(res)
+    local total, craft = 0, 0
+    for profKey, amount in pairs(res.byProf or {}) do
+        total = total + amount
+        local prof = BT.PROF_BY_KEY[profKey]
+        if not (prof and prof.gather) then craft = craft + amount end
+    end
+    if total <= 0 then return 1 end
+    return craft / total
+end
+
+-- Kaufkosten eines Materials in der Materialliste (ohne Anteil der Sammelberufe).
+function BT.ItemCost(key)
+    local res = BT.result and BT.result[key]
+    if not res or res.missing <= 0 or (BT.RECIPES[key] and not res.buy) then return 0 end
+    local price = BT.Price(key)
+    return price and price * res.missing * BT.CraftShare(res) or 0
 end
 
 function BT.Update()
