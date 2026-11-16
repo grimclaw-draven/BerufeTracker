@@ -1490,8 +1490,8 @@ local function DisenchantName(key)
     return BT.LOCALE == "deDE" and mat[2] or mat[3]
 end
 
--- Waffen und Rüstung (grün und besser): alle Entzauber-Ergebnisse mit Chance und Menge.
--- Erscheint, sobald mindestens ein Ergebnis gebraucht wird; benötigte farbig mit Bedarf, die anderen grau.
+-- Waffen und Rüstung (grün und besser): alle Entzauber-Ergebnisse mit Chance und Menge, bei jedem
+-- entzauberbaren Gegenstand. Benötigte Ergebnisse farbig mit Bedarf, die anderen grau.
 local function AddDisenchantLines(tip, id)
     local instant = (C_Item and C_Item.GetItemInfoInstant) or GetItemInfoInstant
     local get = (C_Item and C_Item.GetItemInfo) or GetItemInfo
@@ -1501,12 +1501,7 @@ local function AddDisenchantLines(tip, id)
     local ok2, _, _, quality, itemLevel = pcall(get, id)
     if not ok2 or type(quality) ~= "number" or quality < 2 or quality > 4 or type(itemLevel) ~= "number" then return end
     local results = DisenchantResults(quality, itemLevel, classID == 2)
-    local needed = false
-    for _, result in ipairs(results) do
-        local res = BT.result and BT.result[result[1]]
-        if res and res.need > 0 then needed = true end
-    end
-    if not needed then return end
+    if #results == 0 then return end
     TrackerHeader(tip)
     tip:AddLine(L["Entzaubern ergibt ca.:"], 0.8, 0.8, 0.8)
     for _, result in ipairs(results) do
