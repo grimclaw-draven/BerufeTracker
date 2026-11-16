@@ -1454,6 +1454,16 @@ local DE_PURPLE = {
     { 51, 55, "small-brilliant-shard", 2, 4 }, { 56, 60, "nexus-crystal", 1, 1 }, { 61, 94, "nexus-crystal", 1, 2 },
 }
 
+-- Gegenstände, die in WoW Forever anders entzaubert werden als in Classic (Item-ID -> Ergebnis, Chance, Menge von, bis).
+-- Quelle: Wowhead-Entzauberstatistik für Forever.
+local DE_ITEM = {
+    [271204] = { -- Fleischhakenschlitzer (blau, entzaubert wie grün)
+        { "greater-magic-essence", 70, 2, 3 }, { "strange-dust", 25, 3, 4 }, { "small-glimmering-shard", 5, 1, 1 },
+    },
+}
+BT.DE_ITEM = DE_ITEM
+local DE_CLASSIC_MAX_ID = 24283 -- höchste Item-ID aus Classic; darüber sind es neue Forever-Gegenstände
+
 local function DisenchantResults(quality, itemLevel, isWeapon)
     local results = {}
     local function add(key, chance, lo, hi) if key and chance > 0 then results[#results + 1] = { key, chance, lo, hi } end end
@@ -1500,10 +1510,13 @@ local function AddDisenchantLines(tip, id)
     if not ok or (classID ~= 2 and classID ~= 4) then return end -- nur Waffen und Rüstung
     local ok2, _, _, quality, itemLevel = pcall(get, id)
     if not ok2 or type(quality) ~= "number" or quality < 2 or quality > 4 or type(itemLevel) ~= "number" then return end
-    local results = DisenchantResults(quality, itemLevel, classID == 2)
+    local results = DE_ITEM[id] or DisenchantResults(quality, itemLevel, classID == 2)
     if #results == 0 then return end
     TrackerHeader(tip)
     tip:AddLine(L["Entzaubern ergibt ca.:"], 0.8, 0.8, 0.8)
+    if not DE_ITEM[id] and id > DE_CLASSIC_MAX_ID then
+        tip:AddLine(L["(Classic-Werte, in Forever evtl. anders)"], 0.6, 0.6, 0.6)
+    end
     for _, result in ipairs(results) do
         local tag = DropTag(result)
         local res = BT.result and BT.result[result[1]]
