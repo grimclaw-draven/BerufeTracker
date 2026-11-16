@@ -170,6 +170,39 @@ local function Usage(blocks, skill)
     return usage
 end
 
+
+-- Gleiche Rezepte direkt hintereinander zu einem Schritt zusammenfassen; Summen neu bilden
+-- (Lernkosten und nicht erhältliche Rezepte je Rezept nur einmal).
+local function Finish(steps)
+    local merged = {}
+    for _, step in ipairs(steps) do
+        local prev = merged[#merged]
+        if prev and prev.en == step.en and prev.t == step.f and prev.src == step.src then
+            prev.t, prev.c = step.t, prev.c + step.c
+            prev.costMat = (prev.costMat or 0) + (step.costMat or 0)
+            prev.costLearn = math.max(prev.costLearn or 0, step.costLearn or 0)
+            prev.unavailable = prev.unavailable or step.unavailable
+            prev.estimated = prev.estimated or step.estimated
+            if prev.fromGuide ~= step.fromGuide then prev.fromGuide = prev.fromGuide or step.fromGuide end
+        else
+            merged[#merged + 1] = step
+        end
+    end
+    local total, missing, estimated, learned = 0, 0, false, {}
+    for _, step in ipairs(merged) do
+        total = total + (step.costMat or 0)
+        if not learned[step.en] then
+            learned[step.en] = true
+            total = total + (step.costLearn or 0)
+            if step.unavailable then missing = missing + 1 end
+        else
+            step.costLearn = 0
+        end
+        estimated = estimated or (step.estimated and (step.costMat or 0) > 0)
+    end
+    return { steps = merged, total = total, estimated = estimated, missing = missing }
+end
+
 local cache = {}
 
 -- Rechnet alle Berufe nacheinander; der Bestand wird dabei aufgeteilt (nicht doppelt verplant).
@@ -214,7 +247,7 @@ function BT.ComputeCheapest()
                 step.learnHow = cand.learnHow
                 step.fromGuide = cand.guide
                 step.estimated = cand.est
-                if step.costLearn >= UNAVAILABLE then missing = missing + 1 step.costLearn = 0 end
+                if step.costLearn >= UNAVAILABLE then step.unavailable = true step.costLearn = 0 end
                 total = total + step.costMat + step.costLearn
                 estimated = estimated or (cand.est and above > 0)
                 steps[#steps + 1] = step
@@ -222,7 +255,7 @@ function BT.ComputeCheapest()
             for key, used in pairs(usage or {}) do
                 if stock[key] then stock[key] = math.max(0, stock[key] - used) end
             end
-            out[prof.key] = { steps = steps, total = total, estimated = estimated, missing = missing }
+            out[prof.key] = Finish(steps)
         end
     end
     cache = out
@@ -471,7 +504,7 @@ function BT.ComputeAllRecipes()
                 step.learnHow, step.estimated = src.how, src.est
                 step.fromGuide = seg.block and seg.block.guide or nil
                 if seg.block then step.y, step.l, step.g = nil, nil, nil end
-                if step.costLearn >= UNAVAILABLE then missing = missing + 1 step.costLearn = 0 end
+                if step.costLearn >= UNAVAILABLE then step.unavailable = true step.costLearn = 0 end
                 total = total + step.costMat + step.costLearn
                 estimated = estimated or (src.est and open > 0)
                 steps[#steps + 1] = step
@@ -479,7 +512,7 @@ function BT.ComputeAllRecipes()
             for key, used in pairs(usage or {}) do
                 if stock[key] then stock[key] = math.max(0, stock[key] - used) end
             end
-            out[prof.key] = { steps = steps, total = total, estimated = estimated, missing = missing }
+            out[prof.key] = Finish(steps)
         end
     end
     allCache = out
@@ -495,4 +528,73 @@ function BT.AllRecipesGuide(prof)
         if k == "steps" then return plan and #plan.steps > 0 and plan.steps or prof.steps end
         if k == "plan" then return plan end
     end })
+end
+
+-- ===== Kosten jedes Guides ab dem aktuellen Skill (für Auswahlmenüs und "Guide für alle") =====
+-- Gleiche Rechnung für alle Guides: Material zum Marktpreis, vorhandene Materialien zuerst (über die Berufe
+-- nacheinander verteilt), Lernkosten je Rezept einmal, nicht erhältliche Rezepte gezählt statt bezahlt.
+local function EvalSteps(steps, profKey, stock, Price)
+    local cost, missing, learned, estimated = 0, 0, {}, false
+    local skill = BT.Skill(profKey) or 0
+    for _, step in ipairs(steps) do
+        local amounts = {}
+        if step.lump then
+            local part = skill >= step.t and 0 or (skill <= step.f and 1 or (step.t - skill) / (step.t - step.f))
+            if part > 0 then for _, r in ipairs(step.r) do amounts[#amounts + 1] = { r[1], math.ceil(r[2] * part) } end end
+        else
+            local c = BT.StepRemaining(step, profKey)
+            if c > 0 then for _, r in ipairs(step.r) do amounts[#amounts + 1] = { r[1], c * r[2] } end end
+        end
+        if #amounts > 0 then
+            for _, a in ipairs(amounts) do
+                local have = stock[a[1]] or 0
+                local free = math.min(have, a[2])
+                stock[a[1]] = have - free
+                local price, how = Price(a[1])
+                cost = cost + (a[2] - free) * price
+                estimated = estimated or ((a[2] - free) > 0 and (how == "est" or how == "none"))
+            end
+            if not step.lump and not learned[step.en] then
+                learned[step.en] = true
+                local learn = LearnCost(step)
+                if learn >= UNAVAILABLE then missing = missing + 1 else cost = cost + learn end
+            end
+        end
+    end
+    return cost, missing, estimated
+end
+
+local costCache = {}
+
+-- Ergebnis: [Guide-Schlüssel] = { total, missing, estimated, prof = { [Beruf] = {cost, missing} } },
+-- dazu .active = Summe der gerade gewählten Guides.
+function BT.GuideCosts()
+    if costCache.stamp == BT.solveStamp then return costCache end
+    local out = { stamp = BT.solveStamp }
+    local Price = MakePricer({})
+    local function Run(pickGuide)
+        local stock = {}
+        for key, count in pairs(BT.totals or {}) do stock[key] = count end
+        local res = { total = 0, missing = 0, estimated = false, prof = {} }
+        for _, prof in ipairs(BT.PROFS) do
+            if not prof.gather and not BT.db.opt.off[prof.key] then
+                local guide = pickGuide(prof)
+                local cost, missing, est = EvalSteps(guide.steps, prof.key, stock, Price)
+                res.prof[prof.key] = { cost = cost, missing = missing }
+                res.total, res.missing = res.total + cost, res.missing + missing
+                res.estimated = res.estimated or est
+            end
+        end
+        return res
+    end
+    for _, entry in ipairs(BT.ALL_GUIDES) do
+        out[entry.key] = Run(function(prof)
+            local list = BT.GuideList(prof)
+            for _, guide in ipairs(list) do if guide.key == entry.key then return guide end end
+            return list[1]
+        end)
+    end
+    out.active = Run(BT.ActiveGuide)
+    costCache = out
+    return out
 end

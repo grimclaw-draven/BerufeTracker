@@ -51,6 +51,17 @@ local function ShowMenu(anchor, options, width, selected, onPick)
     menu:Show()
 end
 
+-- Knopftext bleibt im Knopf: links/rechts begrenzt, zu langer Text wird mit "..." gekürzt.
+local function FitButtonText(button, font)
+    local text = button:GetFontString()
+    if not text then return end
+    if font then text:SetFontObject(font) end
+    text:ClearAllPoints()
+    text:SetPoint("LEFT", 6, 0)
+    text:SetPoint("RIGHT", -18, 0)
+    text:SetWordWrap(false)
+end
+
 local function AddDropArrow(button)
     local arrow = button:CreateTexture(nil, "OVERLAY")
     arrow:SetSize(18, 18)
@@ -58,28 +69,43 @@ local function AddDropArrow(button)
     arrow:SetTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollDown-Up")
 end
 
+-- "1 Rezept nicht erhältlich" / "%d Rezepte nicht erhältlich"
+local function MissingText(count)
+    return count == 1 and L["1 Rezept nicht erhältlich"] or L["%d Rezepte nicht erhältlich"]:format(count)
+end
+
 local function OpenGuideMenu(button, prof)
     local options = {}
+    local costs = BT.GuideCosts and BT.GuideCosts() or {}
     for _, guide in ipairs(BT.GuideList(prof)) do
         local last = guide.steps[#guide.steps].t
         local notes = {}
         if guide.lump then notes[#notes + 1] = L["Einkaufsliste"] end
         if last < 300 then notes[#notes + 1] = L["bis %d"]:format(last) end
-        if guide.cheapest and guide.plan then
-            notes[#notes + 1] = L["ca. %s"]:format(BT.Money(guide.plan.total))
-            if guide.plan.missing > 0 then notes[#notes + 1] = "|cffff9933" .. L["%d Rezepte nicht erhältlich"]:format(guide.plan.missing) .. "|cff999999" end
+        local cost = costs[guide.key] and costs[guide.key].prof[prof.key]
+        if cost then
+            notes[#notes + 1] = L["ca. %s"]:format(BT.Money(cost.cost))
+            if cost.missing > 0 then notes[#notes + 1] = "|cffff9933" .. MissingText(cost.missing) .. "|cff999999" end
         end
         options[#options + 1] = { value = guide.key,
             text = guide.title .. (#notes > 0 and ("  |cff999999" .. table.concat(notes, ", ") .. "|r") or "") }
     end
-    ShowMenu(button, options, 210, BT.ActiveGuide(prof).key, function(key) BT.SetGuide(prof, key) end)
+    ShowMenu(button, options, 340, BT.ActiveGuide(prof).key, function(key) BT.SetGuide(prof, key) end)
 end
 
 local function OpenAllGuidesMenu(button)
     local options = {}
-    for _, guide in ipairs(BT.ALL_GUIDES) do options[#options + 1] = { value = guide.key, text = guide.title } end
+    local costs = BT.GuideCosts and BT.GuideCosts() or {}
+    for _, guide in ipairs(BT.ALL_GUIDES) do
+        local cost, notes = costs[guide.key], {}
+        if cost then
+            notes[#notes + 1] = L["ca. %s"]:format(BT.Money(cost.total))
+            if cost.missing > 0 then notes[#notes + 1] = "|cffff9933" .. MissingText(cost.missing) .. "|cff999999" end
+        end
+        options[#options + 1] = { value = guide.key, text = guide.title .. (#notes > 0 and ("  |cff999999" .. table.concat(notes, ", ") .. "|r") or "") }
+    end
     local selected = not next(BT.db.opt.guide) and (BT.db.opt.guideAll or "metabot") or nil
-    ShowMenu(button, options, 230, selected, BT.SetAllGuides)
+    ShowMenu(button, options, 380, selected, BT.SetAllGuides)
 end
 
 -- Ganzzahlige Anteile je Beruf, die in der Summe genau den Bedarf ergeben.
@@ -311,6 +337,7 @@ local function CreateRow()
     row.right = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     row.right:SetPoint("RIGHT", -4, 0)
     row.right:SetJustifyH("RIGHT")
+    row.right:SetWordWrap(false)
 
     row.barBg = row:CreateTexture(nil, "BACKGROUND")
     row.barBg:SetSize(130, 12)
@@ -336,13 +363,15 @@ local function CreateRow()
     end)
 
     row.guideButton = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
-    row.guideButton:SetSize(116, 18)
-    row.guideButton:SetPoint("RIGHT", -144, 0)
+    row.guideButton:SetSize(128, 18)
+    row.guideButton:SetPoint("RIGHT", -158, 0)
+    FitButtonText(row.guideButton, "GameFontHighlightSmall")
     row.guideButton:SetScript("OnClick", function(self) row.entry.onGuide(self) end)
     AddDropArrow(row.guideButton)
     row.guideButton:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_LEFT")
         GameTooltip:AddLine(L["Guide wechseln"], 1, 1, 1)
+        if row.entry.guideFull then GameTooltip:AddLine(row.entry.guideFull, 1, 0.82, 0) end
         GameTooltip:AddLine(row.entry.guideUrl, 0.7, 0.7, 0.7, true)
         GameTooltip:Show()
     end)
@@ -394,7 +423,7 @@ local function ConfigureRow(row, entry)
     row.guideButton:SetShown(entry.guideTitle ~= nil)
     if entry.guideTitle then row.guideButton:SetText(entry.guideTitle) end
     row.right:SetText(entry.right or "")
-    local rightInset = isItem and -280 or ((entry.kind == "step" or entry.kind == "trainer") and -60) or (entry.kind == "info" and -6) or (entry.kind == "prof" and -266) or -190
+    local rightInset = isItem and -280 or ((entry.kind == "step" or entry.kind == "trainer") and -60) or (entry.kind == "info" and -6) or (entry.kind == "prof" and -292) or -190
 
     row.text:ClearAllPoints()
     row.text:SetPoint("LEFT", (isItem and 28) or ((entry.onToggle or entry.kind == "info") and 26) or ((entry.kind == "step" or entry.kind == "trainer") and 18) or 6, 0)
@@ -576,6 +605,7 @@ local function AddProfession(list, prof, onlyMissing)
         onToggle = function(on) BT.db.opt.off[key] = (not on) or nil end,
         onClick = function() expanded[key] = not open end,
         guideTitle = #guides > 1 and guide.title or nil,
+        guideFull = guide.title,
         guideUrl = guide.url,
         onGuide = function(button) OpenGuideMenu(button, prof) end,
     }
@@ -594,11 +624,14 @@ local function AddProfession(list, prof, onlyMissing)
     end
     local plan = guide.cheapest and guide.plan
     if plan then
-        local text = L["Kosten ab jetzt ca. %s (vorhandene Materialien gratis)"]:format(BT.Money(plan.total))
-        if plan.estimated then text = text .. ", " .. L["teils geschätzt: im AH scannen"] end
-        list[#list + 1] = { kind = "info", height = 16, text = "|cff999999" .. text .. "|r" }
+        list[#list + 1] = { kind = "info", height = 16, text = "|cff999999" .. L["Kosten ab jetzt ca. %s (vorhandene Materialien gratis)"]:format(BT.Money(plan.total)) .. "|r" }
+        if plan.estimated then
+            list[#list + 1] = { kind = "info", height = 16, text = "|cff999999" .. L["Teils geschätzt: im Auktionshaus Preise scannen"] .. "|r" }
+        end
         if plan.missing > 0 then
-            list[#list + 1] = { kind = "info", height = 16, text = "|cffff9933" .. L["%d Rezepte weder beim Händler noch im AH: in den Kosten nicht enthalten"]:format(plan.missing) .. "|r" }
+            local text = plan.missing == 1 and L["1 Rezept weder beim Händler noch im AH: in den Kosten nicht enthalten"]
+                or L["%d Rezepte weder beim Händler noch im AH: in den Kosten nicht enthalten"]:format(plan.missing)
+            list[#list + 1] = { kind = "info", height = 16, text = "|cffff9933" .. text .. "|r" }
         end
     end
     if not prof.gather and activeSteps[#activeSteps].t < 300 then
@@ -761,7 +794,15 @@ function BT.RefreshUI()
     window.filter:SetShown(tab == MATERIALS)
     window.filter:SetText(FilterLabel())
     window.guideAll:SetShown(tab == ROUTE)
-    window.guideAll:SetText(L["Guide für alle: %s"]:format(next(BT.db.opt.guide) and L["gemischt"] or BT.GlobalGuideTitle()))
+    window.guideAllLabel:SetShown(tab == ROUTE)
+    window.guideAll:SetText(next(BT.db.opt.guide) and L["gemischt"] or BT.GlobalGuideTitle())
+    window.guideAllCost:SetShown(tab == ROUTE)
+    if tab == ROUTE and BT.GuideCosts then
+        local active = BT.GuideCosts().active
+        local text = L["ca. %s"]:format(BT.Money(active.total))
+        if active.missing > 0 then text = text .. "  |cffff9933" .. MissingText(active.missing) .. "|r" end
+        window.guideAllCost:SetText(text)
+    end
     window.scan:SetShown(tab == MATERIALS)
     window.scan:SetEnabled(BT.atAH or BT.scanText ~= nil)
     window.scan:SetText(BT.scanText or L["Preise scannen"])
@@ -831,11 +872,17 @@ local function CreateWindow()
     f.filter:SetScript("OnClick", OpenFilterMenu)
     AddDropArrow(f.filter)
 
+    f.guideAllLabel = f:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    f.guideAllLabel:SetPoint("TOPLEFT", 18, -61)
+    f.guideAllLabel:SetText(L["Guide für alle:"])
     f.guideAll = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
-    f.guideAll:SetSize(230, 22)
-    f.guideAll:SetPoint("TOPLEFT", 16, -55)
+    f.guideAll:SetSize(220, 22)
+    f.guideAll:SetPoint("LEFT", f.guideAllLabel, "RIGHT", 8, 0)
     f.guideAll:SetScript("OnClick", OpenAllGuidesMenu)
     AddDropArrow(f.guideAll)
+    FitButtonText(f.guideAll)
+    f.guideAllCost = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    f.guideAllCost:SetPoint("LEFT", f.guideAll, "RIGHT", 8, 0)
 
     f.scan = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
     f.scan:SetSize(116, 22)
@@ -886,6 +933,31 @@ local function CreateWindow()
     f.content:SetSize(WIDTH - 46, 1)
     f.scroll:SetScrollChild(f.content)
     f.scroll:HookScript("OnVerticalScroll", function() f.filterMenu:Hide() end)
+
+    -- Größe frei ziehbar (Griff unten rechts); die Größe bleibt gespeichert.
+    if f.SetResizable then
+        f:SetResizable(true)
+        if f.SetResizeBounds then f:SetResizeBounds(560, 360, 1600, 1400)
+        elseif f.SetMinResize then f:SetMinResize(560, 360) f:SetMaxResize(1600, 1400) end
+    end
+    local saved = BT.db and BT.db.opt.windowSize
+    if type(saved) == "table" and saved[1] and saved[2] then f:SetSize(saved[1], saved[2]) end
+    f:SetScript("OnSizeChanged", function(self, width)
+        if type(width) == "number" then self.content:SetWidth(math.max(1, width - 46)) end
+    end)
+    f.content:SetWidth(math.max(1, (f:GetWidth() or WIDTH) - 46))
+    f.grip = CreateFrame("Button", nil, f)
+    f.grip:SetSize(16, 16)
+    f.grip:SetPoint("BOTTOMRIGHT", -4, 4)
+    f.grip:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
+    f.grip:SetHighlightTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight")
+    f.grip:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Down")
+    f.grip:SetScript("OnMouseDown", function() f.filterMenu:Hide() f:StartSizing("BOTTOMRIGHT") end)
+    f.grip:SetScript("OnMouseUp", function()
+        f:StopMovingOrSizing()
+        BT.db.opt.windowSize = { math.floor(f:GetWidth() + 0.5), math.floor(f:GetHeight() + 0.5) }
+        BT.RefreshUI()
+    end)
 
     f:Hide()
 end
