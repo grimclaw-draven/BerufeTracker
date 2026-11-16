@@ -177,8 +177,9 @@ local function Finish(steps)
     local merged = {}
     for _, step in ipairs(steps) do
         local prev = merged[#merged]
-        if prev and prev.en == step.en and prev.t == step.f and prev.src == step.src then
+        if prev and prev.en == step.en and prev.t == step.f then
             prev.t, prev.c = step.t, prev.c + step.c
+            if (prev.src or "") == "" then prev.src = step.src end -- Quelle aus den Rezeptdaten statt "unbekannt"
             prev.costMat = (prev.costMat or 0) + (step.costMat or 0)
             prev.costLearn = math.max(prev.costLearn or 0, step.costLearn or 0)
             prev.unavailable = prev.unavailable or step.unavailable
