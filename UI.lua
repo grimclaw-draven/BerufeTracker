@@ -686,6 +686,8 @@ local function FilterLabel()
     return filter or L["Alle Berufe"]
 end
 
+BT.FilterLabel = function() return FilterLabel() end
+
 local function OpenFilterMenu(button)
     local options = {
         { text = L["Alle Berufe"] .. "  |cff999999" .. L["jeder Charakter mit seinen Berufen"] .. "|r" },
@@ -1249,24 +1251,113 @@ local function IsCreatureType(unit, typeID)
     return false
 end
 
--- Gegner: was er laut QuestieDB droppt, dazu Stoff (Humanoide) und Leder zum Kürschnern (Wildtiere) nach Stufe.
-local function AddMobLines(tip, unit)
-    if not BT.result or not unit or not UnitExists(unit) or UnitIsPlayer(unit) then return end
-    if UnitCanAttack and not UnitCanAttack("player", unit) then return end
-    local guid = UnitGUID and Plain(UnitGUID(unit))
+-- Stoff (Humanoide) und Leder zum Kürschnern (Wildtiere) nach Stufe; nur wenn Stufe und Typ lesbar sind.
+local function LevelEntries(unit, entries)
+    local level = UnitLevel and Plain(UnitLevel(unit))
+    if type(level) ~= "number" or level <= 0 then return end
+    if IsCreatureType(unit, 7) then
+        for _, key in ipairs(KeysForLevel(CLOTH_HINT, level)) do entries[#entries + 1] = { key = key } end
+    elseif IsCreatureType(unit, 1) then
+        for _, key in ipairs(KeysForLevel(LEATHER_HINT, level)) do entries[#entries + 1] = { key = key, tag = L["Kürschnern"] } end
+    end
+end
+
+-- Gegner mit lesbarer GUID: was er laut QuestieDB droppt, dazu Stoff/Leder nach Stufe.
+local function AddMobLines(tip, unit, guid)
+    if not BT.result or not unit then return end
+    if Plain(UnitIsPlayer and UnitIsPlayer(unit)) == true then return end
+    if Plain(UnitCanAttack and UnitCanAttack("player", unit)) == false then return end
     local npcID = type(guid) == "string" and tonumber(guid:match("^Creature%-%d+%-%d+%-%d+%-%d+%-(%d+)%-"))
     local entries = {}
     for _, key in ipairs(npcID and BT.MOB_DROPS and BT.MOB_DROPS[npcID] or {}) do entries[#entries + 1] = { key = key } end
-    local level = UnitLevel and Plain(UnitLevel(unit))
-    if type(level) == "number" and level > 0 then
-        if IsCreatureType(unit, 7) then
-            for _, key in ipairs(KeysForLevel(CLOTH_HINT, level)) do entries[#entries + 1] = { key = key } end
-        elseif IsCreatureType(unit, 1) then
-            for _, key in ipairs(KeysForLevel(LEATHER_HINT, level)) do entries[#entries + 1] = { key = key, tag = L["Kürschnern"] } end
-        end
-    end
+    LevelEntries(unit, entries)
     NeedBlock(tip, entries) -- kein tip:Show() hier: das stößt bei Gegnern die nächste Verarbeitung an (Endlosschleife)
 end
+
+-- Gegner mit geschützter GUID/Name (WoW Forever): Das Addon darf den Namen nicht lesen oder vergleichen.
+-- Deshalb wird für jeden Beute-Gegner der aktuellen Karte der Textblock vorab gebaut; sichere Spielfunktionen
+-- vergleichen den geschützten Namen mit jedem Kandidaten und lassen nur den passenden Block sichtbar.
+-- Das Addon erfährt nie, welcher Gegner es ist. Die Zahl der Zeilen darf nicht vom Ergebnis abhängen: immer genau eine.
+local SecretMob = {}
+do
+    local function CanSelect()
+        return Enum and Enum.CollationStrength and Enum.CollationStrength.Identical
+            and Enum.NormalizationForm and Enum.NormalizationForm.Nfc
+            and C_Intl and type(C_Intl.CompareStrings) == "function" and type(C_Intl.IsNormalized) == "function"
+            and C_StringUtil and type(C_StringUtil.TruncateWhenZero) == "function" and type(C_StringUtil.WrapString) == "function"
+            and C_CurveUtil and type(C_CurveUtil.EvaluateColorValueFromBoolean) == "function"
+    end
+    SecretMob.CanSelect = CanSelect
+    -- Gleiche Texte ergeben 0 -> leerer Text -> der Marker ist normalisiert. Sonst bleibt ein "e" mit
+    -- kombinierendem Akzent stehen, das nicht NFC-normalisiert ist. Ergebnis ggf. geschützt, nur weiterreichen.
+    local function Matches(secretText, publicText)
+        local comparison = C_Intl.CompareStrings(secretText, publicText, Enum.CollationStrength.Identical)
+        local marker = C_StringUtil.WrapString(C_StringUtil.TruncateWhenZero(comparison), "e\204\129", "")
+        return C_Intl.IsNormalized(marker, Enum.NormalizationForm.Nfc)
+    end
+    -- Tor 1: ein unsichtbarer Farbcode vor dem Text wird vollständig, der Text bleibt; Tor 0: alles entfällt.
+    local function Fragment(gate, text)
+        return C_StringUtil.WrapString(C_StringUtil.TruncateWhenZero(gate), "|c0000000", "|r" .. text)
+    end
+
+    local cache = {}
+    local function Candidates(mapID)
+        if cache.result == BT.result and cache.map == mapID and cache.filter == BT.db.opt.matFilter then return cache.list end
+        local byName, order = {}, {}
+        for id, info in pairs(BT.MOB_INFO or {}) do
+            local here = false
+            for _, m in ipairs(info.m or {}) do if m == mapID then here = true break end end
+            local drops = here and BT.MOB_DROPS and BT.MOB_DROPS[id]
+            if drops then
+                local name = BT.MobName(id, info.de)
+                local entry = byName[name]
+                if not entry then
+                    entry = { name = name, keys = {}, seen = {} }
+                    byName[name] = entry
+                    order[#order + 1] = entry
+                end
+                for _, key in ipairs(drops) do
+                    if not entry.seen[key] then entry.seen[key] = true entry.keys[#entry.keys + 1] = key end
+                end
+            end
+        end
+        local list = {}
+        local header = "|cffffd100BerufeTracker|r |cff999999(" .. BT.FilterLabel() .. ")|r"
+        for _, entry in ipairs(order) do
+            local lefts, rights = { header }, { " " }
+            for _, key in ipairs(entry.keys) do
+                local res = BT.result and BT.result[key]
+                if res and res.need > 0 then
+                    lefts[#lefts + 1] = BT.ItemName(key)
+                    rights[#rights + 1] = (res.missing > 0 and ("|cffff6666" .. L["fehlt %s"]:format(BT.Format(res.missing)) .. "|r") or ("|cff33cc33" .. L["genug"] .. "|r"))
+                        .. " |cff999999(" .. BT.Format(res.have) .. "/" .. BT.Format(res.need) .. ")|r"
+                end
+            end
+            if #lefts > 1 then
+                list[#list + 1] = { name = entry.name, left = table.concat(lefts, "\n"), right = table.concat(rights, "\n") }
+            end
+        end
+        cache.result, cache.map, cache.filter, cache.list = BT.result, mapID, BT.db.opt.matFilter, list
+        return list
+    end
+
+    function SecretMob.Attach(tip, secretName)
+        if not CanSelect() or not BT.result then return false end
+        local mapID = C_Map and C_Map.GetBestMapForUnit and Plain(C_Map.GetBestMapForUnit("player"))
+        if not mapID then return false end
+        local list = Candidates(mapID)
+        if #list == 0 then return false end
+        local leftOut, rightOut = "", ""
+        for _, candidate in ipairs(list) do
+            local gate = C_CurveUtil.EvaluateColorValueFromBoolean(Matches(secretName, candidate.name), 1, 0)
+            leftOut = leftOut .. Fragment(gate, candidate.left)
+            rightOut = rightOut .. Fragment(gate, candidate.right)
+        end
+        tip:AddDoubleLine(leftOut, rightOut)
+        return true
+    end
+end
+BT.SecretMob = SecretMob
 
 -- Ausrüstung: welches Verzauberungsmaterial Entzaubern ungefähr ergibt (grün: Staub/Essenz, blau/lila: Splitter).
 local function AddDisenchantLines(tip, id)
@@ -1307,12 +1398,28 @@ local function HookItemTooltips()
     end
     -- Gegner-Tooltips: das Spiel baut sie laufend neu auf. Sperre gegen Wiedereintritt, Zeilen nur einmal je Inhalt.
     local mobBusy, mobDone = false, false
-    local function OnUnit(tip)
+    local function MobTooltip(tip, data)
+        local ok, _, unit = pcall(tip.GetUnit, tip)
+        unit = (ok and Plain(unit)) or "mouseover"
+        local guid = data and data.guid
+        if guid == nil and UnitGUID then guid = UnitGUID(unit) end
+        if issecretvalue and issecretvalue(guid) then
+            -- geschützt: Name nur an sichere Spielfunktionen weitergeben, nie selbst lesen
+            local name = UnitName and UnitName(unit)
+            local attached = SecretMob.Attach(tip, name)
+            local entries = {}
+            LevelEntries(unit, entries)
+            NeedBlock(tip, entries)
+            return "geschützt", attached
+        end
+        AddMobLines(tip, unit, guid)
+        return "lesbar"
+    end
+    local function OnUnit(tip, data)
         if tip ~= GameTooltip or mobBusy or mobDone then return end
         mobBusy, mobDone = true, true
-        local ok, _, unit = pcall(tip.GetUnit, tip)
-        local ok2, err = pcall(AddMobLines, tip, (ok and Plain(unit)) or "mouseover")
-        BT.mobDebug = { at = time(), unit = ok and Plain(unit) or "?", error = not ok2 and tostring(err) or nil }
+        local ok, mode, attached = pcall(MobTooltip, tip, data)
+        BT.mobDebug = { at = time(), mode = ok and mode or nil, attached = attached, error = not ok and tostring(mode) or nil }
         mobBusy = false
     end
     GameTooltip:HookScript("OnTooltipCleared", function() mobDone = false end)
@@ -1468,7 +1575,8 @@ function BT.PrintMobDebug()
     print(tag .. "NPC-ID: " .. tostring(npcID) .. ", Beute-Einträge: " .. (drops and table.concat(drops, ", ") or "-"))
     print(tag .. "Wildtier: " .. tostring(IsCreatureType(unit, 1)) .. ", Humanoid: " .. tostring(IsCreatureType(unit, 7)))
     local info = BT.mobDebug
-    print(tag .. "Letzter Gegner-Tooltip: " .. (info and ("vor " .. (time() - info.at) .. " s, Einheit " .. tostring(info.unit) .. ", Fehler: " .. tostring(info.error or "keiner")) or "noch keiner"))
+    print(tag .. "Sichere Namensauswahl verfügbar: " .. tostring(SecretMob.CanSelect() and true or false))
+    print(tag .. "Letzter Gegner-Tooltip: " .. (info and ("vor " .. (time() - info.at) .. " s, GUID " .. tostring(info.mode) .. ", Block angehängt: " .. tostring(info.attached) .. ", Fehler: " .. tostring(info.error or "keiner")) or "noch keiner"))
 end
 
 function BT.PrintChatDebug()
