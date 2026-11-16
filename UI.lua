@@ -1300,13 +1300,27 @@ do
         return C_StringUtil.WrapString(C_StringUtil.TruncateWhenZero(gate), "|c0000000", "|r" .. text)
     end
 
+    -- Aktuelle Karte und die übergeordneten Karten bis zur Zone (Gebäude, Höhlen und Unterzonen haben eigene IDs).
+    local function MapChain(mapID)
+        local chain, guard = { [mapID] = true }, 0
+        local info = C_Map.GetMapInfo and C_Map.GetMapInfo(mapID)
+        while info and info.parentMapID and info.parentMapID > 0 and guard < 6 and (info.mapType or 3) > 3 do
+            chain[info.parentMapID] = true
+            info = C_Map.GetMapInfo(info.parentMapID)
+            guard = guard + 1
+        end
+        return chain
+    end
+    SecretMob.MapChain = MapChain
+
     local cache = {}
     local function Candidates(mapID)
         if cache.result == BT.result and cache.map == mapID and cache.filter == BT.db.opt.matFilter then return cache.list end
+        local maps = MapChain(mapID)
         local byName, order = {}, {}
         for id, info in pairs(BT.MOB_INFO or {}) do
             local here = false
-            for _, m in ipairs(info.m or {}) do if m == mapID then here = true break end end
+            for _, m in ipairs(info.m or {}) do if maps[m] then here = true break end end
             local drops = here and BT.MOB_DROPS and BT.MOB_DROPS[id]
             if drops then
                 local name = BT.MobName(id, info.de)
@@ -1338,8 +1352,11 @@ do
             end
         end
         cache.result, cache.map, cache.filter, cache.list = BT.result, mapID, BT.db.opt.matFilter, list
+        cache.mobsHere = #order
         return list
     end
+    SecretMob.Candidates = Candidates
+    SecretMob.cache = cache
 
     function SecretMob.Attach(tip, secretName)
         if not CanSelect() or not BT.result then return false end
@@ -1399,13 +1416,20 @@ local function HookItemTooltips()
     -- Gegner-Tooltips: das Spiel baut sie laufend neu auf. Sperre gegen Wiedereintritt, Zeilen nur einmal je Inhalt.
     local mobBusy, mobDone = false, false
     local function MobTooltip(tip, data)
-        local ok, _, unit = pcall(tip.GetUnit, tip)
-        unit = (ok and Plain(unit)) or "mouseover"
-        local guid = data and data.guid
+        local name, unit, guid
+        if TooltipUtil and TooltipUtil.GetDisplayedUnit then
+            local ok, n, u, g = pcall(TooltipUtil.GetDisplayedUnit, tip)
+            if ok then name, unit, guid = n, u, g end
+        end
+        if unit == nil or (issecretvalue and issecretvalue(unit)) then
+            local ok, _, u = pcall(tip.GetUnit, tip)
+            unit = (ok and Plain(u)) or "mouseover"
+        end
+        if guid == nil then guid = data and data.guid end
         if guid == nil and UnitGUID then guid = UnitGUID(unit) end
         if issecretvalue and issecretvalue(guid) then
             -- geschützt: Name nur an sichere Spielfunktionen weitergeben, nie selbst lesen
-            local name = UnitName and UnitName(unit)
+            if name == nil and UnitName then name = UnitName(unit) end
             local attached = SecretMob.Attach(tip, name)
             local entries = {}
             LevelEntries(unit, entries)
@@ -1576,6 +1600,16 @@ function BT.PrintMobDebug()
     print(tag .. "Wildtier: " .. tostring(IsCreatureType(unit, 1)) .. ", Humanoid: " .. tostring(IsCreatureType(unit, 7)))
     local info = BT.mobDebug
     print(tag .. "Sichere Namensauswahl verfügbar: " .. tostring(SecretMob.CanSelect() and true or false))
+    local mapID = C_Map and C_Map.GetBestMapForUnit and Plain(C_Map.GetBestMapForUnit("player"))
+    if mapID then
+        local maps = {}
+        for m in pairs(SecretMob.MapChain(mapID)) do maps[#maps + 1] = m end
+        local list = SecretMob.Candidates(mapID)
+        print(tag .. "Karte: " .. table.concat(maps, ", ") .. ", Beute-Gegner hier: " .. tostring(SecretMob.cache.mobsHere) .. ", davon mit benötigter Beute: " .. #list)
+        for index = 1, math.min(#list, 5) do print(tag .. "   " .. list[index].name) end
+    else
+        print(tag .. "Karte: unbekannt")
+    end
     print(tag .. "Letzter Gegner-Tooltip: " .. (info and ("vor " .. (time() - info.at) .. " s, GUID " .. tostring(info.mode) .. ", Block angehängt: " .. tostring(info.attached) .. ", Fehler: " .. tostring(info.error or "keiner")) or "noch keiner"))
 end
 
