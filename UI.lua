@@ -1136,6 +1136,15 @@ local function ItemsOfNode(name)
     return itemsByNode[name]
 end
 
+-- Handwerksmaterial laut Spiel (Item-Klasse 7, "Handwerkswaren")?
+local TRADE_GOODS = (Enum and Enum.ItemClass and Enum.ItemClass.Tradegoods) or 7
+local function IsTradeGood(id)
+    local instant = (C_Item and C_Item.GetItemInfoInstant) or GetItemInfoInstant
+    if not instant then return false end
+    local ok, _, _, _, _, _, classID = pcall(instant, id)
+    return ok and classID == TRADE_GOODS
+end
+
 local function TrackerHeader(tip)
     tip:AddLine(" ")
     tip:AddLine("BerufeTracker |cff999999(" .. FilterLabel() .. (BT.db.opt.noGather and (", " .. L["ohne Sammelberufe"]) or "") .. ")|r", 1, 0.82, 0)
@@ -1178,7 +1187,13 @@ local function HookItemTooltips()
             id = link and tonumber(link:match("item:(%d+)"))
         end
         local key = id and ItemKeyById(id)
-        if key then AddNeedLines(tip, key) end
+        if key then
+            AddNeedLines(tip, key)
+        elseif id and IsTradeGood(id) then
+            -- Handwerksmaterial, das keine Route braucht: sagen, statt zu schweigen
+            TrackerHeader(tip)
+            tip:AddLine(L["Für keine Route gebraucht"], 0.6, 0.6, 0.6)
+        end
     end
     if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall and Enum and Enum.TooltipDataType then
         TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, OnItem)
