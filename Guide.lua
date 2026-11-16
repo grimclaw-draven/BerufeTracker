@@ -387,7 +387,7 @@ end
 -- Guide-Eintrag für die Auswahl; die Schritte werden erst bei Bedarf berechnet.
 function BT.CheapestGuide(prof)
     if prof.gather then return nil end
-    local guide = { key = "cheapest", title = L["Günstigster Weg (aus Guides)"], cheapest = true,
+    local guide = { key = "cheapest", title = L["Günstigster Guide-Weg"], cheapest = true,
         url = L["Eigener Guide aus allen Guides: billigste Rezepte nach AH-, Händler-, Lehrer- und Rezeptpreisen; vorhandene Materialien zählen gratis."] }
     return setmetatable(guide, { __index = function(_, k)
         local plan = BT.ComputeCheapest()[prof.key]
@@ -396,7 +396,7 @@ function BT.CheapestGuide(prof)
     end })
 end
 
--- ===== Guide "Günstigster Weg (alle Rezepte)": unabhängig von den anderen Guides =====
+-- ===== Guide "Günstigster berechneter Weg": unabhängig von den anderen Guides =====
 -- Bausteine sind alle Rezepte des Berufs aus den Forever-Spieldaten (BT.ALLREC). Für jeden Skillpunkt zählt die
 -- erwartete Zahl an Herstellungen nach Farbe: orange sicher, ab gelb Chance (grau - Skill) / (grau - gelb).
 -- Lernkosten zählen, sobald ein Rezept zum ersten Mal benutzt wird.
@@ -631,7 +631,7 @@ end
 
 function BT.AllRecipesGuide(prof)
     if prof.gather or not TEMPLATES[prof.key] then return nil end
-    local guide = { key = "allrecipes", title = L["Günstigster Weg (alle Rezepte)"], cheapest = true,
+    local guide = { key = "allrecipes", title = L["Günstigster berechneter Weg"], cheapest = true,
         url = L["Eigener Guide aus allen Rezepten des Berufs (Forever-Spieldaten): je Skillpunkt das billigste Rezept nach Farbe und Chance, mit AH-, Händler-, Lehrer- und Rezeptpreisen; gelernte Rezepte und vorhandene Materialien zählen gratis."] }
     return setmetatable(guide, { __index = function(_, k)
         local plan = BT.ComputeAllRecipes()[prof.key]

@@ -18,7 +18,7 @@ For **WoW Forever**, in the language of your game client: English, German, Frenc
 **Route**
 - The step-by-step route of each profession, with how much of it is still open.
 - Choose your guide: Metabot, RankedBoost, Wowhead, wowtbc.gg, GoldGoblin or wow-professions, per profession or for all at once.
-- **Cheapest route (all recipes):** your own guide, independent of the other guides. For every skill point it picks the cheapest of all the profession's recipes (Forever game data), by recipe color and skill-up chance, with auction house, vendor, trainer and recipe prices. Recipes you know and materials you already have count as free; vendor goods with limited stock only count if they are on the auction house; recipes with a cooldown are left out. **Cheapest route (from guides)** does the same with the steps of the other guides. Both update themselves when your bags change.
+- **Cheapest calculated route:** your own guide, independent of the other guides. For every skill point it picks the cheapest of all the profession's recipes (Forever game data), by recipe color and skill-up chance, with auction house, vendor, trainer and recipe prices. Recipes you know and materials you already have count as free; vendor goods with limited stock only count if they are on the auction house; recipes with a cooldown are left out. **Cheapest guide route** does the same with the steps of the other guides. Both update themselves when your bags change.
 - Missing recipes are marked together with where to find them.
 - Trainer visits appear at the right point of the route, with the nearest trainer who teaches you the next rank.
 

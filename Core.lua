@@ -683,7 +683,7 @@ function BT.GuideSteps(prof) return BT.ActiveGuide(prof).steps end
 BT.ALL_GUIDES = {
     { key = "metabot", title = "Metabot" }, { key = "rankedboost", title = "RankedBoost" }, { key = "wowhead", title = "Wowhead" },
     { key = "wowtbc", title = "wowtbc.gg" }, { key = "goldgoblin", title = "GoldGoblin" }, { key = "wowprofessions", title = "wow-professions" },
-    { key = "cheapest", title = L["Günstigster Weg (aus Guides)"] }, { key = "allrecipes", title = L["Günstigster Weg (alle Rezepte)"] },
+    { key = "cheapest", title = L["Günstigster Guide-Weg"] }, { key = "allrecipes", title = L["Günstigster berechneter Weg"] },
 }
 
 function BT.GlobalGuideTitle()
