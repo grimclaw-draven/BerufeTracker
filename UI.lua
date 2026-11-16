@@ -720,9 +720,19 @@ local function BuildRoute(list)
     AddCollapseAll(list)
     local current, others, gathering = {}, {}, {}
     for _, prof in ipairs(BT.PROFS) do
-        local group = (prof.gather and gathering) or (BT.IsCurrentProf(prof.key) and current) or others
+        -- gelernte Berufe des Charakters immer oben, auch Sammelberufe (sie sind Hauptberufe)
+        local group = (BT.IsCurrentProf(prof.key) and current) or (prof.gather and gathering) or others
         group[#group + 1] = prof
     end
+    -- Dieser Charakter: erst die Hauptberufe, dann Erste Hilfe und Kochkunst, Angeln zuletzt (sonst alphabetisch)
+    local RANK = { ["first-aid"] = 1, cooking = 1, fishing = 2 }
+    local order = {}
+    for index, prof in ipairs(BT.PROFS) do order[prof.key] = index end
+    table.sort(current, function(a, b)
+        local ra, rb = RANK[a.key] or 0, RANK[b.key] or 0
+        if ra ~= rb then return ra < rb end
+        return order[a.key] < order[b.key]
+    end)
     if #current > 0 then
         local focus = BT.FocusChar()
         list[#list + 1] = SectionHead(focus and focus ~= BT.me and L["Charakter: %s"]:format(focus) or "Dieser Charakter", current)
