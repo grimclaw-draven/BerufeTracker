@@ -32,12 +32,18 @@ private_list = os.path.join(A, 'dev', 'private.txt')
 if os.path.isfile(private_list):
     words += [w.strip() for w in open(private_list, encoding='utf8') if w.strip()]
 private = re.compile('|'.join(re.escape(w) for w in words), re.I)
+# Ausnahmen: genau diese Textstellen sind Spieldaten (z. B. ein Gegner, der wie ein eigener Charakter heißt);
+# eine pro Zeile in dev/private_allow.txt (nicht im Repo). Nur der exakte Text wird ausgenommen.
+allow_list = os.path.join(A, 'dev', 'private_allow.txt')
+allowed = [w.strip() for w in open(allow_list, encoding='utf8') if w.strip()] if os.path.isfile(allow_list) else []
 problems = []
 for f in files:
     if f == 'Seed.lua': continue
     path = os.path.join(A, f)
-    if not os.path.isfile(path): problems.append('fehlt: ' + f)
-    elif private.search(open(path, encoding='utf8').read()): problems.append('private Daten in ' + f)
+    if not os.path.isfile(path): problems.append('fehlt: ' + f); continue
+    text = open(path, encoding='utf8').read()
+    for snippet in allowed: text = text.replace(snippet, '')
+    if private.search(text): problems.append('private Daten in ' + f)
 for f in ['LICENSE.md', 'README.md', 'CHANGELOG.md']:
     if not os.path.isfile(os.path.join(A, f)): problems.append('fehlt: ' + f)
 if problems:
