@@ -12,6 +12,7 @@ Locales.lua
 Translations.lua
 Data.lua
 LocaleData.lua
+Recipes.lua
 Sources.lua
 Costs.lua
 Seed.lua

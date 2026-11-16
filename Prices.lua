@@ -13,6 +13,11 @@ end
 for slug, recipe in pairs(BT.COSTS and BT.COSTS.recipe or {}) do
     if recipe.id and not BT.ID_TO_KEY[recipe.id] then BT.ID_TO_KEY[recipe.id] = slug end
 end
+for _, steps in pairs(BT.RECIPE_TEMPLATES or {}) do
+    for _, step in ipairs(steps) do
+        if step.rc and not BT.ID_TO_KEY[step.rc.id] then BT.ID_TO_KEY[step.rc.id] = step.rc.slug end
+    end
+end
 
 local function Entry(key)
     local entry = BT.db.prices[key]

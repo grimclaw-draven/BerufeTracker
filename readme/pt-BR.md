@@ -18,7 +18,7 @@ Para **WoW Forever**, no idioma do seu cliente de jogo: inglês, alemão, franc�
 **Rota**
 - A rota passo a passo de cada profissão, com quanto ainda falta.
 - Escolha seu guia: Metabot, RankedBoost, Wowhead, wowtbc.gg, GoldGoblin ou wow-professions, por profissão ou para todas de uma vez.
-- **Caminho mais barato:** um guia próprio montado a partir de todos os guias. Ele escolhe as receitas mais baratas pelos preços da casa de leilões, vendedores, instrutores e receitas; materiais que você já tem contam como grátis. Itens de vendedor com estoque limitado só contam se estiverem na casa de leilões. Ele se atualiza assim que suas bolsas mudam.
+- **Caminho mais barato (todas as receitas):** um guia próprio, independente dos outros guias. Para cada ponto de perícia ele escolhe a mais barata de todas as receitas da profissão (dados de jogo do Forever), pela cor da receita e pela chance de subir, com preços da casa de leilões, vendedores, instrutores e receitas. Receitas conhecidas e materiais que você já tem contam como grátis; itens de vendedor com estoque limitado só contam se estiverem na casa de leilões; receitas com recarga ficam de fora. **Caminho mais barato (dos guias)** faz o mesmo com os passos dos outros guias. Ambos se atualizam assim que suas bolsas mudam.
 - As receitas que faltam são marcadas junto com onde encontrá-las.
 - As visitas ao instrutor aparecem no ponto certo da rota, com o instrutor mais próximo que ensina o próximo nível.
 

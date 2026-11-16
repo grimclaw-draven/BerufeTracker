@@ -189,6 +189,9 @@ local function StepTooltip(row)
             unavailable = L["nicht im AH gefunden"] })[step.learnHow] or ""
         GameTooltip:AddDoubleLine(L["Rezept"], (step.costLearn > 0 and (BT.Money(step.costLearn) .. ", ") or "") .. how, 1, 0.82, 0, 1, 1, 1)
         if step.fromGuide then GameTooltip:AddDoubleLine(L["Aus Guide"], step.fromGuide, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7) end
+        if step.y then
+            GameTooltip:AddLine(L["Lernbar ab %d, gelb ab %d, grün ab %d, grau ab %d"]:format(step.l, step.y, math.floor((step.y + step.g) / 2), step.g), 0.7, 0.7, 0.7)
+        end
     end
     GameTooltip:Show()
 end

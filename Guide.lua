@@ -34,7 +34,7 @@ local function LearnCost(step)
     if step.src == "R" then
         local slug = step.rc and step.rc.slug
         if not slug then return UNAVAILABLE, "unavailable" end
-        local entry, data = Prices(slug), COSTS.recipe[slug]
+        local entry, data = Prices(slug), (step.rc.id and step.rc) or COSTS.recipe[slug]
         local best, how
         if entry.ah then best, how = entry.ah, "ah" end
         local vendor
@@ -44,7 +44,7 @@ local function LearnCost(step)
         if not best then return UNAVAILABLE, (data and data.lim) and "limited" or "unavailable" end
         return best, how
     end
-    local cost = COSTS.train[step.en]
+    local cost = step.tc or COSTS.train[step.en]
     return cost or 0, cost and "trainer" or "trainer?"
 end
 BT.LearnCost = LearnCost
@@ -231,11 +231,192 @@ end
 -- Guide-Eintrag für die Auswahl; die Schritte werden erst bei Bedarf berechnet.
 function BT.CheapestGuide(prof)
     if prof.gather then return nil end
-    local guide = { key = "cheapest", title = L["Günstigster Weg"], cheapest = true,
+    local guide = { key = "cheapest", title = L["Günstigster Weg (aus Guides)"], cheapest = true,
         url = L["Eigener Guide aus allen Guides: billigste Rezepte nach AH-, Händler-, Lehrer- und Rezeptpreisen; vorhandene Materialien zählen gratis."] }
     return setmetatable(guide, { __index = function(_, k)
         local plan = BT.ComputeCheapest()[prof.key]
         if k == "steps" then return plan and plan.steps or prof.steps end
+        if k == "plan" then return plan end
+    end })
+end
+
+-- ===== Guide "Günstigster Weg (alle Rezepte)": unabhängig von den anderen Guides =====
+-- Bausteine sind alle Rezepte des Berufs aus den Forever-Spieldaten (BT.ALLREC). Für jeden Skillpunkt zählt die
+-- erwartete Zahl an Herstellungen nach Farbe: orange sicher, ab gelb Chance (grau - Skill) / (grau - gelb).
+-- Lernkosten zählen, sobald ein Rezept zum ersten Mal benutzt wird.
+
+local function NormalizeName(text) return (tostring(text):lower():gsub("[%p%s]", "")) end
+
+-- Schritt-Vorlagen einmal beim Laden bauen (Namen, Aliasse für "schon gelernt", Rezept-Items fürs Inventar).
+local TEMPLATES = {}
+do
+    local getSpell = C_Spell and C_Spell.GetSpellName
+    for profKey, recs in pairs(BT.ALLREC or {}) do
+        local list = {}
+        for _, rec in ipairs(recs) do
+            local step = { n = rec.de, en = rec.en, src = rec.src, spell = rec.s, r = rec.r, tc = rec.tc,
+                l = rec.l, y = rec.y, g = rec.g, su = rec.su or 1, item = rec.item }
+            step.aliases = { NormalizeName(rec.de), NormalizeName(rec.en) }
+            if rec.item then
+                step.aliases[#step.aliases + 1] = "#" .. rec.item
+                local out = BT.ITEM_BY_ID[rec.item]
+                if out then step.out, step.mk = out, rec.mk or 1 end
+            end
+            if getSpell then
+                local ok, own = pcall(getSpell, rec.s)
+                if ok and type(own) == "string" and own ~= "" and not (issecretvalue and issecretvalue(own)) then
+                    step.aliases[#step.aliases + 1] = NormalizeName(own)
+                end
+            end
+            if rec.rc then
+                local rc = rec.rc
+                local slug = BT.ITEM_BY_ID[rc.id] or ("recipe-item-" .. rc.id)
+                step.rc = { slug = slug, de = rc.de, en = rc.en, id = rc.id, p = rc.p, lim = rc.lim }
+                BT.ITEM_BY_ID[rc.id] = slug
+                BT.NAME[rc.de], BT.NAME[rc.en] = slug, slug
+                if BT.RC_ITEM and not BT.RC_ITEM[rc.en] then BT.RC_ITEM[rc.en] = rc.id end
+                for _, name in ipairs({ rc.de, rc.en }) do
+                    step.aliases[#step.aliases + 1] = NormalizeName((name:gsub("^[^:]+:%s*", "")))
+                end
+            end
+            list[#list + 1] = step
+        end
+        TEMPLATES[profKey] = list
+    end
+end
+BT.RECIPE_TEMPLATES = TEMPLATES
+
+-- Erwartete Herstellungen für einen Skillpunkt bei Skill s; nil, wenn das Rezept dort nicht (mehr) zählt.
+local function CraftsPerPoint(step, s)
+    if s < step.l or s >= step.g then return nil end
+    local chance = 1
+    if s >= step.y and step.g > step.y then chance = (step.g - s) / (step.g - step.y) end
+    return 1 / (chance * step.su)
+end
+BT.CraftsPerPoint = CraftsPerPoint
+
+local MAX_SKILL = 300
+
+-- Billigste Folge von Rezepten Punkt für Punkt (Zustand: zuletzt benutztes Rezept).
+local function PlanAll(steps, skill, Price, withUnavailable)
+    local usable = {}
+    for _, step in ipairs(steps) do
+        local learn, how = LearnCost(step)
+        if withUnavailable or learn < UNAVAILABLE then
+            local craft, est = 0, false
+            for _, reagent in ipairs(step.r) do
+                local p, h = Price(reagent[1])
+                craft = craft + p * reagent[2]
+                est = est or h == "est" or h == "none"
+            end
+            usable[#usable + 1] = { step = step, learn = learn, how = how, craft = craft, est = est }
+        end
+    end
+    local cur, prevBest, bestArg, switched = {}, 0, {}, {}
+    local reached = 1
+    for s = 1, MAX_SKILL - 1 do
+        local new, best, arg, sw = {}, nil, nil, {}
+        local weight = s >= skill and 1 or BELOW
+        for index, cand in ipairs(usable) do
+            local crafts = CraftsPerPoint(cand.step, s)
+            if crafts then
+                local cont = cur[index]
+                local switch = prevBest + cand.learn * weight
+                local base
+                if cont and cont <= switch then base = cont else base, sw[index] = switch, true end
+                local total = base + cand.craft * crafts * weight
+                new[index] = total
+                if not best or total < best then best, arg = total, index end
+            end
+        end
+        if not best then break end
+        cur, prevBest, bestArg[s], switched[s], reached = new, best, arg, sw, s + 1
+    end
+    -- Rückweg: welches Rezept bei welchem Skill
+    local pick, index = {}, bestArg[reached - 1]
+    for s = reached - 1, 1, -1 do
+        pick[s] = index
+        if switched[s][index] then index = bestArg[s - 1] end
+    end
+    return usable, pick, reached
+end
+
+local allCache = {}
+
+function BT.ComputeAllRecipes()
+    if allCache.stamp == BT.solveStamp then return allCache end
+    local stock = {}
+    for key, count in pairs(BT.totals or {}) do stock[key] = count end
+    local out = { stamp = BT.solveStamp }
+    for _, prof in ipairs(BT.PROFS) do
+        local templates = TEMPLATES[prof.key]
+        if templates and not prof.gather then
+            local skill = BT.Skill(prof.key) or 0
+            local factor = {}
+            for key, count in pairs(stock) do if count > 0 then factor[key] = 0 end end
+            local usable, pick, reached, usage
+            for _ = 1, 3 do
+                local Price = MakePricer(factor)
+                usable, pick, reached = PlanAll(templates, skill, Price, false)
+                if reached < MAX_SKILL then usable, pick, reached = PlanAll(templates, skill, Price, true) end
+                usage = {}
+                for s = math.max(1, skill), reached - 1 do
+                    local cand = usable[pick[s]]
+                    local crafts = CraftsPerPoint(cand.step, s)
+                    for _, reagent in ipairs(cand.step.r) do usage[reagent[1]] = (usage[reagent[1]] or 0) + crafts * reagent[2] end
+                end
+                local changed = false
+                for key, used in pairs(usage) do
+                    local have = stock[key] or 0
+                    local f = have == 0 and 1 or (used <= have and 0 or (used - have) / used)
+                    if math.abs((factor[key] or 1) - f) > 0.01 then changed = true end
+                    factor[key] = f
+                end
+                if not changed then break end
+            end
+            local Price = MakePricer(factor)
+            local steps, total, estimated, missing = {}, 0, false, false
+            local s = 1
+            while s < reached do
+                local index, from = pick[s], s
+                local cand = usable[index]
+                local crafts, craftsOpen = 0, 0
+                while s < reached and pick[s] == index do
+                    local c = CraftsPerPoint(cand.step, s)
+                    crafts = crafts + c
+                    if s >= skill then craftsOpen = craftsOpen + c end
+                    s = s + 1
+                end
+                local step = {}
+                for k, v in pairs(cand.step) do step[k] = v end
+                step.f, step.t, step.c = from, s, math.max(1, math.ceil(crafts - 1e-9))
+                local craftCost = 0
+                for _, reagent in ipairs(step.r) do craftCost = craftCost + Price(reagent[1]) * reagent[2] end
+                step.costMat = craftCost * craftsOpen
+                step.costLearn = s > skill and cand.learn or 0
+                step.learnHow, step.estimated = cand.how, cand.est
+                if step.costLearn >= UNAVAILABLE then missing = true step.costLearn = 0 end
+                total = total + step.costMat + step.costLearn
+                estimated = estimated or (cand.est and craftsOpen > 0)
+                steps[#steps + 1] = step
+            end
+            for key, used in pairs(usage or {}) do
+                if stock[key] then stock[key] = math.max(0, stock[key] - used) end
+            end
+            out[prof.key] = { steps = steps, total = total, estimated = estimated, missing = missing }
+        end
+    end
+    allCache = out
+    return out
+end
+
+function BT.AllRecipesGuide(prof)
+    if prof.gather or not TEMPLATES[prof.key] then return nil end
+    local guide = { key = "allrecipes", title = L["Günstigster Weg (alle Rezepte)"], cheapest = true,
+        url = L["Eigener Guide aus allen Rezepten des Berufs (Forever-Spieldaten): je Skillpunkt das billigste Rezept nach Farbe und Chance, mit AH-, Händler-, Lehrer- und Rezeptpreisen; gelernte Rezepte und vorhandene Materialien zählen gratis."] }
+    return setmetatable(guide, { __index = function(_, k)
+        local plan = BT.ComputeAllRecipes()[prof.key]
+        if k == "steps" then return plan and #plan.steps > 0 and plan.steps or prof.steps end
         if k == "plan" then return plan end
     end })
 end

@@ -47,8 +47,13 @@ end
 function BT.StepName(step)
     if DE then return step.n end
     if step.lump then return L["Einkaufsliste"] end
-    local id = BT.STEP_ITEM and BT.STEP_ITEM[step.en]
-    return GameItemName(id) or (LD.s and LD.s[step.en]) or step.en
+    local id = step.item or (BT.STEP_ITEM and BT.STEP_ITEM[step.en])
+    local name = GameItemName(id) or (LD.s and LD.s[step.en])
+    if not name and step.spell and C_Spell and C_Spell.GetSpellName then
+        local ok, own = pcall(C_Spell.GetSpellName, step.spell)
+        if ok and type(own) == "string" and own ~= "" and not (issecretvalue and issecretvalue(own)) then name = own end
+    end
+    return name or step.en
 end
 
 function BT.RecipeItemName(rc)
@@ -645,6 +650,8 @@ function BT.GuideList(prof, raw)
     for _, guide in ipairs(prof.alts or {}) do list[#list + 1] = guide end
     local own = not raw and BT.CheapestGuide and BT.CheapestGuide(prof)
     if own then list[#list + 1] = own end
+    local all = not raw and BT.AllRecipesGuide and BT.AllRecipesGuide(prof)
+    if all then list[#list + 1] = all end
     return list
 end
 
@@ -661,7 +668,7 @@ function BT.GuideSteps(prof) return BT.ActiveGuide(prof).steps end
 BT.ALL_GUIDES = {
     { key = "metabot", title = "Metabot" }, { key = "rankedboost", title = "RankedBoost" }, { key = "wowhead", title = "Wowhead" },
     { key = "wowtbc", title = "wowtbc.gg" }, { key = "goldgoblin", title = "GoldGoblin" }, { key = "wowprofessions", title = "wow-professions" },
-    { key = "cheapest", title = L["Günstigster Weg"] },
+    { key = "cheapest", title = L["Günstigster Weg (aus Guides)"] }, { key = "allrecipes", title = L["Günstigster Weg (alle Rezepte)"] },
 }
 
 function BT.GlobalGuideTitle()
