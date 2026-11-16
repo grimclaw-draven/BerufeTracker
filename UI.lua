@@ -558,6 +558,9 @@ local function BuildMaterials(list)
 end
 
 local function RecipeTag(step)
+    local excluded = BT.CRAFT_EXCLUDE and BT.CRAFT_EXCLUDE[step.en]
+    if excluded == "cooldown" then return "  |cffff9933[" .. L["lange Abklingzeit"] .. "]|r" end
+    if excluded == "quest" then return "  |cffff9933[" .. L["nur über Quest"] .. "]|r" end
     if step.src ~= "R" then return "" end
     local state, who = BT.RecipeStatus(step)
     if state == "known" then return "  |cff33cc33[" .. L["gelernt"] .. "]|r" end

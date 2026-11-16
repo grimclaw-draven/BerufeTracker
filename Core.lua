@@ -761,6 +761,11 @@ local function RemainingCrafts(step, skill)
     return math.ceil(step.c * (step.t - skill) / (step.t - step.f))
 end
 
+-- Zählt der Beruf beim aktuellen Filter mit (wie in der Materialliste)?
+function BT.ProfCounted(profKey)
+    return not DB.opt.off[profKey] and #FilteredSkills(profKey) > 0
+end
+
 function BT.StepRemaining(step, profKey)
     return RemainingCrafts(step, (BT.Skill(profKey)))
 end

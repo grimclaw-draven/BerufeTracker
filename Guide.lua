@@ -558,7 +558,8 @@ local function EvalSteps(steps, profKey, stock, Price)
             if not step.lump and not learned[step.en] then
                 learned[step.en] = true
                 local learn = LearnCost(step)
-                if learn >= UNAVAILABLE then missing = missing + 1 else cost = cost + learn end
+                -- lange Abklingzeit oder nur über Quest: so nicht machbar, wie ein fehlendes Rezept zählen
+                if learn >= UNAVAILABLE or (BT.CRAFT_EXCLUDE and BT.CRAFT_EXCLUDE[step.en]) then missing = missing + 1 else cost = cost + learn end
             end
         end
     end
@@ -577,13 +578,22 @@ function BT.GuideCosts()
         local stock = {}
         for key, count in pairs(BT.totals or {}) do stock[key] = count end
         local res = { total = 0, missing = 0, estimated = false, prof = {} }
-        for _, prof in ipairs(BT.PROFS) do
-            if not prof.gather and not BT.db.opt.off[prof.key] then
-                local guide = pickGuide(prof)
-                local cost, missing, est = EvalSteps(guide.steps, prof.key, stock, Price)
-                res.prof[prof.key] = { cost = cost, missing = missing }
-                res.total, res.missing = res.total + cost, res.missing + missing
-                res.estimated = res.estimated or est
+        -- zuerst die Berufe, die beim Filter mitzählen (sie bilden die Summe und teilen sich den Bestand),
+        -- danach die übrigen nur für das Auswahlmenü des einzelnen Berufs
+        for pass = 1, 2 do
+            for _, prof in ipairs(BT.PROFS) do
+                local counted = BT.ProfCounted(prof.key)
+                if not prof.gather and not BT.db.opt.off[prof.key] and counted == (pass == 1) then
+                    local guide = pickGuide(prof)
+                    local own = pass == 1 and stock or {}
+                    if pass == 2 then for key, count in pairs(stock) do own[key] = count end end
+                    local cost, missing, est = EvalSteps(guide.steps, prof.key, own, Price)
+                    res.prof[prof.key] = { cost = cost, missing = missing, counted = counted }
+                    if counted then
+                        res.total, res.missing = res.total + cost, res.missing + missing
+                        res.estimated = res.estimated or est
+                    end
+                end
             end
         end
         return res
