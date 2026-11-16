@@ -30,6 +30,8 @@ Para **WoW Forever**, en el idioma de tu cliente de juego: inglés, alemán, fra
 **En el juego**
 - Las descripciones de objetos (bolsas, banco, casa de subastas, botín) muestran cuánto te falta todavía con tu filtro actual.
 - Los filones de mineral y las hierbas del mundo muestran lo que aún necesitas de ellos.
+- Los enemigos muestran qué materiales que necesitas sueltan, además del paño de los humanoides y el cuero de las bestias (desuello) de su nivel.
+- Las armas y armaduras muestran qué materiales de encantamiento da aproximadamente desencantarlas, si los necesitas.
 
 ## Uso
 

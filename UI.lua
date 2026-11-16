@@ -1177,6 +1177,114 @@ end
 
 -- Zusatzzeilen in Item-Tooltips (Taschen, Bank, Auktionshaus, Beute, Links)
 -- und im Tooltip von Erzadern und Kräutern in der Welt.
+-- Stufenbereiche aus den Bezugshinweisen (dieselben, die der Material-Tooltip zeigt):
+-- Stoff von Humanoiden, Leder von Wildtieren (Kürschnern), Verzauberungsmaterial nach Gegenstandsstufe.
+local CLOTH_HINT = "Beute von humanoiden Gegnern, Stufe %s"
+local LEATHER_HINT = "Kürschnerei: Tiere häuten, Stufe %s"
+local DISENCHANT_HINT = "Entzaubern grüner Gegenstände, Gegenstandsstufe ca. %s"
+local hintRanges = {}
+local function KeysForLevel(hint, level)
+    local ranges = hintRanges[hint]
+    if not ranges then
+        ranges = {}
+        for key, source in pairs(BT.SOURCES or {}) do
+            if source.h == hint and source.ha then
+                local lo, hi = source.ha:match("(%d+)%D+(%d+)")
+                if lo then ranges[#ranges + 1] = { key = key, lo = tonumber(lo), hi = tonumber(hi) } end
+            end
+        end
+        table.sort(ranges, function(a, b) return a.lo < b.lo end)
+        hintRanges[hint] = ranges
+    end
+    local keys = {}
+    for _, range in ipairs(ranges) do
+        if level >= range.lo and level <= range.hi then keys[#keys + 1] = range.key end
+    end
+    return keys
+end
+
+-- Eine Zeile "Material   fehlt X (Bestand/Bedarf)", nur wenn es laut Filter gebraucht wird.
+local function NeedLine(tip, key, tag)
+    local res = BT.result and BT.result[key]
+    if not res or res.need == 0 then return false end
+    local state = res.missing > 0 and ("|cffff6666" .. L["fehlt %s"]:format(BT.Format(res.missing)) .. "|r") or ("|cff33cc33" .. L["genug"] .. "|r")
+    tip:AddDoubleLine(BT.ItemName(key) .. (tag and (" |cff999999(" .. tag .. ")|r") or ""),
+        state .. " |cff999999(" .. BT.Format(res.have) .. "/" .. BT.Format(res.need) .. ")|r", 1, 1, 1, 1, 1, 1)
+    return true
+end
+
+-- Mehrere Materialien: Kopfzeile nur, wenn mindestens eines gebraucht wird; jedes Material nur einmal.
+local function NeedBlock(tip, entries, subtitle)
+    local seen, shown = {}, false
+    for _, entry in ipairs(entries) do
+        local res = not seen[entry.key] and BT.result and BT.result[entry.key]
+        seen[entry.key] = true
+        if res and res.need > 0 then
+            if not shown then
+                TrackerHeader(tip)
+                if subtitle then tip:AddLine(subtitle, 0.8, 0.8, 0.8) end
+                shown = true
+            end
+            NeedLine(tip, entry.key, entry.tag)
+        end
+    end
+    return shown
+end
+
+-- Kreaturtyp: über die Spiel-ID (1 Wildtier, 7 Humanoid), sonst über bekannte Namen in allen Sprachen.
+local TYPE_NAMES = {
+    [1] = { "Beast", "Wildtier", "Bête", "Bestia", "Fera", "Животное", "야수", "野兽", "野獸" },
+    [7] = { "Humanoid", "Humanoide", "Humanoïde", "Umanoide", "Гуманоид", "인간형", "人型生物" },
+}
+local function IsCreatureType(unit, typeID)
+    local name = UnitCreatureType and Plain(UnitCreatureType(unit))
+    if not name then return false end
+    if C_CreatureInfo and C_CreatureInfo.GetCreatureTypeInfo then
+        local ok, info = pcall(C_CreatureInfo.GetCreatureTypeInfo, typeID)
+        if ok and info and info.name == name then return true end
+    end
+    for _, known in ipairs(TYPE_NAMES[typeID]) do
+        if known == name then return true end
+    end
+    return false
+end
+
+-- Gegner: was er laut QuestieDB droppt, dazu Stoff (Humanoide) und Leder zum Kürschnern (Wildtiere) nach Stufe.
+local function AddMobLines(tip, unit)
+    if not BT.result or not unit or not UnitExists(unit) or UnitIsPlayer(unit) then return end
+    if UnitCanAttack and not UnitCanAttack("player", unit) then return end
+    local guid = UnitGUID and Plain(UnitGUID(unit))
+    local npcID = type(guid) == "string" and tonumber(guid:match("^Creature%-%d+%-%d+%-%d+%-%d+%-(%d+)%-"))
+    local entries = {}
+    for _, key in ipairs(npcID and BT.MOB_DROPS and BT.MOB_DROPS[npcID] or {}) do entries[#entries + 1] = { key = key } end
+    local level = UnitLevel and Plain(UnitLevel(unit))
+    if type(level) == "number" and level > 0 then
+        if IsCreatureType(unit, 7) then
+            for _, key in ipairs(KeysForLevel(CLOTH_HINT, level)) do entries[#entries + 1] = { key = key } end
+        elseif IsCreatureType(unit, 1) then
+            for _, key in ipairs(KeysForLevel(LEATHER_HINT, level)) do entries[#entries + 1] = { key = key, tag = L["Kürschnern"] } end
+        end
+    end
+    if NeedBlock(tip, entries) then tip:Show() end
+end
+
+-- Ausrüstung: welches Verzauberungsmaterial Entzaubern ungefähr ergibt (grün: Staub/Essenz, blau/lila: Splitter).
+local function AddDisenchantLines(tip, id)
+    local instant = (C_Item and C_Item.GetItemInfoInstant) or GetItemInfoInstant
+    local get = (C_Item and C_Item.GetItemInfo) or GetItemInfo
+    if not (instant and get) then return end
+    local ok, _, _, _, _, _, classID = pcall(instant, id)
+    if not ok or (classID ~= 2 and classID ~= 4) then return end -- nur Waffen und Rüstung
+    local ok2, _, _, quality, itemLevel = pcall(get, id)
+    if not ok2 or type(quality) ~= "number" or quality < 2 or quality > 4 or type(itemLevel) ~= "number" then return end
+    local entries = {}
+    for _, key in ipairs(KeysForLevel(DISENCHANT_HINT, itemLevel)) do
+        local isShard = key:find("shard", 1, true) ~= nil
+        if (quality == 2) ~= isShard then entries[#entries + 1] = { key = key } end
+    end
+    NeedBlock(tip, entries, L["Entzaubern ergibt ca.:"])
+end
+
 local function HookItemTooltips()
     local function OnItem(tip, data)
         if tip ~= GameTooltip and tip ~= ItemRefTooltip then return end
@@ -1193,7 +1301,20 @@ local function HookItemTooltips()
             -- Handwerksmaterial, das keine Route braucht: sagen, statt zu schweigen
             TrackerHeader(tip)
             tip:AddLine(L["Für keine Route gebraucht"], 0.6, 0.6, 0.6)
+        elseif id then
+            AddDisenchantLines(tip, id)
         end
+    end
+    -- Gegner-Tooltips
+    local function OnUnit(tip)
+        if tip ~= GameTooltip then return end
+        local _, unit = tip:GetUnit()
+        AddMobLines(tip, unit or "mouseover")
+    end
+    if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall and Enum and Enum.TooltipDataType and Enum.TooltipDataType.Unit then
+        TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Unit, OnUnit)
+    else
+        GameTooltip:HookScript("OnTooltipSetUnit", OnUnit)
     end
     if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall and Enum and Enum.TooltipDataType then
         TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, OnItem)

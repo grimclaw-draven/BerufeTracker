@@ -30,6 +30,8 @@ For **WoW Forever**, in the language of your game client: English, German, Frenc
 **In the game**
 - Item tooltips (bags, bank, auction house, loot) show how much you still need under your current filter.
 - Ore veins and herbs in the world show what you still need from them.
+- Enemies show which of your needed materials they drop, plus cloth from humanoids and leather from beasts (skinning) of their level.
+- Weapons and armor show which enchanting materials disenchanting gives about, if you need them.
 
 ## Usage
 

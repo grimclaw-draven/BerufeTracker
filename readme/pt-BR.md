@@ -30,6 +30,8 @@ Para **WoW Forever**, no idioma do seu cliente de jogo: inglês, alemão, franc�
 **No jogo**
 - As dicas de itens (bolsas, banco, Casa de Leilões, saque) mostram quanto você ainda precisa com o filtro atual.
 - Os veios de minério e as ervas no mundo mostram o que você ainda precisa deles.
+- Os inimigos mostram quais materiais de que você precisa eles deixam cair, além de tecido de humanoides e couro de feras (esfolamento) do nível deles.
+- Armas e armaduras mostram quais materiais de encantamento o desencantamento rende aproximadamente, se você precisar deles.
 
 ## Uso
 

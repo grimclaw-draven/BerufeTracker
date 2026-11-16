@@ -30,6 +30,8 @@ Per **WoW Forever**, nella lingua del tuo client di gioco: inglese, tedesco, fra
 **Nel gioco**
 - I tooltip degli oggetti (borse, banca, casa d'aste, bottino) mostrano quanto ti serve ancora con il filtro attuale.
 - Le vene di minerale e le erbe nel mondo mostrano quanto ti serve ancora da esse.
+- I nemici mostrano quali materiali che ti servono lasciano cadere, oltre alla stoffa degli umanoidi e al cuoio delle bestie (scuoiatura) del loro livello.
+- Armi e armature mostrano quali materiali di incantamento si ottengono circa disincantandole, se ti servono.
 
 ## Utilizzo
 

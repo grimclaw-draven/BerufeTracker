@@ -30,6 +30,8 @@ Pour **WoW Forever**, dans la langue de votre client de jeu : anglais, allemand,
 **Dans le jeu**
 - Les infobulles d'objets (sacs, banque, hôtel des ventes, butin) indiquent combien il vous en faut encore avec votre filtre actuel.
 - Les filons de minerai et les herbes dans le monde indiquent ce qu'il vous faut encore en tirer.
+- Les ennemis indiquent quels matériaux dont vous avez besoin ils laissent tomber, ainsi que le tissu des humanoïdes et le cuir des bêtes (dépeçage) de leur niveau.
+- Les armes et armures indiquent quels matériaux d’enchantement le désenchantement donne environ, si vous en avez besoin.
 
 ## Utilisation
 
