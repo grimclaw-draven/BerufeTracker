@@ -98,6 +98,23 @@ local function OpenAllGuidesMenu(button)
     local costs = BT.GuideCosts and BT.GuideCosts() or {}
     for _, guide in ipairs(BT.ALL_GUIDES) do
         local cost, notes = costs[guide.key], {}
+        -- Wo endet der Guide? Über alle Herstellungsberufe, die ihn haben.
+        local lowest, highest, lump = nil, nil, false
+        for _, prof in ipairs(BT.PROFS) do
+            if not prof.gather then
+                for _, entry in ipairs(BT.GuideList(prof, true)) do
+                    if entry.key == guide.key then
+                        local last = entry.steps[#entry.steps].t
+                        lowest, highest = math.min(lowest or last, last), math.max(highest or last, last)
+                        lump = lump or entry.lump
+                    end
+                end
+            end
+        end
+        if lump then notes[#notes + 1] = L["Einkaufsliste"] end
+        if lowest and lowest < 300 then
+            notes[#notes + 1] = (highest == lowest and L["bis %d"] or L["teils nur bis %d"]):format(lowest)
+        end
         if cost then
             notes[#notes + 1] = L["ca. %s"]:format(BT.Money(cost.total))
             if cost.missing > 0 then notes[#notes + 1] = "|cffff9933" .. MissingText(cost.missing) .. "|cff999999" end
