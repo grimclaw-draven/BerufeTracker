@@ -1278,6 +1278,24 @@ end
 -- Deshalb wird für jeden Beute-Gegner der aktuellen Karte der Textblock vorab gebaut; sichere Spielfunktionen
 -- vergleichen den geschützten Namen mit jedem Kandidaten und lassen nur den passenden Block sichtbar.
 -- Das Addon erfährt nie, welcher Gegner es ist. Die Zahl der Zeilen darf nicht vom Ergebnis abhängen: immer genau eine.
+-- Aktuelle Karte: In WoW Forever ist GetBestMapForUnit zeitweise geschützt (z. B. im Kampf). Deshalb wird die Karte
+-- bei Zonenwechseln und immer dann gemerkt, wenn sie lesbar ist; sonst gilt die zuletzt bekannte (wie bei ATT).
+local lastMapID
+local function CurrentMapID()
+    local raw = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
+    local mapID = Plain(raw)
+    if type(mapID) == "number" and mapID > 0 then lastMapID = mapID end
+    return lastMapID, raw
+end
+BT.CurrentMapID = CurrentMapID
+do
+    local frame = CreateFrame("Frame")
+    for _, event in ipairs({ "PLAYER_ENTERING_WORLD", "ZONE_CHANGED", "ZONE_CHANGED_INDOORS", "ZONE_CHANGED_NEW_AREA", "PLAYER_REGEN_ENABLED" }) do
+        frame:RegisterEvent(event)
+    end
+    frame:SetScript("OnEvent", function() CurrentMapID() end)
+end
+
 local SecretMob = {}
 do
     local function CanSelect()
@@ -1316,11 +1334,11 @@ do
     local cache = {}
     local function Candidates(mapID)
         if cache.result == BT.result and cache.map == mapID and cache.filter == BT.db.opt.matFilter then return cache.list end
-        local maps = MapChain(mapID)
+        local maps = mapID and MapChain(mapID) -- ohne Karte: alle Beute-Gegner (gekappt, s. u.)
         local byName, order = {}, {}
         for id, info in pairs(BT.MOB_INFO or {}) do
-            local here = false
-            for _, m in ipairs(info.m or {}) do if maps[m] then here = true break end end
+            local here = not maps
+            for _, m in ipairs(maps and info.m or {}) do if maps[m] then here = true break end end
             local drops = here and BT.MOB_DROPS and BT.MOB_DROPS[id]
             if drops then
                 local name = BT.MobName(id, info.de)
@@ -1347,7 +1365,7 @@ do
                         .. " |cff999999(" .. BT.Format(res.have) .. "/" .. BT.Format(res.need) .. ")|r"
                 end
             end
-            if #lefts > 1 then
+            if #lefts > 1 and #list < 150 then
                 list[#list + 1] = { name = entry.name, left = table.concat(lefts, "\n"), right = table.concat(rights, "\n") }
             end
         end
@@ -1360,9 +1378,7 @@ do
 
     function SecretMob.Attach(tip, secretName)
         if not CanSelect() or not BT.result then return false end
-        local mapID = C_Map and C_Map.GetBestMapForUnit and Plain(C_Map.GetBestMapForUnit("player"))
-        if not mapID then return false end
-        local list = Candidates(mapID)
+        local list = Candidates(CurrentMapID())
         if #list == 0 then return false end
         local leftOut, rightOut = "", ""
         for _, candidate in ipairs(list) do
@@ -1600,16 +1616,13 @@ function BT.PrintMobDebug()
     print(tag .. "Wildtier: " .. tostring(IsCreatureType(unit, 1)) .. ", Humanoid: " .. tostring(IsCreatureType(unit, 7)))
     local info = BT.mobDebug
     print(tag .. "Sichere Namensauswahl verfügbar: " .. tostring(SecretMob.CanSelect() and true or false))
-    local mapID = C_Map and C_Map.GetBestMapForUnit and Plain(C_Map.GetBestMapForUnit("player"))
-    if mapID then
-        local maps = {}
-        for m in pairs(SecretMob.MapChain(mapID)) do maps[#maps + 1] = m end
-        local list = SecretMob.Candidates(mapID)
-        print(tag .. "Karte: " .. table.concat(maps, ", ") .. ", Beute-Gegner hier: " .. tostring(SecretMob.cache.mobsHere) .. ", davon mit benötigter Beute: " .. #list)
-        for index = 1, math.min(#list, 5) do print(tag .. "   " .. list[index].name) end
-    else
-        print(tag .. "Karte: unbekannt")
-    end
+    local mapID, raw = CurrentMapID()
+    print(tag .. "Karte gerade: " .. (raw == nil and "leer" or DebugValue(raw)) .. ", gemerkt: " .. tostring(mapID))
+    local maps = {}
+    for m in pairs(mapID and SecretMob.MapChain(mapID) or {}) do maps[#maps + 1] = m end
+    local list = SecretMob.Candidates(mapID)
+    print(tag .. "Karten: " .. (#maps > 0 and table.concat(maps, ", ") or "alle (keine bekannt)") .. ", Beute-Gegner: " .. tostring(SecretMob.cache.mobsHere) .. ", davon mit benötigter Beute: " .. #list)
+    for index = 1, math.min(#list, 5) do print(tag .. "   " .. list[index].name) end
     print(tag .. "Letzter Gegner-Tooltip: " .. (info and ("vor " .. (time() - info.at) .. " s, GUID " .. tostring(info.mode) .. ", Block angehängt: " .. tostring(info.attached) .. ", Fehler: " .. tostring(info.error or "keiner")) or "noch keiner"))
 end
 
