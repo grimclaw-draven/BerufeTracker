@@ -84,7 +84,8 @@ local function Candidates(prof)
         if not guide.lump then
             for _, step in ipairs(guide.steps) do
                 local id = step.en .. "|" .. step.f .. "|" .. step.t .. "|" .. step.c
-                if step.t > step.f and not seen[id] then
+                -- Abklingzeit- und Quest-Rezepte gelten für beide eigenen Guides nicht (BT.CRAFT_EXCLUDE)
+                if step.t > step.f and not seen[id] and not (BT.CRAFT_EXCLUDE and BT.CRAFT_EXCLUDE[step.en]) then
                     seen[id] = true
                     list[#list + 1] = { step = step, guide = guide.title }
                 end
@@ -198,7 +199,7 @@ function BT.ComputeCheapest()
                 if not changed then break end
             end
             local Price = MakePricer(factor)
-            local steps, total, estimated, missing = {}, 0, false, false
+            local steps, total, estimated, missing = {}, 0, false, 0
             for _, block in ipairs(blocks) do
                 local cand, orig = block.cand, block.cand.step
                 local step = {}
@@ -213,7 +214,7 @@ function BT.ComputeCheapest()
                 step.learnHow = cand.learnHow
                 step.fromGuide = cand.guide
                 step.estimated = cand.est
-                if step.costLearn >= UNAVAILABLE then missing = true step.costLearn = 0 end
+                if step.costLearn >= UNAVAILABLE then missing = missing + 1 step.costLearn = 0 end
                 total = total + step.costMat + step.costLearn
                 estimated = estimated or (cand.est and above > 0)
                 steps[#steps + 1] = step
@@ -297,8 +298,11 @@ BT.CraftsPerPoint = CraftsPerPoint
 
 local MAX_SKILL = 300
 
--- Billigste Folge von Rezepten Punkt für Punkt (Zustand: zuletzt benutztes Rezept).
-local function PlanAll(steps, skill, Price, withUnavailable)
+-- Billigster Weg Punkt für Punkt. Zwei Arten von Bausteinen:
+--  * Rezepte (Zustand = zuletzt benutztes Rezept, Herstellungen je Punkt nach Farbe und Chance)
+--  * Abschnitte der anderen Guides (mit deren Herstellungszahlen), Start bei jedem Skill, Ende an einer Abschnittsgrenze.
+-- So ist das Ergebnis nie teurer als die beste Zusammensetzung aus den Guides.
+local function PlanAll(steps, blocks, skill, Price, withUnavailable)
     local usable = {}
     for _, step in ipairs(steps) do
         local learn, how = LearnCost(step)
@@ -312,36 +316,113 @@ local function PlanAll(steps, skill, Price, withUnavailable)
             usable[#usable + 1] = { step = step, learn = learn, how = how, craft = craft, est = est }
         end
     end
-    local cur, prevBest, bestArg, switched = {}, 0, {}, {}
+    local guideBlocks, ends = {}, {}
+    for _, cand in ipairs(blocks) do
+        local learn, how = LearnCost(cand.step)
+        if withUnavailable or learn < UNAVAILABLE then
+            local craft, est = 0, false
+            for _, reagent in ipairs(cand.step.r) do
+                local p, h = Price(reagent[1])
+                craft = craft + p * reagent[2]
+                est = est or h == "est" or h == "none"
+            end
+            guideBlocks[#guideBlocks + 1] = { step = cand.step, guide = cand.guide, learn = learn, how = how, craft = craft, est = est,
+                perPoint = cand.step.c / (cand.step.t - cand.step.f) }
+            ends[cand.step.f], ends[cand.step.t] = true, true
+        end
+    end
+    local endList = {}
+    for p in pairs(ends) do endList[#endList + 1] = p end
+    table.sort(endList)
+
+    local function W(a, b) -- gewichtete Zahl an Punkten von a bis b (unter dem Skill zählt kaum)
+        local above = math.max(0, b - math.max(a, skill))
+        return above + BELOW * ((b - a) - above)
+    end
+
+    local arrive = { [1] = 0 } -- billigste Kosten, Skill s zu erreichen
+    local viaBlock = {}        -- [s] = {von, Baustein}, wenn s am billigsten über einen Guide-Abschnitt erreicht wird
+    local pend = {}
+    local cur, stateBest, bestArg, switched = {}, {}, {}, {}
     local reached = 1
     for s = 1, MAX_SKILL - 1 do
-        local new, best, arg, sw = {}, nil, nil, {}
+        local base = arrive[s]
+        if not base then break end
         local weight = s >= skill and 1 or BELOW
+        -- Guide-Abschnitte, die bei s beginnen können
+        for _, block in ipairs(guideBlocks) do
+            local step = block.step
+            if step.f <= s and s < step.t then
+                for _, e in ipairs(endList) do
+                    if e > s and e <= step.t then
+                        local total = base + block.craft * block.perPoint * W(s, e) + block.learn * weight
+                        if not pend[e] or total < pend[e][1] then pend[e] = { total, s, block } end
+                    end
+                end
+            end
+        end
+        -- Rezepte Punkt für Punkt
+        local new, best, arg, sw = {}, nil, nil, {}
         for index, cand in ipairs(usable) do
             local crafts = CraftsPerPoint(cand.step, s)
             if crafts then
                 local cont = cur[index]
-                local switch = prevBest + cand.learn * weight
-                local base
-                if cont and cont <= switch then base = cont else base, sw[index] = switch, true end
-                local total = base + cand.craft * crafts * weight
+                local switch = base + cand.learn * weight
+                local start
+                if cont and cont <= switch then start = cont else start, sw[index] = switch, true end
+                local total = start + cand.craft * crafts * weight
                 new[index] = total
                 if not best or total < best then best, arg = total, index end
             end
         end
-        if not best then break end
-        cur, prevBest, bestArg[s], switched[s], reached = new, best, arg, sw, s + 1
+        cur, bestArg[s], switched[s] = new, arg, sw
+        local nextS = s + 1
+        local p = pend[nextS]
+        if best and (not p or best <= p[1]) then
+            arrive[nextS], stateBest[nextS] = best, true
+        elseif p then
+            arrive[nextS], viaBlock[nextS] = p[1], { p[2], p[3] }
+        end
+        if arrive[nextS] then reached = nextS end
     end
-    -- Rückweg: welches Rezept bei welchem Skill
-    local pick, index = {}, bestArg[reached - 1]
-    for s = reached - 1, 1, -1 do
-        pick[s] = index
-        if switched[s][index] then index = bestArg[s - 1] end
+    -- Rückweg: Abschnitte {kind, cand, from, to}
+    local segments, pos = {}, reached
+    while pos > 1 do
+        if viaBlock[pos] then
+            local from, block = viaBlock[pos][1], viaBlock[pos][2]
+            table.insert(segments, 1, { block = block, from = from, to = pos })
+            pos = from
+        else
+            local s, index = pos - 1, bestArg[pos - 1]
+            local to = pos
+            while true do
+                if switched[s][index] or s == 1 then break end
+                s = s - 1
+            end
+            table.insert(segments, 1, { cand = usable[index], from = s, to = to })
+            pos = s
+        end
     end
-    return usable, pick, reached
+    return segments, reached
 end
 
 local allCache = {}
+
+-- Material und Herstellungen eines Abschnitts (offen = ab dem aktuellen Skill).
+local function SegmentCrafts(seg, skill)
+    if seg.block then
+        local per = seg.block.perPoint
+        local above = math.max(0, seg.to - math.max(seg.from, skill))
+        return per * (seg.to - seg.from), per * above
+    end
+    local all, open = 0, 0
+    for s = seg.from, seg.to - 1 do
+        local c = CraftsPerPoint(seg.cand.step, s)
+        all = all + c
+        if s >= skill then open = open + c end
+    end
+    return all, open
+end
 
 function BT.ComputeAllRecipes()
     if allCache.stamp == BT.solveStamp then return allCache end
@@ -352,18 +433,19 @@ function BT.ComputeAllRecipes()
         local templates = TEMPLATES[prof.key]
         if templates and not prof.gather then
             local skill = BT.Skill(prof.key) or 0
+            local blocks = Candidates(prof)
             local factor = {}
             for key, count in pairs(stock) do if count > 0 then factor[key] = 0 end end
-            local usable, pick, reached, usage
+            local segments, reached, usage
             for _ = 1, 3 do
                 local Price = MakePricer(factor)
-                usable, pick, reached = PlanAll(templates, skill, Price, false)
-                if reached < MAX_SKILL then usable, pick, reached = PlanAll(templates, skill, Price, true) end
+                segments, reached = PlanAll(templates, blocks, skill, Price, false)
+                if reached < MAX_SKILL then segments, reached = PlanAll(templates, blocks, skill, Price, true) end
                 usage = {}
-                for s = math.max(1, skill), reached - 1 do
-                    local cand = usable[pick[s]]
-                    local crafts = CraftsPerPoint(cand.step, s)
-                    for _, reagent in ipairs(cand.step.r) do usage[reagent[1]] = (usage[reagent[1]] or 0) + crafts * reagent[2] end
+                for _, seg in ipairs(segments) do
+                    local _, open = SegmentCrafts(seg, skill)
+                    local step = (seg.block or seg.cand).step
+                    for _, reagent in ipairs(step.r) do usage[reagent[1]] = (usage[reagent[1]] or 0) + open * reagent[2] end
                 end
                 local changed = false
                 for key, used in pairs(usage) do
@@ -375,29 +457,23 @@ function BT.ComputeAllRecipes()
                 if not changed then break end
             end
             local Price = MakePricer(factor)
-            local steps, total, estimated, missing = {}, 0, false, false
-            local s = 1
-            while s < reached do
-                local index, from = pick[s], s
-                local cand = usable[index]
-                local crafts, craftsOpen = 0, 0
-                while s < reached and pick[s] == index do
-                    local c = CraftsPerPoint(cand.step, s)
-                    crafts = crafts + c
-                    if s >= skill then craftsOpen = craftsOpen + c end
-                    s = s + 1
-                end
+            local steps, total, estimated, missing = {}, 0, false, 0
+            for _, seg in ipairs(segments) do
+                local src = seg.block or seg.cand
+                local all, open = SegmentCrafts(seg, skill)
                 local step = {}
-                for k, v in pairs(cand.step) do step[k] = v end
-                step.f, step.t, step.c = from, s, math.max(1, math.ceil(crafts - 1e-9))
+                for k, v in pairs(src.step) do step[k] = v end
+                step.f, step.t, step.c = seg.from, seg.to, math.max(1, math.ceil(all - 1e-9))
                 local craftCost = 0
                 for _, reagent in ipairs(step.r) do craftCost = craftCost + Price(reagent[1]) * reagent[2] end
-                step.costMat = craftCost * craftsOpen
-                step.costLearn = s > skill and cand.learn or 0
-                step.learnHow, step.estimated = cand.how, cand.est
-                if step.costLearn >= UNAVAILABLE then missing = true step.costLearn = 0 end
+                step.costMat = craftCost * open
+                step.costLearn = seg.to > skill and src.learn or 0
+                step.learnHow, step.estimated = src.how, src.est
+                step.fromGuide = seg.block and seg.block.guide or nil
+                if seg.block then step.y, step.l, step.g = nil, nil, nil end
+                if step.costLearn >= UNAVAILABLE then missing = missing + 1 step.costLearn = 0 end
                 total = total + step.costMat + step.costLearn
-                estimated = estimated or (cand.est and craftsOpen > 0)
+                estimated = estimated or (src.est and open > 0)
                 steps[#steps + 1] = step
             end
             for key, used in pairs(usage or {}) do

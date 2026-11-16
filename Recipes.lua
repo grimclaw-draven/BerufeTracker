@@ -343,6 +343,8 @@ local recipes = {
   ["truesilver-transformer"]={makes=1,reag={["truesilver-bar"]=2,["elemental-earth"]=2,["elemental-air"]=1}},
 }
 for key, recipe in pairs(recipes) do if not BT.RECIPES[key] then BT.RECIPES[key] = recipe end end
+-- In beiden eigenen Guides nicht verwendet (englischer Rezept- oder Ergebnisname -> Grund)
+BT.CRAFT_EXCLUDE = {["Arcanite Bar"]="cooldown",["Basic Campfire"]="cooldown",["Essence of Air"]="cooldown",["Essence of Earth"]="cooldown",["Essence of Fire"]="cooldown",["Essence of Undeath"]="cooldown",["Essence of Water"]="cooldown",["Gold Bar"]="cooldown",["Gordok Ogre Suit"]="quest",["Legionite Bar"]="cooldown",["Living Essence"]="cooldown",["Mooncloth"]="cooldown",["Transmute: Air to Fire"]="cooldown",["Transmute: Arcanite"]="cooldown",["Transmute: Earth to Life"]="cooldown",["Transmute: Earth to Water"]="cooldown",["Transmute: Fire to Earth"]="cooldown",["Transmute: Iron to Gold"]="cooldown",["Transmute: Legionite"]="cooldown",["Transmute: Life to Earth"]="cooldown",["Transmute: Mithril to Truesilver"]="cooldown",["Transmute: Undeath to Water"]="cooldown",["Transmute: Water to Air"]="cooldown",["Transmute: Water to Undeath"]="cooldown",["Truesilver Bar"]="cooldown"}
 BT.ALLREC = {
   ["alchemy"]={
     {s=1245250,en="Elixir of Minor Force",de="Elixier der schwachen Gewalt",src="A",l=1,y=10,g=15,item=247755,mk=1,r={{"silverleaf",1},{"empty-vial",1}}},
