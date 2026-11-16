@@ -69,11 +69,6 @@ local function AddDropArrow(button)
     arrow:SetTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollDown-Up")
 end
 
--- "1 Rezept nicht erhältlich" / "%d Rezepte nicht erhältlich"
-local function MissingText(count)
-    return count == 1 and L["1 Rezept nicht erhältlich"] or L["%d Rezepte nicht erhältlich"]:format(count)
-end
-
 local function OpenGuideMenu(button, prof)
     local options = {}
     local costs = BT.GuideCosts and BT.GuideCosts() or {}
@@ -85,7 +80,6 @@ local function OpenGuideMenu(button, prof)
         local cost = costs[guide.key] and costs[guide.key].prof[prof.key]
         if cost then
             notes[#notes + 1] = L["ca. %s"]:format(BT.Money(cost.cost))
-            if cost.missing > 0 then notes[#notes + 1] = "|cffff9933" .. MissingText(cost.missing) .. "|cff999999" end
         end
         options[#options + 1] = { value = guide.key,
             text = guide.title .. (#notes > 0 and ("  |cff999999" .. table.concat(notes, ", ") .. "|r") or "") }
@@ -117,7 +111,6 @@ local function OpenAllGuidesMenu(button)
         end
         if cost then
             notes[#notes + 1] = L["ca. %s"]:format(BT.Money(cost.total))
-            if cost.missing > 0 then notes[#notes + 1] = "|cffff9933" .. MissingText(cost.missing) .. "|cff999999" end
         end
         options[#options + 1] = { value = guide.key, text = guide.title .. (#notes > 0 and ("  |cff999999" .. table.concat(notes, ", ") .. "|r") or "") }
     end
@@ -652,11 +645,6 @@ local function AddProfession(list, prof, onlyMissing)
         if plan.estimated then
             list[#list + 1] = { kind = "info", height = 16, text = "|cff999999" .. L["Teils geschätzt: im Auktionshaus Preise scannen"] .. "|r" }
         end
-        if plan.missing > 0 then
-            local text = plan.missing == 1 and L["1 Rezept weder beim Händler noch im AH: in den Kosten nicht enthalten"]
-                or L["%d Rezepte weder beim Händler noch im AH: in den Kosten nicht enthalten"]:format(plan.missing)
-            list[#list + 1] = { kind = "info", height = 16, text = "|cffff9933" .. text .. "|r" }
-        end
     end
     if not prof.gather and activeSteps[#activeSteps].t < 300 then
         list[#list + 1] = { kind = "info", height = 16, text = "|cffff9933" .. L["Guide endet bei Skill %d"]:format(activeSteps[#activeSteps].t) .. "|r" }
@@ -836,7 +824,6 @@ function BT.RefreshUI()
         local active = BT.GuideCosts().active
         local text = L["ca. %s"]:format(BT.Money(active.total))
         if (active.learn or 0) > 0 then text = text .. " |cff999999(" .. L["davon Lehrer/Rezepte %s"]:format(BT.Money(active.learn)) .. ")|r" end
-        if active.missing > 0 then text = text .. "  |cffff9933" .. MissingText(active.missing) .. "|r" end
         window.guideAllCost:SetText(text)
     end
     window.scan:SetShown(tab == MATERIALS)
