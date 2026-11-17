@@ -196,15 +196,15 @@ local function KeyFromLink(id, link)
     return key
 end
 
+-- Alle verfolgten Items haben eine ID; unbekannte IDs werden nicht mehr über den Namen nachgeschlagen.
+-- (Die Namensabfrage löste bei nicht geladenen Items eine Endlosschleife aus Abfrage, GET_ITEM_INFO_RECEIVED
+-- und Neuberechnung aus -> Dauer-Lag.)
 local function KeyFromID(id)
     if BT.ITEM_BY_ID[id] then return BT.ITEM_BY_ID[id] end
     local known = DB.idmap[id]
     if known ~= nil then return known or nil end
     local name = GetInfo(id)
-    if not name then
-        BT.pendingNames = true
-        return nil
-    end
+    if not name then return nil end -- noch nicht geladen: nicht nachfordern, kein erneuter Import
     local key = BT.NAME[name]
     DB.idmap[id] = key or false
     return key
@@ -330,9 +330,16 @@ local function ScanRecipes()
         if ui[foreign] and ui[foreign]() then return end
     end
     local rec = Record()
+    -- nur neu gelernte Rezepte genauer abfragen (sonst lief bei jeder Herstellung eine Abfrage je Rezept)
+    rec.knownIDs = rec.knownIDs or {}
     for _, recipeID in ipairs(ui.GetAllRecipeIDs() or {}) do
-        local info = ui.GetRecipeInfo(recipeID)
-        if info and info.learned then NoteRecipe(rec, recipeID, info.name) end
+        if not rec.knownIDs[recipeID] then
+            local info = ui.GetRecipeInfo(recipeID)
+            if info and info.learned then
+                NoteRecipe(rec, recipeID, info.name)
+                rec.knownIDs[recipeID] = true
+            end
+        end
     end
 end
 
@@ -420,8 +427,15 @@ function BT.IsIgnored(id)
 end
 
 -- Im Filter gewählter Charakter (Materialien-Filter); nil bei "Alle Berufe", "Gelernte Berufe", "Jeder Beruf einmal".
-function BT.FocusChar()
+-- Wirksamer Filter: "me" = der gerade eingeloggte Charakter (Standard), sonst der gespeicherte Wert.
+function BT.MatFilter()
     local filter = DB and DB.opt.matFilter
+    if filter == "me" then return (BT.me and DB.chars[BT.me]) and BT.me or nil end
+    return filter
+end
+
+function BT.FocusChar()
+    local filter = DB and BT.MatFilter()
     if filter and filter ~= "once" and filter ~= "learned" and DB.chars[filter] then return filter end
     return nil
 end
@@ -667,6 +681,8 @@ function BT.GuideList(prof, raw)
     if own then list[#list + 1] = own end
     local all = not raw and BT.AllRecipesGuide and BT.AllRecipesGuide(prof)
     if all then list[#list + 1] = all end
+    local fast = not raw and BT.FastestGuide and BT.FastestGuide(prof)
+    if fast then list[#list + 1] = fast end
     return list
 end
 
@@ -684,6 +700,7 @@ BT.ALL_GUIDES = {
     { key = "metabot", title = "Metabot" }, { key = "rankedboost", title = "RankedBoost" }, { key = "wowhead", title = "Wowhead" },
     { key = "wowtbc", title = "wowtbc.gg" }, { key = "goldgoblin", title = "GoldGoblin" }, { key = "wowprofessions", title = "wow-professions" },
     { key = "cheapest", title = L["Günstigster Guide-Weg"] }, { key = "allrecipes", title = L["Günstigster berechneter Weg"] },
+    { key = "fastest", title = L["Schnellster berechneter Weg"] },
 }
 
 function BT.GlobalGuideTitle()
@@ -728,7 +745,7 @@ end
 -- sonst ein einzelner Charakter.
 local function FilteredSkills(profKey)
     if DB.opt.noGather and BT.PROF_BY_KEY[profKey].gather then return {} end
-    local filter = DB.opt.matFilter
+    local filter = BT.MatFilter()
     if filter == "once" then return { (BestSkill(profKey)) } end
     if filter == "learned" then
         local skill, who = BestSkill(profKey)
@@ -772,6 +789,35 @@ function BT.StepRemaining(step, profKey)
     return RemainingCrafts(step, (BT.Skill(profKey)))
 end
 
+-- Kennung aller Eingaben der eigenen Guides: ändert sie sich nicht, bleibt das berechnete Ergebnis gültig.
+local function InputSignature(totals)
+    local faction = UnitFactionGroup and UnitFactionGroup("player")
+    local parts = { tostring(DB.opt.matFilter), tostring(BT.me), tostring(DB.opt.noGather), tostring(faction) }
+    local keys = {}
+    for key, count in pairs(totals) do if count > 0 then keys[#keys + 1] = key end end
+    table.sort(keys)
+    for _, key in ipairs(keys) do parts[#parts + 1] = key .. "=" .. totals[key] end
+    local prices = 0
+    for _, entry in pairs(DB.prices) do
+        prices = (prices + (entry.ah or 0) * 3 + (entry.vendor or 0) * 7 + (entry.vendorLim and 11 or 0)) % 1000000007
+    end
+    parts[#parts + 1] = "p" .. prices
+    local ids = {}
+    for id in pairs(DB.chars) do ids[#ids + 1] = id end
+    table.sort(ids)
+    for _, id in ipairs(ids) do
+        local rec, known = DB.chars[id], 0
+        for _ in pairs(rec.known or {}) do known = known + 1 end
+        local skills = {}
+        for key, rank in pairs(rec.skills or {}) do skills[#skills + 1] = key .. rank end
+        table.sort(skills)
+        parts[#parts + 1] = id .. (BT.IsIgnored(id) and "!" or "") .. tostring(rec.faction) .. known .. table.concat(skills, ",")
+    end
+    for key, value in pairs(DB.opt.skill) do parts[#parts + 1] = "s" .. key .. value end
+    for key in pairs(DB.opt.off) do parts[#parts + 1] = "o" .. key end
+    return table.concat(parts, ";")
+end
+
 function BT.Solve()
     local totals, byChar = {}, {}
     for _, id in ipairs(BT.CharIds()) do
@@ -787,9 +833,10 @@ function BT.Solve()
         end
     end
 
-    -- Bestand schon jetzt bereitstellen: der Guide "Günstigster Weg" rechnet damit
+    -- Bestand schon jetzt bereitstellen: die eigenen Guides rechnen damit
     BT.totals, BT.byChar = totals, byChar
     BT.solveStamp = (BT.solveStamp or 0) + 1
+    BT.inputSig = InputSignature(totals)
 
     local demand, supply, share = {}, {}, {}
     local function AddShare(key, profKey, amount)
@@ -894,6 +941,14 @@ function BT.CraftShare(res)
 end
 
 -- Kaufkosten eines Materials in der Materialliste (ohne Anteil der Sammelberufe).
+-- Dauer lesbar: "1 h 5 min", "12 min", "45 s"
+function BT.Duration(seconds)
+    seconds = math.floor((seconds or 0) + 0.5)
+    if seconds >= 3600 then return L["%d h %d min"]:format(math.floor(seconds / 3600), math.floor(seconds % 3600 / 60)) end
+    if seconds >= 60 then return L["%d min"]:format(math.floor(seconds / 60 + 0.5)) end
+    return L["%d s"]:format(seconds)
+end
+
 function BT.ItemCost(key)
     local res = BT.result and BT.result[key]
     if not res or res.missing <= 0 or (BT.RECIPES[key] and not res.buy) then return 0 end
@@ -938,6 +993,11 @@ function handlers.PLAYER_LOGIN()
     DB.opt.matCollapsed = DB.opt.matCollapsed or {}
     DB.opt.guide = DB.opt.guide or {}
     DB.prices = DB.prices or {}
+    -- Standard im Filter: aktueller Charakter (nur, wenn noch nie etwas gewählt wurde)
+    if not DB.opt.filterDefaulted then
+        DB.opt.filterDefaulted = true
+        if DB.opt.matFilter == nil then DB.opt.matFilter = "me" end
+    end
     if DB.dataVersion ~= BT.DATA_VERSION then
         DB.idmap = {}
         DB.dataVersion = BT.DATA_VERSION

@@ -7,7 +7,20 @@ local QUESTION = "Interface\\Icons\\INV_Misc_QuestionMark"
 local tab, window = ROUTE, nil
 local rows = {}
 local INTERMEDIATES = "Zwischenprodukte (herstellen)"
-local expanded = {} -- nur für diese Sitzung, sonst gilt: offen = Beruf des aktiven Charakters
+-- Aufgeklappte Berufe je Charakter, gespeichert; ohne Eintrag gilt: offen = Beruf des aktiven Charakters.
+local expanded = setmetatable({}, {
+    __index = function(_, key)
+        local all = BT.db and BT.db.opt.expanded
+        local mine = all and BT.me and all[BT.me]
+        if mine then return mine[key] end
+    end,
+    __newindex = function(_, key, value)
+        if not (BT.db and BT.me) then return end
+        BT.db.opt.expanded = BT.db.opt.expanded or {}
+        BT.db.opt.expanded[BT.me] = BT.db.opt.expanded[BT.me] or {}
+        BT.db.opt.expanded[BT.me][key] = value
+    end,
+})
 
 local function IsExpanded(profKey)
     if expanded[profKey] ~= nil then return expanded[profKey] end
@@ -232,6 +245,9 @@ local function StepTooltip(row)
             unavailable = L["nicht im AH gefunden"] })[step.learnHow] or ""
         GameTooltip:AddDoubleLine(L["Rezept"], (step.costLearn > 0 and (BT.Money(step.costLearn) .. ", ") or "") .. how, 1, 0.82, 0, 1, 1, 1)
         if step.fromGuide then GameTooltip:AddDoubleLine(L["Aus Guide"], step.fromGuide, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7) end
+        if step.seconds and step.seconds > 0 then
+            GameTooltip:AddDoubleLine(L["Herstellzeit"], BT.Duration(step.seconds), 1, 0.82, 0, 1, 1, 1)
+        end
         if step.y then
             GameTooltip:AddLine(L["Lernbar ab %d, gelb ab %d, grün ab %d, grau ab %d"]:format(step.l, step.y, math.floor((step.y + step.g) / 2), step.g), 0.7, 0.7, 0.7)
         end
@@ -641,6 +657,9 @@ local function AddProfession(list, prof, onlyMissing)
     end
     local plan = guide.cheapest and guide.plan
     if plan then
+        if guide.key == "fastest" and plan.seconds then
+            list[#list + 1] = { kind = "info", height = 16, text = "|cff999999" .. L["Herstellzeit ab jetzt ca. %s"]:format(BT.Duration(plan.seconds)) .. "|r" }
+        end
         list[#list + 1] = { kind = "info", height = 16, text = "|cff999999" .. L["Kosten ab jetzt ca. %s (vorhandene Materialien gratis)"]:format(BT.Money(plan.total)) .. "|r" }
         if plan.estimated then
             list[#list + 1] = { kind = "info", height = 16, text = "|cff999999" .. L["Teils geschätzt: im Auktionshaus Preise scannen"] .. "|r" }
@@ -763,6 +782,7 @@ end
 
 local function FilterLabel()
     local filter = BT.db.opt.matFilter
+    if filter == "me" then return L["Aktueller Charakter"] .. (BT.me and (": " .. BT.me:match("^%S+")) or "") end
     if filter == "learned" then return L["Gelernte Berufe"] end
     if filter == "once" then return L["Jeder Beruf einmal"] end
     return filter or L["Alle Berufe"]
@@ -772,6 +792,7 @@ BT.FilterLabel = function() return FilterLabel() end
 
 local function OpenFilterMenu(button)
     local options = {
+        { text = L["Aktueller Charakter"] .. "  |cff999999" .. L["immer der eingeloggte Charakter"] .. "|r", value = "me" },
         { text = L["Alle Berufe"] .. "  |cff999999" .. L["jeder Charakter mit seinen Berufen"] .. "|r" },
         { text = L["Gelernte Berufe"] .. "  |cff999999" .. L["jeder einmal, bester Charakter"] .. "|r", value = "learned" },
         { text = L["Jeder Beruf einmal"] .. "  |cff999999" .. L["auch ungelernte, bester Charakter"] .. "|r", value = "once" },
@@ -1278,15 +1299,58 @@ local function TrackerHeader(tip)
     tip:AddLine("BerufeTracker |cff999999(" .. FilterLabel() .. (BT.db.opt.noGather and (", " .. L["ohne Sammelberufe"]) or "") .. ")|r", 1, 0.82, 0)
 end
 
+-- Sammelberufe steigen durchs Sammeln: Ab welchem Skill ein Kraut bzw. Erz sammelbar ist (Classic-Werte).
+-- Orange bis +25, gelb bis +50, grün bis +100, danach grau (keine Skillpunkte mehr).
+local GATHER_REQ = {
+    herbalism = { peacebloom = 1, silverleaf = 1, earthroot = 15, mageroyal = 50, briarthorn = 70, stranglekelp = 85,
+        bruiseweed = 100, ["wild-steelbloom"] = 115, ["grave-moss"] = 120, kingsblood = 125, liferoot = 150, fadeleaf = 160,
+        goldthorn = 170, ["khadgars-whisker"] = 185, wintersbite = 195, firebloom = 205, ["purple-lotus"] = 210,
+        ["arthas-tears"] = 220, sungrass = 230, blindweed = 235, ["ghost-mushroom"] = 245, gromsblood = 250,
+        ["golden-sansam"] = 260, dreamfoil = 270, ["mountain-silversage"] = 280, plaguebloom = 285, icecap = 290,
+        ["black-lotus"] = 300, swiftthistle = 50 },
+    mining = { ["copper-ore"] = 1, ["tin-ore"] = 65, ["silver-ore"] = 75, ["iron-ore"] = 125, ["gold-ore"] = 155,
+        ["mithril-ore"] = 175, ["truesilver-ore"] = 230, ["dark-iron-ore-11370"] = 230, ["thorium-ore"] = 245,
+        ["rough-stone"] = 1, ["coarse-stone"] = 65, ["heavy-stone"] = 125, ["solid-stone"] = 175, ["dense-stone"] = 245 },
+}
+BT.GATHER_REQ = GATHER_REQ
+
+-- Zeile "Kräuterkunde (75): Sammeln bringt Skillpunkte" für den aktuellen (bzw. im Filter gewählten) Charakter.
+-- Gibt true zurück, wenn eine Zeile hinzukam.
+local function GatherLine(tip, key)
+    local id = BT.FocusChar and BT.FocusChar() or BT.me
+    local rec = id and BT.db.chars[id]
+    local added = false
+    for profKey, list in pairs(GATHER_REQ) do
+        local need = list[key]
+        local skill = rec and rec.skills and rec.skills[profKey]
+        if need and skill then
+            local name = BT.ProfTitle(BT.PROF_BY_KEY[profKey]) .. " (" .. skill .. ")"
+            if skill < need then
+                tip:AddLine(L["%s: sammelbar ab Skill %d"]:format(name, need), 1, 0.4, 0.4)
+            elseif skill < need + 100 then
+                local r, g, b = 1, 0.5, 0.25 -- orange
+                if skill >= need + 50 then r, g, b = 0.25, 0.75, 0.25 elseif skill >= need + 25 then r, g, b = 1, 1, 0 end
+                tip:AddLine(L["%s: Sammeln bringt Skillpunkte"]:format(name), r, g, b)
+            else
+                tip:AddLine(L["%s: grau, keine Skillpunkte mehr"]:format(name), 0.5, 0.5, 0.5)
+            end
+            added = true
+        end
+    end
+    return added
+end
+
 -- Bedarf eines Materials nach den aktuellen Filtern; allProfs = alle Berufe statt der größten vier.
 AddNeedLines = function(tip, key, allProfs)
     local res = BT.result and BT.result[key]
     if not res then return end
     TrackerHeader(tip)
     if res.need == 0 then
-        tip:AddLine(L["Wird nicht mehr gebraucht"], 0.6, 0.6, 0.6)
+        -- Sammelberufe brauchen ihr Material trotzdem: zum Skillen
+        if not GatherLine(tip, key) then tip:AddLine(L["Wird nicht mehr gebraucht"], 0.6, 0.6, 0.6) end
         return
     end
+    GatherLine(tip, key)
     tip:AddDoubleLine(L["Benötigt"], BT.Format(res.need), 1, 1, 1, 1, 1, 1)
     tip:AddDoubleLine(L["Im Besitz"], BT.Format(res.have), 1, 1, 1, 1, 1, 1)
     if res.missing > 0 then
@@ -1743,10 +1807,14 @@ local function HookItemTooltips()
                 tip:AddDoubleLine(BT.ItemName(entry.key), state .. " |cff999999(" .. BT.Format(res.have) .. "/" .. BT.Format(res.need) .. ")|r", 1, 1, 1, 1, 1, 1)
             end
         end
-        if not any then
-            TrackerHeader(tip)
-            tip:AddLine(L["Wird nicht mehr gebraucht"], 0.6, 0.6, 0.6)
+        if not any then TrackerHeader(tip) end
+        local gathered = false
+        for _, entry in ipairs(list) do
+            if not gathered and GATHER_REQ and (GATHER_REQ.herbalism[entry.key] or GATHER_REQ.mining[entry.key]) then
+                gathered = GatherLine(tip, entry.key)
+            end
         end
+        if not any and not gathered then tip:AddLine(L["Wird nicht mehr gebraucht"], 0.6, 0.6, 0.6) end
         -- Größe nur auf dem OnShow-Weg anpassen; während der Verarbeitung des Inhalts macht das Spiel es selbst
         if fromShow then tip:Show() end
     end
