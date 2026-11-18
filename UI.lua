@@ -1952,6 +1952,170 @@ function BT.PrintChatDebug()
     print(tag .. "Text: " .. tostring(chatInfo.text or "-"):gsub("|", "||"))
 end
 
+
+-- ===== Berufsfenster des Spiels: Rezepte der aktiven Route markieren =====
+-- Offene Schritte der aktiven Route aller Berufe, auffindbar über das hergestellte Item ("#ID") oder den Namen.
+-- Der erste offene Schritt eines Berufs ist der aktuelle.
+local routeIndex, routeIndexKey = {}, nil
+local function NormalizeName(text) return (tostring(text):lower():gsub("[%p%s]", "")) end
+
+function BT.RouteRecipeIndex()
+    local key = tostring(BT.solveStamp) .. "|" .. tostring(BT.planVersion)
+    if routeIndexKey == key then return routeIndex end
+    local index = {}
+    for _, prof in ipairs(BT.PROFS) do
+        if not BT.db.opt.off[prof.key] then
+            local current = true
+            for _, step in ipairs(BT.GuideSteps(prof)) do
+                local open = not step.lump and BT.StepRemaining(step, prof.key) or 0
+                if open > 0 then
+                    local entry = { step = step, prof = prof, open = open, current = current }
+                    current = false
+                    for _, alias in ipairs(step.aliases or {}) do
+                        if not index[alias] then index[alias] = entry end
+                    end
+                end
+            end
+        end
+    end
+    routeIndex, routeIndexKey = index, key
+    return index
+end
+
+-- Routen-Eintrag zu einem Rezept des Berufsfensters (über das hergestellte Item, sonst den Namen).
+function BT.RouteRecipeInfo(name, outputID)
+    local index = BT.RouteRecipeIndex()
+    return (outputID and index["#" .. outputID]) or (name and index[NormalizeName(name)]) or nil
+end
+
+-- Tooltip-Zeilen: Routen-Abschnitt und je Material Bedarf, Bestand und wo es liegt.
+function BT.AddRouteRecipeLines(tip, entry)
+    local step = entry.step
+    tip:AddLine(" ")
+    tip:AddLine("BerufeTracker |cff999999(" .. BT.FilterLabel() .. ")|r", 1, 0.82, 0)
+    tip:AddDoubleLine((entry.current and L["Aktueller Routen-Schritt"] or L["Späterer Routen-Schritt"]) .. " " .. step.f .. "-" .. step.t,
+        L["%s× offen"]:format(BT.Format(entry.open)), 1, 1, 1, 1, 0.82, 0)
+    for _, reagent in ipairs(step.r) do
+        local key, per = reagent[1], reagent[2]
+        local need = per * entry.open
+        local have = (BT.totals and BT.totals[key]) or 0
+        local color = have >= need and "|cff33cc33" or "|cffff6666"
+        tip:AddDoubleLine("  " .. BT.ItemName(key), color .. BT.Format(have) .. "/" .. BT.Format(need) .. "|r", 1, 1, 1, 1, 1, 1)
+        local owners = {}
+        for id, count in pairs((BT.byChar or {})[key] or {}) do
+            if count > 0 then owners[#owners + 1] = { id = id, count = count } end
+        end
+        table.sort(owners, function(a, b) return a.count > b.count end)
+        for i = 1, math.min(3, #owners) do
+            local who = owners[i].id == BT.me and ("|cffffd100" .. owners[i].id .. "|r") or owners[i].id
+            tip:AddDoubleLine("     " .. who, BT.Format(owners[i].count), 0.7, 0.7, 0.7, 0.7, 0.7, 0.7)
+        end
+    end
+end
+
+-- Hergestelltes Item eines Rezepts (zwischengespeichert, die Abfrage ist nicht ganz billig).
+local outputCache = {}
+local function RecipeOutput(recipeID)
+    if not recipeID then return nil end
+    if outputCache[recipeID] ~= nil then return outputCache[recipeID] or nil end
+    local ui = C_TradeSkillUI
+    local out = false
+    if ui and ui.GetRecipeSchematic then
+        local ok, schematic = pcall(ui.GetRecipeSchematic, recipeID, false)
+        if ok and type(schematic) == "table" and schematic.outputItemID then out = schematic.outputItemID end
+    end
+    outputCache[recipeID] = out
+    return out or nil
+end
+
+local profHook = { hooked = false, rows = 0, marked = 0 }
+
+-- Eine Zeile der Rezeptliste: Balken links (hell = aktueller Schritt), rechts die offene Anzahl.
+local function DecorateRecipeRow(frame, node)
+    local data = node and node.GetData and node:GetData()
+    local info = type(data) == "table" and data.recipeInfo
+    if not rawget(frame, "btBar") then
+        frame.btBar = frame:CreateTexture(nil, "OVERLAY")
+        frame.btBar:SetPoint("TOPLEFT", 0, -1)
+        frame.btBar:SetPoint("BOTTOMLEFT", 0, 1)
+        frame.btBar:SetWidth(3)
+        frame.btText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        frame.btText:SetPoint("RIGHT", -4, 0)
+        frame:HookScript("OnEnter", function(self)
+            local entry = rawget(self, "btEntry")
+            if not entry then return end
+            if not GameTooltip:IsOwned(self) then GameTooltip:SetOwner(self, "ANCHOR_RIGHT") end
+            BT.AddRouteRecipeLines(GameTooltip, entry)
+            GameTooltip:Show()
+        end)
+        frame:HookScript("OnLeave", function(self) if rawget(self, "btEntry") and GameTooltip:IsOwned(self) then GameTooltip:Hide() end end)
+    end
+    profHook.rows = profHook.rows + 1
+    local entry = type(info) == "table" and BT.RouteRecipeInfo(info.name, RecipeOutput(info.recipeID)) or nil
+    frame.btEntry = entry
+    if entry then
+        profHook.marked = profHook.marked + 1
+        if entry.current then frame.btBar:SetColorTexture(1, 0.82, 0, 1) else frame.btBar:SetColorTexture(0.6, 0.5, 0.2, 0.6) end
+        frame.btText:SetText((entry.current and "|cffffd100" or "|cff998844") .. BT.Format(entry.open) .. "×|r")
+        frame.btBar:Show()
+        frame.btText:Show()
+    else
+        frame.btBar:Hide()
+        frame.btText:Hide()
+    end
+end
+
+local function RecipeScrollBox()
+    local page = ProfessionsFrame and ProfessionsFrame.CraftingPage
+    local list = page and page.RecipeList
+    return list and list.ScrollBox
+end
+
+-- Alle sichtbaren Zeilen neu markieren (z. B. nach einer neuen Route).
+function BT.RefreshProfessionMarks()
+    local box = RecipeScrollBox()
+    if not (box and box.ForEachFrame and box.IsVisible and box:IsVisible()) then return end
+    pcall(box.ForEachFrame, box, function(frame)
+        local node = frame.GetElementData and frame:GetElementData()
+        pcall(DecorateRecipeRow, frame, node)
+    end)
+end
+
+local function HookProfessions()
+    if profHook.hooked then return true end
+    local box = RecipeScrollBox()
+    if not (box and ScrollUtil and ScrollUtil.AddInitializedFrameCallback) then return false end
+    local ok = pcall(ScrollUtil.AddInitializedFrameCallback, box, function(_, frame, node)
+        local done, err = pcall(DecorateRecipeRow, frame, node)
+        if not done then profHook.error = tostring(err) end
+    end, profHook, true)
+    profHook.hooked = ok
+    return ok
+end
+
+function BT.InitProfessionsHook()
+    if HookProfessions() then return end
+    -- Das Berufsfenster wird erst bei Bedarf geladen
+    local loader = CreateFrame("Frame")
+    loader:RegisterEvent("ADDON_LOADED")
+    loader:RegisterEvent("TRADE_SKILL_SHOW")
+    loader:SetScript("OnEvent", function(self)
+        if HookProfessions() then
+            self:UnregisterAllEvents()
+            BT.RefreshProfessionMarks()
+        end
+    end)
+end
+
+function BT.PrintProfessionDebug()
+    local tag = "|cffffcc00BerufeTracker:|r "
+    print(tag .. "Berufsfenster gefunden: " .. tostring(RecipeScrollBox() ~= nil) .. ", Haken gesetzt: " .. tostring(profHook.hooked))
+    print(tag .. "Zeilen geprüft: " .. profHook.rows .. ", markiert: " .. profHook.marked .. (profHook.error and (", Fehler: " .. profHook.error) or ""))
+    local count = 0
+    for _ in pairs(BT.RouteRecipeIndex()) do count = count + 1 end
+    print(tag .. "Offene Routen-Rezepte (Namen und Item-IDs): " .. count)
+end
+
 function BT.InitUI()
     CreateWindow()
     CreateMinimapButton()
@@ -1959,6 +2123,7 @@ function BT.InitUI()
     HookWaypointTooltip()
     HookItemTooltips()
     HookChatBoxes()
+    BT.InitProfessionsHook()
     EnsureMapLabel()
     if not mapLabel then -- die Weltkarte wird teils erst bei Bedarf geladen
         local loader = CreateFrame("Frame")

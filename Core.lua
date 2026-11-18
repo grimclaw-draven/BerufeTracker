@@ -964,6 +964,7 @@ end
 function BT.Update()
     BT.Solve()
     if BT.RefreshUI then BT.RefreshUI() end
+    if BT.RefreshProfessionMarks then BT.RefreshProfessionMarks() end
 end
 
 local queued = {}
@@ -1081,6 +1082,8 @@ SlashCmdList.BERUFETRACKER = function(input)
         BT.PrintChatDebug()
     elseif cmd == "mobdebug" then
         BT.PrintMobDebug()
+    elseif cmd == "profdebug" then
+        BT.PrintProfessionDebug()
     elseif cmd == "scan" then
         BT.StartScan()
     elseif cmd == "skill" and arg1 then
