@@ -673,15 +673,22 @@ local function AddProfession(list, prof, onlyMissing, trainerOnly)
     if guide.lump then
         list[#list + 1] = { kind = "info", height = 16, text = "|cff999999" .. L["Nur Einkaufsliste, keine einzelnen Rezepte"] .. "|r" }
     end
+    -- Herstellzeit und Kosten ab jetzt bei jedem Guide (fremde Guides mit ihren eigenen Zahlen, nur angezeigt)
     local plan = guide.cheapest and guide.plan
-    if plan then
-        if guide.key == "fastest" and plan.seconds then
-            list[#list + 1] = { kind = "info", height = 16, text = "|cff999999" .. L["Herstellzeit ab jetzt ca. %s"]:format(BT.Duration(plan.seconds)) .. "|r" }
-        end
-        list[#list + 1] = { kind = "info", height = 16, text = "|cff999999" .. L["Kosten ab jetzt ca. %s (vorhandene Materialien gratis)"]:format(BT.Money(plan.total)) .. "|r" }
-        if plan.estimated then
-            list[#list + 1] = { kind = "info", height = 16, text = "|cff999999" .. L["Teils geschätzt: im Auktionshaus Preise scannen"] .. "|r" }
-        end
+    local seconds = BT.GuideSeconds and BT.GuideSeconds(guide, prof)
+    if seconds and seconds > 0 then
+        list[#list + 1] = { kind = "info", height = 16, text = "|cff999999" .. L["Herstellzeit ab jetzt ca. %s"]:format(BT.Duration(seconds)) .. "|r" }
+    end
+    local cost = plan and plan.total
+    if not cost and BT.GuideCosts then
+        local entry = BT.GuideCosts()[guide.key]
+        cost = entry and entry.prof[prof.key] and entry.prof[prof.key].cost
+    end
+    if cost and (cost > 0 or (seconds or 0) > 0) then -- fertige Berufe ohne Zeile
+        list[#list + 1] = { kind = "info", height = 16, text = "|cff999999" .. L["Kosten ab jetzt ca. %s (vorhandene Materialien gratis)"]:format(BT.Money(cost)) .. "|r" }
+    end
+    if plan and plan.estimated then
+        list[#list + 1] = { kind = "info", height = 16, text = "|cff999999" .. L["Teils geschätzt: im Auktionshaus Preise scannen"] .. "|r" }
     end
     if not prof.gather and activeSteps[#activeSteps].t < 300 then
         list[#list + 1] = { kind = "info", height = 16, text = "|cffff9933" .. L["Guide endet bei Skill %d"]:format(activeSteps[#activeSteps].t) .. "|r" }

@@ -538,6 +538,19 @@ end
 local function CastTime(step) return step.ct or CAST_BY_NAME[step.en] or 5 end
 BT.CastTime = CastTime
 
+-- Herstellzeit ab jetzt für einen Guide (nur Anzeige): eigene Wege aus ihrer Rechnung, sonst die offenen
+-- Herstellungen des Guides (seine eigenen Zahlen) mal Zauberzeit des Rezepts. Einkaufslisten haben keine.
+function BT.GuideSeconds(guide, prof)
+    if guide.lump then return nil end
+    local plan = guide.cheapest and guide.plan
+    if plan and plan.seconds then return plan.seconds end
+    local seconds = 0
+    for _, step in ipairs(guide.steps) do
+        if not step.lump then seconds = seconds + BT.StepRemaining(step, prof.key) * CastTime(step) end
+    end
+    return seconds
+end
+
 -- Modus "time" (schnellster Weg): eine Sekunde Herstellzeit wiegt mehr als jedes Gold, Gold entscheidet nur bei
 -- Gleichstand. Nicht erhältliche Rezepte bleiben in beiden Modi das Letzte, was gewählt wird.
 local function LearnValue(learn, mode)
