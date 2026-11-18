@@ -34,6 +34,8 @@ end
 
 
 
+local StepCrafts -- Herstellungen je Skillpunkt für jeden Schritt (unten gesetzt, sobald die Rezeptvorlagen da sind)
+
 local function Prices(key) return (BT.db and BT.db.prices and BT.db.prices[key]) or {} end
 
 -- Marktpreis je Stück ohne Bestand: AH oder Händler mit unbegrenztem Vorrat. Gibt Preis und Quelle.
@@ -220,7 +222,7 @@ local function Simulate(segments, skill, stock, crafts, mode)
         consumer.estimated = false
         for s = math.max(seg.from, skill), seg.to - 1 do
             consumer.at = s
-            local c = seg.block and seg.block.perPoint or crafts(step, s)
+            local c = StepCrafts(step, s)
             for _, reagent in ipairs(step.r) do consumer.Take(reagent[1], c * reagent[2]) end
             -- hergestellte Zwischenprodukte (z. B. Seidenstoffballen) stehen später wieder zur Verfügung
             if step.out then consumer.stock[step.out] = (consumer.stock[step.out] or 0) + c * (step.mk or 1) end
@@ -274,6 +276,13 @@ local function Plan(cands, skill, Price)
         cand.craft, cand.est = craft, est
         cand.learn, cand.learnHow = LearnCost(step)
         cand.perPoint = step.c / (step.t - step.f)
+        -- gewichtete Herstellungen bis zu jedem Skill im Abschnitt (nach Chance; unter dem aktuellen Skill kaum gewichtet)
+        local pre, acc = { [step.f] = 0 }, 0
+        for q = step.f, step.t - 1 do
+            acc = acc + StepCrafts(step, q) * (q >= skill and 1 or BELOW)
+            pre[q + 1] = acc
+        end
+        cand.pre = pre
     end
     if skill > 0 then pointSet[skill] = true end
     local points = {}
@@ -293,8 +302,7 @@ local function Plan(cands, skill, Price)
                     for j = i + 1, index[step.t] do
                         local e = points[j]
                         local above = math.max(0, e - math.max(s, skill))
-                        local below = (e - s) - above
-                        local cost = cand.craft * cand.perPoint * (above + BELOW * below)
+                        local cost = cand.craft * (cand.pre[e] - cand.pre[s])
                             + (above > 0 and cand.learn or BELOW * cand.learn)
                         local total = base + cost
                         if not best[j] or total < best[j] then best[j], from[j] = total, { i, cand } end
@@ -399,7 +407,7 @@ function BT.ComputeCheapest()
             end
             local segments = {}
             for _, block in ipairs(blocks) do
-                segments[#segments + 1] = { block = { step = block.cand.step, perPoint = block.cand.perPoint }, from = block.s, to = block.e }
+                segments[#segments + 1] = { block = { step = block.cand.step }, from = block.s, to = block.e }
             end
             local copy = {}
             for key, count in pairs(stock) do copy[key] = count end
@@ -410,7 +418,9 @@ function BT.ComputeCheapest()
                 local step = {}
                 for k, v in pairs(orig) do step[k] = v end
                 step.f, step.t = block.s, block.e
-                step.c = math.max(1, math.ceil(orig.c * (block.e - block.s) / (orig.t - orig.f)))
+                local expected = 0
+                for q = block.s, block.e - 1 do expected = expected + StepCrafts(orig, q) end
+                step.c = math.max(1, math.ceil(expected - 1e-9)) -- voraussichtlich nach Chance
                 local above = math.max(0, block.e - math.max(block.s, skill))
                 step.costMat = segments[index].cost or 0
                 step.costLearn = above > 0 and cand.learn or 0
@@ -497,6 +507,26 @@ local function CraftsPerPoint(step, s)
 end
 BT.CraftsPerPoint = CraftsPerPoint
 
+-- Rezept-Vorlage (mit Farbgrenzen) zu einem beliebigen Schritt, auch aus den fremden Guides
+local TEMPLATE_BY_EN = {}
+for _, list in pairs(TEMPLATES) do
+    for _, tpl in ipairs(list) do TEMPLATE_BY_EN[tpl.en] = TEMPLATE_BY_EN[tpl.en] or tpl end
+end
+function BT.StepTemplate(step)
+    if step.l and step.y and step.g then return step end
+    return TEMPLATE_BY_EN[step.en]
+end
+
+-- Voraussichtliche Herstellungen für einen Skillpunkt bei Skill s: nach Rezeptfarbe und Chance, für jeden Guide
+-- gleich. Nur wenn das Rezept unbekannt ist oder der Guide es außerhalb seiner Farben nutzt: die Zahl des Guides.
+StepCrafts = function(step, s)
+    local tpl = BT.StepTemplate(step)
+    local c = tpl and CraftsPerPoint(tpl, s)
+    if c then return c end
+    return step.c / math.max(1, step.t - step.f)
+end
+BT.StepCrafts = StepCrafts
+
 local MAX_SKILL = 300
 
 -- Zauberzeit je Herstellung in Sekunden: aus den Rezeptdaten, für Guide-Schritte über den Rezeptnamen.
@@ -551,12 +581,12 @@ local function PlanAll(steps, blocks, skill, Price, withUnavailable, breaks, mod
         local learn, how = LearnCost(cand.step)
         if withUnavailable or learn < UNAVAILABLE then
             local step = cand.step
-            local block = { step = step, guide = cand.guide, learn = learn, how = how, value = LearnValue(learn, mode),
-                perPoint = step.c / (step.t - step.f) }
-            -- Kosten bis zu jedem Skill im Abschnitt, Punkt für Punkt (Bestand nur, solange er reicht)
+            local block = { step = step, guide = cand.guide, learn = learn, how = how, value = LearnValue(learn, mode) }
+            -- Kosten bis zu jedem Skill im Abschnitt, Punkt für Punkt: Herstellungen nach Chance, Bestand nur,
+            -- solange er reicht
             local pre, acc = { [step.f] = 0 }, 0
             for q = step.f, step.t - 1 do
-                acc = acc + Craft(step, q) * (q >= skill and 1 or BELOW)
+                acc = acc + Craft(step, q) * StepCrafts(step, q) * (q >= skill and 1 or BELOW)
                 pre[q + 1] = acc
             end
             block.pre = pre
@@ -585,7 +615,7 @@ local function PlanAll(steps, blocks, skill, Price, withUnavailable, breaks, mod
             if step.f <= s and s < step.t then
                 for _, e in ipairs(endList) do
                     if e > s and e <= step.t then
-                        local total = base + block.perPoint * (block.pre[e] - block.pre[s]) + block.value * weight
+                        local total = base + (block.pre[e] - block.pre[s]) + block.value * weight
                         if not pend[e] or total < pend[e][1] then pend[e] = { total, s, block } end
                     end
                 end
@@ -638,14 +668,10 @@ end
 
 -- Material und Herstellungen eines Abschnitts (offen = ab dem aktuellen Skill).
 local function SegmentCrafts(seg, skill)
-    if seg.block then
-        local per = seg.block.perPoint
-        local above = math.max(0, seg.to - math.max(seg.from, skill))
-        return per * (seg.to - seg.from), per * above
-    end
     local all, open = 0, 0
+    local step = (seg.block or seg.cand).step
     for s = seg.from, seg.to - 1 do
-        local c = CraftsPerPoint(seg.cand.step, s)
+        local c = StepCrafts(step, s)
         all = all + c
         if s >= skill then open = open + c end
     end
@@ -675,7 +701,7 @@ local function ComputePlans(mode, yield)
                 if reach < MAX_SKILL then segs, reach = PlanAll(templates, blocks, skill, Price, true, breaks, mode, yield) end
                 local copy = {}
                 for key, count in pairs(stock) do copy[key] = count end
-                local cons = Simulate(segs, skill, copy, CraftsPerPoint, mode)
+                local cons = Simulate(segs, skill, copy, nil, mode)
                 local score = cons.bought + cons.seconds * TimeWeight(mode)
                 for _, seg in ipairs(segs) do
                     local src = seg.block or seg.cand
@@ -805,7 +831,9 @@ local function EvalSteps(steps, profKey, stock, skill)
             local part = skill >= step.t and 0 or (skill <= step.f and 1 or (step.t - skill) / (step.t - step.f))
             if part > 0 then for _, r in ipairs(step.r) do amounts[#amounts + 1] = { r[1], math.ceil(r[2] * part) } end end
         else
-            local c = skill >= step.t and 0 or (skill <= step.f and step.c or math.ceil(step.c * (step.t - skill) / (step.t - step.f)))
+            local c = 0
+            for s = math.max(skill, step.f), step.t - 1 do c = c + StepCrafts(step, s) end
+            c = math.ceil(c - 1e-9)
             if c > 0 then
                 for _, r in ipairs(step.r) do amounts[#amounts + 1] = { r[1], c * r[2] } end
                 if step.out then amounts.out = c * (step.mk or 1) end

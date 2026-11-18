@@ -234,7 +234,15 @@ local function StepTooltip(row)
         GameTooltip:AddLine("  " .. reagent[2] .. "× " .. BT.ItemName(reagent[1]), 1, 1, 1)
     end
     if not step.lump then
-        GameTooltip:AddDoubleLine(L["Noch offen"], L["%s von %s"]:format(BT.Format(BT.StepRemaining(step, prof)), step.c), 1, 0.82, 0, 1, 1, 1)
+        -- voraussichtliche Herstellungen nach Chance; die Zahl des Guides zum Vergleich, wenn sie abweicht
+        local expected = BT.RemainingCrafts(step, step.f)
+        GameTooltip:AddDoubleLine(L["Noch offen"], L["%s von %s"]:format(BT.Format(BT.StepRemaining(step, prof)), BT.Format(expected)), 1, 0.82, 0, 1, 1, 1)
+        if BT.StepTemplate and BT.StepTemplate(step) then
+            GameTooltip:AddLine(L["Voraussichtlich nach Chance auf einen Skillpunkt"], 0.7, 0.7, 0.7)
+            if not step.y and step.c ~= expected then
+                GameTooltip:AddDoubleLine(L["Laut Guide"], L["%s×"]:format(BT.Format(step.c)), 0.7, 0.7, 0.7, 0.7, 0.7, 0.7)
+            end
+        end
     end
     if step.costMat then
         -- Guide "Günstigster Weg": Kosten ab dem aktuellen Skill

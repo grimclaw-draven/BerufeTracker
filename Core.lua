@@ -772,11 +772,19 @@ local function LumpShare(step, skill)
     return (step.t - skill) / (step.t - step.f)
 end
 
+-- Noch offene Herstellungen: voraussichtlich nach Rezeptfarbe und Chance je Skillpunkt (BT.StepCrafts), für jeden
+-- Guide gleich gerechnet. BT.useGuideCounts (nur Tests) nimmt stattdessen die Zahl des Guides.
 local function RemainingCrafts(step, skill)
     if skill >= step.t then return 0 end
+    if BT.StepCrafts and not BT.useGuideCounts then
+        local sum = 0
+        for s = math.max(skill, step.f), step.t - 1 do sum = sum + BT.StepCrafts(step, s) end
+        return math.ceil(sum - 1e-9)
+    end
     if skill <= step.f then return step.c end
     return math.ceil(step.c * (step.t - skill) / (step.t - step.f))
 end
+BT.RemainingCrafts = RemainingCrafts
 
 -- Zählt der Beruf beim aktuellen Filter mit (wie in der Materialliste)?
 BT.FilteredSkills = function(profKey) return FilteredSkills(profKey) end
