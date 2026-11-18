@@ -792,7 +792,14 @@ end
 -- Kennung aller Eingaben der eigenen Guides: ändert sie sich nicht, bleibt das berechnete Ergebnis gültig.
 local function InputSignature(totals)
     local faction = UnitFactionGroup and UnitFactionGroup("player")
-    local parts = { tostring(DB.opt.matFilter), tostring(BT.me), tostring(DB.opt.noGather), tostring(faction) }
+    -- Einstellungen: ändern sie sich, wird sofort neu gerechnet
+    local ctx = { tostring(DB.opt.matFilter), tostring(BT.me), tostring(DB.opt.noGather), tostring(faction) }
+    for key, value in pairs(DB.opt.skill) do ctx[#ctx + 1] = "s" .. key .. value end
+    for key in pairs(DB.opt.off) do ctx[#ctx + 1] = "o" .. key end
+    table.sort(ctx, function(a, b) return tostring(a) < tostring(b) end)
+    BT.inputCtx = table.concat(ctx, ";")
+    -- Daten: Bestand, Preise, Skills, gelernte Rezepte (neu gerechnet beim nächsten Öffnen des Fensters)
+    local parts = { BT.inputCtx }
     local keys = {}
     for key, count in pairs(totals) do if count > 0 then keys[#keys + 1] = key end end
     table.sort(keys)
@@ -813,8 +820,6 @@ local function InputSignature(totals)
         table.sort(skills)
         parts[#parts + 1] = id .. (BT.IsIgnored(id) and "!" or "") .. tostring(rec.faction) .. known .. table.concat(skills, ",")
     end
-    for key, value in pairs(DB.opt.skill) do parts[#parts + 1] = "s" .. key .. value end
-    for key in pairs(DB.opt.off) do parts[#parts + 1] = "o" .. key end
     return table.concat(parts, ";")
 end
 

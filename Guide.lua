@@ -11,6 +11,28 @@ local UNAVAILABLE = 10000000 -- 1000g: Rezept nicht zu bekommen (nur Drop, nicht
 local UNKNOWN_PRICE = 1000   -- 10s je Stück, wenn es gar keinen Anhaltspunkt gibt
 local ESTIMATE_FACTOR = 4    -- ohne AH-Preis: Verkaufspreis beim Händler × 4 als grobe Schätzung
 local BELOW = 0.001          -- Schritte unter dem aktuellen Skill zählen kaum (nur damit die Route vollständig bleibt)
+local TIME_WEIGHT = 1000000  -- schnellster Weg: 100g je Sekunde, damit Zeit immer vor Gold geht
+local TIE_WEIGHT = 0.01      -- günstigster Weg: Zeit nur als winziger Ausgleich bei Gleichstand im Gold
+
+local dirty = { cost = true, time = true, cheapest = true }
+BT.planVersion = 0
+
+-- Beim Öffnen des Fensters: mit den aktuellen Daten neu rechnen. Sonst bleibt das Ergebnis stehen, auch wenn sich
+-- Bestand, Preise oder Skills ändern (z. B. beim Herstellen); nur geänderte Einstellungen (Filter, Charakter,
+-- Fraktion, abgewählte Berufe) rechnen sofort neu.
+function BT.MarkPlansDirty()
+    dirty.cost, dirty.time, dirty.cheapest = true, true, true
+    BT.openStamp = (BT.openStamp or 0) + 1
+end
+
+-- Muss neu gerechnet werden? (Tests rechnen immer mit den aktuellen Daten)
+local function Stale(cache, kind)
+    if cache.sig == nil then return true end
+    if cache.sig == BT.inputSig then return false end
+    return BT.syncCompute or cache.ctx ~= BT.inputCtx or dirty[kind]
+end
+
+
 
 local function Prices(key) return (BT.db and BT.db.prices and BT.db.prices[key]) or {} end
 
@@ -87,22 +109,36 @@ local function BaseMarket(key)
     return UNKNOWN_PRICE, "none"
 end
 
--- Spielt den Materialverbrauch nach: zuerst aus dem Bestand, was fehlt, wird gekauft oder - wenn billiger -
+-- Zeit je Stück, ein Zwischenprodukt selbst herzustellen: Zauberzeit plus Abklingzeit als Wartezeit (Sekunden).
+-- Mondstoff, Arkanitbarren, Transmutationen: Stunden bis Tage je Herstellung. Gekauftes kostet keine Zeit.
+local function MakeTime(key)
+    local entry = BT.CRAFT_TIME and BT.CRAFT_TIME[key]
+    if not entry then return 0 end
+    return (entry[1] + entry[2]) / math.max(1, entry[3] or 1)
+end
+BT.MakeTime = MakeTime
+
+local function TimeWeight(mode) return mode == "time" and TIME_WEIGHT or TIE_WEIGHT end
+
+-- Spielt den Materialverbrauch nach: zuerst aus dem Bestand, was fehlt, wird gekauft oder - wenn günstiger -
 -- aus Rohstoffen hergestellt (auch aus eigenen, z. B. Leinenstoffballen aus vorhandenem Leinenstoff).
--- ranOut[key] = Skill, bei dem der Bestand eines Materials aufgebraucht war.
-local function NewConsumer(stock)
-    local self = { stock = stock, bought = 0, estimated = false, ranOut = {}, at = 0 }
-    local function Unit(key, depth) -- Kosten je Stück im Moment
+-- Modus "time": Herstellen kostet zusätzlich seine Zeit (inkl. Abklingzeit), Kaufen im AH keine.
+-- ranOut[key] = Skill, bei dem der Bestand eines Materials aufgebraucht war; seconds = Zeit für Zwischenprodukte.
+local function NewConsumer(stock, mode)
+    local self = { stock = stock, bought = 0, estimated = false, ranOut = {}, at = 0, seconds = 0 }
+    local weight = TimeWeight(mode)
+    local function Unit(key, depth) -- Wert je Stück im Moment (Gold, im Zeitmodus plus Zeit)
         if (stock[key] or 0) > 1e-9 then return 0 end
         local price = Market(key) -- ohne echten Preis: Zwischenprodukte herstellen statt Schätzpreis
         local recipe = BT.RECIPES[key]
         if recipe and depth < 5 then
             local sum = 0
             for reagent, amount in pairs(recipe.reag) do sum = sum + Unit(reagent, depth + 1) * amount end
-            sum = sum / recipe.makes
+            sum = sum / recipe.makes + MakeTime(key) * weight
             if not price or sum < price then return sum end
         end
-        return price or (BaseMarket(key))
+        if price then return price end
+        return (BaseMarket(key)) + MakeTime(key) * weight -- nur selbst herstellbar: Zeit zählt mit
     end
     function self.Take(key, amount, depth)
         depth = depth or 0
@@ -119,12 +155,16 @@ local function NewConsumer(stock)
         if recipe and depth < 5 then
             local sum = 0
             for reagent, n in pairs(recipe.reag) do sum = sum + Unit(reagent, depth + 1) * n end
-            if not price or sum / recipe.makes < price then
+            if not price or sum / recipe.makes + MakeTime(key) * weight < price then
+                self.seconds = self.seconds + rest * MakeTime(key)
                 for reagent, n in pairs(recipe.reag) do self.Take(reagent, rest * n / recipe.makes, depth + 1) end
                 return
             end
         end
-        if not price then price, how = BaseMarket(key) end
+        if not price then
+            price, how = BaseMarket(key)
+            self.seconds = self.seconds + rest * MakeTime(key) -- ohne Marktpreis bleibt nur selbst herstellen
+        end
         if self.log then self.log[key] = (self.log[key] or 0) + rest end
         self.bought = self.bought + rest * price
         if how == "est" or how == "none" then self.estimated = true end
@@ -135,7 +175,8 @@ BT.NewConsumer = NewConsumer
 
 -- Stückpreis je Skill: gratis, solange der Bestand laut letzter Simulation reicht (freeUntil[key] = ab diesem
 -- Skill aufgebraucht), sonst Markt oder Herstellen. Zwischenergebnisse je Skill zwischengespeichert.
-local function MakeTimedPricer(freeUntil)
+local function MakeTimedPricer(freeUntil, mode)
+    local weight = TimeWeight(mode)
     local memoS, memo = nil, {}
     local function Price(key, s, depth)
         if memoS ~= s then memoS, memo = s, {} end
@@ -155,10 +196,13 @@ local function MakeTimedPricer(freeUntil)
                     sum = sum + p * amount
                     est = est or h == "est" or h == "none"
                 end
-                sum = sum / recipe.makes
+                sum = sum / recipe.makes + MakeTime(key) * weight
                 if not price or sum < price then price, how = sum, est and "est" or "craft" end
             end
-            if not price then price, how = BaseMarket(key) end
+            if not price then
+                price, how = BaseMarket(key)
+                price = price + MakeTime(key) * weight
+            end
         end
         memo[key] = { price, how }
         return price, how
@@ -168,11 +212,11 @@ end
 
 -- Verbrauch einer geplanten Route nachspielen. Abschnitte: { cand = {step}, from, to } (Rezept, Chance je Punkt)
 -- oder { block = {step, perPoint}, from, to } (Guide-Abschnitt). Setzt seg.cost und seg.est.
-local function Simulate(segments, skill, stock, crafts)
-    local consumer = NewConsumer(stock)
+local function Simulate(segments, skill, stock, crafts, mode)
+    local consumer = NewConsumer(stock, mode)
     for _, seg in ipairs(segments) do
         local step = (seg.block or seg.cand).step
-        local before, est = consumer.bought, consumer.estimated
+        local before, est, beforeSeconds = consumer.bought, consumer.estimated, consumer.seconds
         consumer.estimated = false
         for s = math.max(seg.from, skill), seg.to - 1 do
             consumer.at = s
@@ -182,6 +226,7 @@ local function Simulate(segments, skill, stock, crafts)
             if step.out then consumer.stock[step.out] = (consumer.stock[step.out] or 0) + c * (step.mk or 1) end
         end
         seg.cost, seg.est = consumer.bought - before, consumer.estimated
+        seg.extraSeconds = consumer.seconds - beforeSeconds -- Zeit für selbst hergestellte Zwischenprodukte
         consumer.estimated = est or consumer.estimated
     end
     return consumer
@@ -327,10 +372,11 @@ local cache = {}
 
 -- Rechnet alle Berufe nacheinander; der Bestand wird dabei aufgeteilt (nicht doppelt verplant).
 function BT.ComputeCheapest()
-    if cache.sig ~= nil and cache.sig == BT.inputSig then return cache end
+    if not Stale(cache, "cheapest") then return cache end
+    dirty.cheapest = false
     local stock = {}
     for key, count in pairs(BT.totals or {}) do stock[key] = count end
-    local out = { sig = BT.inputSig }
+    local out = { sig = BT.inputSig, ctx = BT.inputCtx }
     for _, prof in ipairs(BT.PROFS) do
         if not prof.gather then
             local cands = Candidates(prof)
@@ -463,7 +509,6 @@ BT.CastTime = CastTime
 
 -- Modus "time" (schnellster Weg): eine Sekunde Herstellzeit wiegt mehr als jedes Gold, Gold entscheidet nur bei
 -- Gleichstand. Nicht erhältliche Rezepte bleiben in beiden Modi das Letzte, was gewählt wird.
-local TIME_WEIGHT = 1000000 -- 100g je Sekunde
 local function LearnValue(learn, mode)
     if mode == "time" and learn >= UNAVAILABLE then return learn * 100000 end
     return learn
@@ -490,7 +535,7 @@ local function PlanAll(steps, blocks, skill, Price, withUnavailable, breaks, mod
         for _, reagent in ipairs(step.r) do sum = sum + Price(reagent[1], s) * reagent[2] end
         -- schnellster Weg: Zeit vor Gold; günstigster Weg: Zeit nur als winziger Ausgleich bei Gleichstand
         -- (z. B. zwei Rezepte aus gratis Bestand: das mit weniger Herstellungen gewinnt)
-        sum = sum + CastTime(step) * (mode == "time" and TIME_WEIGHT or 0.01)
+        sum = sum + CastTime(step) * TimeWeight(mode)
         craftCache[step] = sum
         return sum
     end
@@ -623,20 +668,20 @@ local function ComputePlans(mode, yield)
             -- Verbrauchssimulation wirklich am wenigsten kostet (Gold bzw. Zeit), nicht einfach die letzte.
             local segments, reached, consumer, bestScore
             for _ = 1, 6 do
-                local Price = MakeTimedPricer(freeUntil)
+                local Price = MakeTimedPricer(freeUntil, mode)
                 local breaks = {}
                 for _, at in pairs(freeUntil) do breaks[at] = true end
                 local segs, reach = PlanAll(templates, blocks, skill, Price, false, breaks, mode, yield)
                 if reach < MAX_SKILL then segs, reach = PlanAll(templates, blocks, skill, Price, true, breaks, mode, yield) end
                 local copy = {}
                 for key, count in pairs(stock) do copy[key] = count end
-                local cons = Simulate(segs, skill, copy, CraftsPerPoint)
-                local score = cons.bought
+                local cons = Simulate(segs, skill, copy, CraftsPerPoint, mode)
+                local score = cons.bought + cons.seconds * TimeWeight(mode)
                 for _, seg in ipairs(segs) do
                     local src = seg.block or seg.cand
                     local _, open = SegmentCrafts(seg, skill)
                     if seg.to > skill then score = score + LearnValue(src.learn, mode) end
-                    score = score + open * CastTime(src.step) * (mode == "time" and TIME_WEIGHT or 0.01)
+                    score = score + open * CastTime(src.step) * TimeWeight(mode)
                 end
                 if not bestScore or score < bestScore then
                     bestScore, segments, reached, consumer = score, segs, reach, cons
@@ -662,7 +707,7 @@ local function ComputePlans(mode, yield)
                 step.costMat = seg.cost or 0
                 step.costLearn = seg.to > skill and src.learn or 0
                 step.learnHow, step.estimated = src.how, seg.est
-                step.seconds = open * CastTime(src.step)
+                step.seconds = open * CastTime(src.step) + (seg.extraSeconds or 0)
                 seconds = seconds + step.seconds
                 step.fromGuide = nil -- bei den berechneten Wegen spielt die Herkunft keine Rolle
                 if seg.block then step.y, step.l, step.g = nil, nil, nil end
@@ -682,14 +727,13 @@ end
 -- gilt das alte Ergebnis. So ruckelt das Spiel beim Herstellen nicht.
 local plans = { cost = {}, time = {} }
 local jobs = {}
-BT.planVersion = 0
-
 local function GetPlans(mode)
     local cache, sig = plans[mode], BT.inputSig
-    if cache.sig == sig and sig ~= nil then return cache end
+    if not Stale(cache, mode) then return cache end
+    dirty[mode] = false
     if BT.syncCompute or cache.sig == nil or not (C_Timer and C_Timer.After and coroutine) then
         local out = ComputePlans(mode)
-        out.sig = sig
+        out.sig, out.ctx = sig, BT.inputCtx
         plans[mode] = out
         BT.planVersion = BT.planVersion + 1
         return out
@@ -697,7 +741,7 @@ local function GetPlans(mode)
     local job = jobs[mode]
     if not job or job.sig ~= sig then
         local co = coroutine.create(function() return ComputePlans(mode, coroutine.yield) end)
-        job = { co = co, sig = sig }
+        job = { co = co, sig = sig, ctx = BT.inputCtx }
         jobs[mode] = job
         local function Step()
             if jobs[mode] ~= job then return end -- durch eine neuere Rechnung ersetzt
@@ -709,7 +753,7 @@ local function GetPlans(mode)
             end
             if coroutine.status(co) == "dead" then
                 jobs[mode] = nil
-                result.sig = job.sig
+                result.sig, result.ctx = job.sig, job.ctx
                 plans[mode] = result
                 BT.planVersion = BT.planVersion + 1
                 if BT.Update then BT.Update() end
@@ -788,7 +832,8 @@ local costCache = {}
 -- dazu .active = Summe der gerade gewählten Guides.
 function BT.GuideCosts()
     -- neu nur, wenn sich Eingaben, eigene Pläne oder die Guide-Auswahl geändert haben
-    local key = tostring(BT.inputSig) .. "|" .. BT.planVersion .. "|" .. tostring(BT.db.opt.guideAll)
+    local key = (BT.syncCompute and tostring(BT.inputSig) or (tostring(BT.inputCtx) .. "|" .. (BT.openStamp or 0)))
+        .. "|" .. BT.planVersion .. "|" .. tostring(BT.db.opt.guideAll)
     for profKey, guideKey in pairs(BT.db.opt.guide) do key = key .. "|" .. profKey .. "=" .. guideKey end
     if costCache.key == key then return costCache end
     local out = { key = key }
