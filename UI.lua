@@ -2267,7 +2267,11 @@ local watched = setmetatable({}, { __mode = "k" }) -- markierte Zeilen
 local hoverRow, watcher
 
 local function RowHovered(row)
-    if not (rawget(row, "btEntry") and row:IsVisible() and MouseIsOver and MouseIsOver(row)) then return false end
+    if not (rawget(row, "btEntry") and row:IsVisible()) then return false end
+    local over
+    if MouseIsOver then over = MouseIsOver(row) elseif row.IsMouseOver then over = row:IsMouseOver() end
+    if not over then return false end
+    profHook.over = (profHook.over or 0) + 1
     local left, scale = row:GetLeft(), row:GetEffectiveScale()
     local x = GetCursorPosition and GetCursorPosition()
     if type(left) ~= "number" or type(x) ~= "number" or type(scale) ~= "number" or scale <= 0 then return true end
@@ -2293,6 +2297,7 @@ local function EnsureHoverWatcher()
         elapsed = elapsed + (dt or 0)
         if elapsed < 0.05 then return end
         elapsed = 0
+        profHook.ticks = (profHook.ticks or 0) + 1
         if not (ProfessionsFrame and ProfessionsFrame:IsVisible()) then
             if hoverRow then BT.ProfHoverCheck() end
             return
@@ -2407,6 +2412,10 @@ function BT.PrintProfessionDebug()
     local tag = "|cffffcc00BerufeTracker:|r "
     print(tag .. "Berufsfenster gefunden: " .. tostring(RecipeScrollBox() ~= nil) .. ", Haken gesetzt: " .. tostring(profHook.hooked))
     print(tag .. "Zeilen geprüft: " .. profHook.rows .. ", markiert: " .. profHook.marked .. (profHook.error and (", Fehler: " .. profHook.error) or ""))
+    local nWatched = 0
+    for _ in pairs(watched) do nWatched = nWatched + 1 end
+    print(tag .. "Wächter: " .. tostring(watcher ~= nil) .. ", Prüfungen: " .. (profHook.ticks or 0) .. ", markierte Zeilen: " .. nWatched
+        .. ", Maus über Zeile: " .. (profHook.over or 0) .. ", MouseIsOver: " .. tostring(MouseIsOver ~= nil))
     print(tag .. "Hover erkannt: " .. (profHook.enter or 0) .. ", Tooltip gezeigt: " .. (profHook.shown or 0))
     local count = 0
     for _ in pairs(BT.RouteRecipeIndex()) do count = count + 1 end
