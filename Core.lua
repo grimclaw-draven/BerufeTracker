@@ -21,6 +21,14 @@ BT.PROF_BY_KEY = {}
 
 local function Normalize(text) return (text:lower():gsub("[%p%s]", "")) end
 
+-- Geschützte Werte (Secret Values in WoW Forever) nie übernehmen: Sie lassen sich nicht speichern, und beim
+-- Ausloggen fällt dann die ganze Tabelle weg (Taschen, Skills, Rezepte, Scan-Zeitpunkte).
+local function Plain(value)
+    if issecretvalue and issecretvalue(value) then return nil end
+    return value
+end
+BT.Plain = Plain
+
 -- Name eines Items in der Spielsprache: Spiel selbst, sonst QuestieDB, sonst Englisch.
 local function GameItemName(id)
     if not id or DE then return nil end
@@ -173,15 +181,24 @@ local function PlayerId()
     return name
 end
 
+-- Fehlende Teiltabellen eines Charakters ergänzen (ältere, beim Speichern beschädigte Einträge).
+local function RepairRecord(rec)
+    for _, field in ipairs({ "bags", "bank", "mail", "ts" }) do
+        if type(rec[field]) ~= "table" then rec[field] = {} end
+    end
+    return rec
+end
+
 local function Record()
     local rec = DB.chars[BT.me]
     if not rec then
-        rec = { bags = {}, bank = {}, mail = {}, ts = {}, skills = {} }
+        rec = { skills = {} }
         DB.chars[BT.me] = rec
     end
+    RepairRecord(rec)
     local _, class = UnitClass("player")
-    rec.class = class
-    rec.faction = UnitFactionGroup("player")
+    rec.class = Plain(class) or rec.class
+    rec.faction = Plain(UnitFactionGroup("player")) or rec.faction
     return rec
 end
 
@@ -216,8 +233,9 @@ local function ScanContainers(list)
         for slot = 1, C_Container.GetContainerNumSlots(bag) or 0 do
             local info = C_Container.GetContainerItemInfo(bag, slot)
             if info then
-                local key = KeyFromLink(info.itemID, info.hyperlink)
-                if key then out[key] = (out[key] or 0) + (info.stackCount or 1) end
+                local id, link, count = Plain(info.itemID), Plain(info.hyperlink), Plain(info.stackCount)
+                local key = (id or link) and KeyFromLink(id, link)
+                if key then out[key] = (out[key] or 0) + (tonumber(count) or 1) end
             end
         end
     end
@@ -257,14 +275,14 @@ end
 local function ScanBags()
     local rec = Record()
     rec.bags = ScanContainers(BagList())
-    rec.ts.bags = time()
+    rec.ts.bags = Plain(time())
 end
 
 local function ScanBank()
     if not BT.bankOpen then return end
     local rec = Record()
     rec.bank = ScanContainers(BankList())
-    rec.ts.bank = time()
+    rec.ts.bank = Plain(time())
 end
 
 local function ScanMail()
@@ -273,17 +291,19 @@ local function ScanMail()
     for index = 1, GetInboxNumItems() do
         for attachment = 1, ATTACHMENTS_MAX_RECEIVE or 12 do
             local name, itemID, _, count = GetInboxItem(index, attachment)
-            local key = name and (BT.NAME[name] or (itemID and KeyFromID(itemID)))
-            if key then out[key] = (out[key] or 0) + (count or 1) end
+            name, itemID, count = Plain(name), Plain(itemID), Plain(count)
+            local key = (itemID and KeyFromID(itemID)) or (name and BT.NAME[name])
+            if key then out[key] = (out[key] or 0) + (tonumber(count) or 1) end
         end
     end
     rec.mail = out
-    rec.ts.mail = time()
+    rec.ts.mail = Plain(time())
 end
 
 local function ScanSkills()
     local found, caps = {}, {}
     local function note(name, rank, maxRank, skillLine)
+        name, rank, maxRank, skillLine = Plain(name), Plain(rank), Plain(maxRank), Plain(skillLine)
         local key = (skillLine and BT.SKILL_LINES[skillLine]) or (type(name) == "string" and BT.PROF_BY_NAME[name:lower()])
         if key and tonumber(rank) then found[key] = math.max(found[key] or 0, tonumber(rank)) end
         if key and tonumber(maxRank) then caps[key] = math.max(caps[key] or 0, tonumber(maxRank)) end
@@ -311,14 +331,16 @@ end
 
 local function NoteRecipe(rec, recipeID, name)
     rec.known = rec.known or {}
-    if name then rec.known[Normalize(name)] = true end
+    name, recipeID = Plain(name), Plain(recipeID)
+    if not recipeID then return end
+    if type(name) == "string" then rec.known[Normalize(name)] = true end
     local ui = C_TradeSkillUI
     if ui.GetRecipeSchematic then
         local ok, schematic = pcall(ui.GetRecipeSchematic, recipeID, false)
-        local outputID = ok and schematic and schematic.outputItemID
+        local outputID = ok and schematic and Plain(schematic.outputItemID)
         if outputID then rec.known["#" .. outputID] = true end
-        local output = outputID and GetInfo(outputID)
-        if output then rec.known[Normalize(output)] = true end
+        local output = outputID and Plain((GetInfo(outputID)))
+        if type(output) == "string" then rec.known[Normalize(output)] = true end
     end
 end
 
@@ -333,9 +355,10 @@ local function ScanRecipes()
     -- nur neu gelernte Rezepte genauer abfragen (sonst lief bei jeder Herstellung eine Abfrage je Rezept)
     rec.knownIDs = rec.knownIDs or {}
     for _, recipeID in ipairs(ui.GetAllRecipeIDs() or {}) do
-        if not rec.knownIDs[recipeID] then
+        recipeID = Plain(recipeID)
+        if recipeID and not rec.knownIDs[recipeID] then
             local info = ui.GetRecipeInfo(recipeID)
-            if info and info.learned then
+            if info and Plain(info.learned) then
                 NoteRecipe(rec, recipeID, info.name)
                 rec.knownIDs[recipeID] = true
             end
@@ -394,7 +417,7 @@ end
 -- Quelle eines Bereichs: eigener Scan hat Vorrang, sonst Bagnon-Cache.
 function BT.Source(id, section)
     local own = DB.chars[id]
-    if own and own.ts[section] then return own[section], "own", own.ts[section] end
+    if own and type(own.ts) == "table" and own.ts[section] then return own[section] or {}, "own", own.ts[section] end
     local imported = BT.imported[id]
     if imported then return imported[section], "bagnon" end
     return nil
@@ -618,10 +641,6 @@ function BT.ActiveWaypoint()
     return wp, distance, angle
 end
 
-local function Plain(value)
-    if issecretvalue and issecretvalue(value) then return nil end
-    return value
-end
 
 -- Sprichst du mit dem Ziel des Wegpunkts, hat er seinen Zweck erfüllt.
 local function ClearWaypointOnInteraction()
@@ -1017,6 +1036,7 @@ function handlers.PLAYER_LOGIN()
         DB.dataVersion = BT.DATA_VERSION
     end
     DB.idmap = DB.idmap or {}
+    for _, rec in pairs(DB.chars) do if type(rec) == "table" then RepairRecord(rec) end end
     BT.db = DB
     BT.me = PlayerId()
     for id, skills in pairs(BT.SEED_SKILLS or {}) do

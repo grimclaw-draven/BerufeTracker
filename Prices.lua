@@ -136,8 +136,9 @@ local function ReadBrowse()
     end
     local now = time()
     for _, result in ipairs(list) do
-        local key = BT.ID_TO_KEY[result.itemKey.itemID]
-        local price = tonumber(result.minPrice)
+        local itemID = type(result.itemKey) == "table" and BT.Plain(result.itemKey.itemID)
+        local key = itemID and BT.ID_TO_KEY[itemID]
+        local price = tonumber(BT.Plain(result.minPrice))
         if key and price and price > 0 then
             local entry = Entry(key)
             if entry.ahTs ~= now or not entry.ah or price < entry.ah then
@@ -181,7 +182,7 @@ local function ScanMerchant()
     if not (GetMerchantNumItems and GetMerchantItemLink and BT.db) then return end
     local now = time()
     for index = 1, GetMerchantNumItems() or 0 do
-        local link = GetMerchantItemLink(index)
+        local link = BT.Plain(GetMerchantItemLink(index))
         local id = link and tonumber(link:match("item:(%d+)"))
         local key = (id and (BT.ITEM_BY_ID[id] or BT.ID_TO_KEY[id])) or (link and BT.NAME[link:match("%[(.-)%]") or ""])
         if key and (BT.ITEMS[key] or BT.ID_TO_KEY[id or 0] == key) then
@@ -193,7 +194,8 @@ local function ScanMerchant()
                 local _, _, itemPrice, quantity, numAvailable = GetMerchantItemInfo(index)
                 price, stack, available = itemPrice, quantity, numAvailable
             end
-            if price and price > 0 then
+            price, stack, available = BT.Plain(price), BT.Plain(stack), BT.Plain(available)
+            if type(price) == "number" and price > 0 then
                 local entry = Entry(key)
                 entry.vendor, entry.vendorTs = price / math.max(1, stack or 1), now
                 -- begrenzter Vorrat (z. B. 1×): zählt im Guide "Günstigster Weg" nicht als Händlerquelle
