@@ -2171,6 +2171,10 @@ function BT.RouteRecipeIndex()
                 local open = not step.lump and BT.StepRemaining(step, prof.key) or 0
                 if open > 0 then
                     local entry = { step = step, prof = prof, open = open, current = current }
+                    if current then
+                        local guide = BT.ActiveGuide(prof)
+                        entry.guide = guide and guide.title
+                    end
                     current = false
                     for _, alias in ipairs(step.aliases or {}) do
                         if not index[alias] then index[alias] = entry end
@@ -2194,6 +2198,9 @@ function BT.AddRouteRecipeLines(tip, entry)
     local step = entry.step
     tip:AddLine(" ")
     tip:AddLine("BerufeTracker |cff999999(" .. BT.FilterLabel() .. ")|r", 1, 0.82, 0)
+    if entry.current and entry.guide then
+        tip:AddLine(L["Empfohlen als Nächstes laut Guide: %s"]:format(entry.guide), 0.4, 1, 0.4, true)
+    end
     tip:AddDoubleLine((entry.current and L["Aktueller Routen-Schritt"] or L["Späterer Routen-Schritt"]) .. " " .. step.f .. "-" .. step.t,
         L["%s× offen"]:format(BT.Format(entry.open)), 1, 1, 1, 1, 0.82, 0)
     for _, reagent in ipairs(step.r) do
@@ -2231,15 +2238,31 @@ end
 
 local profHook = { hooked = false, rows = 0, marked = 0 }
 
--- Eine Zeile der Rezeptliste: Balken links (hell = aktueller Schritt), rechts die offene Anzahl.
+-- Eine Zeile der Rezeptliste: die aktuelle Empfehlung bekommt einen feinen goldenen Rahmen, einen leicht
+-- getönten Hintergrund und rechts die offene Anzahl.
 local function DecorateRecipeRow(frame, node)
     local data = node and node.GetData and node:GetData()
     local info = type(data) == "table" and data.recipeInfo
     if not rawget(frame, "btBar") then
-        frame.btBar = frame:CreateTexture(nil, "OVERLAY")
-        frame.btBar:SetPoint("TOPLEFT", 0, -1)
-        frame.btBar:SetPoint("BOTTOMLEFT", 0, 1)
-        frame.btBar:SetWidth(3)
+        frame.btBg = frame:CreateTexture(nil, "BACKGROUND", nil, 1)
+        frame.btBg:SetPoint("TOPLEFT", 0, 0)
+        frame.btBg:SetPoint("BOTTOMRIGHT", 0, 0)
+        frame.btBg:SetColorTexture(1, 0.82, 0, 0.12)
+        local edges = {}
+        local function Edge(a, b, horizontal)
+            local tex = frame:CreateTexture(nil, "OVERLAY")
+            tex:SetColorTexture(1, 0.82, 0, 0.8)
+            tex:SetPoint(a, 0, 0)
+            tex:SetPoint(b, 0, 0)
+            if horizontal then tex:SetHeight(1) else tex:SetWidth(1) end
+            edges[#edges + 1] = tex
+            return tex
+        end
+        frame.btBar = Edge("TOPLEFT", "BOTTOMLEFT", false) -- linke Kante
+        Edge("TOPRIGHT", "BOTTOMRIGHT", false)
+        Edge("TOPLEFT", "TOPRIGHT", true)
+        Edge("BOTTOMLEFT", "BOTTOMRIGHT", true)
+        frame.btEdges = edges
         frame.btText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
         frame.btText:SetPoint("RIGHT", -4, 0)
         frame:HookScript("OnEnter", function(self)
@@ -2257,12 +2280,13 @@ local function DecorateRecipeRow(frame, node)
     frame.btEntry = entry
     if entry then
         profHook.marked = profHook.marked + 1
-        if entry.current then frame.btBar:SetColorTexture(1, 0.82, 0, 1) else frame.btBar:SetColorTexture(0.6, 0.5, 0.2, 0.6) end
-        frame.btText:SetText((entry.current and "|cffffd100" or "|cff998844") .. BT.Format(entry.open) .. "×|r")
-        frame.btBar:Show()
+        frame.btText:SetText("|cffffd100" .. BT.Format(entry.open) .. "×|r")
+        for _, edge in ipairs(frame.btEdges) do edge:Show() end
+        frame.btBg:Show()
         frame.btText:Show()
     else
-        frame.btBar:Hide()
+        for _, edge in ipairs(frame.btEdges) do edge:Hide() end
+        frame.btBg:Hide()
         frame.btText:Hide()
     end
 end
