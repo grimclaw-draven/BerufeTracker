@@ -236,16 +236,8 @@ local function StepTooltip(row)
     if not step.lump then
         local total = BT.RemainingCrafts(step, step.f)
         GameTooltip:AddDoubleLine(L["Noch offen"], L["%s von %s"]:format(BT.Format(BT.StepRemaining(step, prof)), BT.Format(total)), 1, 0.82, 0, 1, 1, 1)
-        if step.y then
-            GameTooltip:AddLine(L["Voraussichtlich nach Chance auf einen Skillpunkt"], 0.7, 0.7, 0.7)
-        else
-            -- Zahl des Guides; zum Vergleich die voraussichtliche Menge nach Chance, wenn sie abweicht
-            local expected = BT.ExpectedCrafts and BT.ExpectedCrafts(step, (BT.Skill(prof)))
-            local open = BT.StepRemaining(step, prof)
-            if expected and open > 0 and expected ~= open then
-                GameTooltip:AddDoubleLine(L["Voraussichtlich nach Chance"], L["%s×"]:format(BT.Format(expected)), 0.7, 0.7, 0.7, 0.7, 0.7, 0.7)
-            end
-        end
+        -- nur eigene Rezept-Schritte rechnen nach Chance; fremde Guides haben ihre Mengen selbst eingerechnet
+        if step.y then GameTooltip:AddLine(L["Voraussichtlich nach Chance auf einen Skillpunkt"], 0.7, 0.7, 0.7) end
     end
     if step.costMat then
         -- Guide "Günstigster Weg": Kosten ab dem aktuellen Skill

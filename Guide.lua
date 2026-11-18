@@ -527,17 +527,6 @@ StepCrafts = function(step, s)
 end
 BT.StepCrafts = StepCrafts
 
--- Nur zur Anzeige: voraussichtliche Herstellungen nach Chance ab Skill "from" (auch für Schritte fremder Guides);
--- nil, wenn das Rezept unbekannt ist.
-function BT.ExpectedCrafts(step, from)
-    local tpl = BT.StepTemplate(step)
-    if not tpl then return nil end
-    local sum = 0
-    for s = math.max(from or step.f, step.f), step.t - 1 do
-        sum = sum + (CraftsPerPoint(tpl, s) or step.c / math.max(1, step.t - step.f))
-    end
-    return math.ceil(sum - 1e-9)
-end
 
 local MAX_SKILL = 300
 
