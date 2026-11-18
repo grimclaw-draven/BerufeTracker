@@ -2216,6 +2216,7 @@ local function DecorateRecipeRow(frame, node)
     end
     profHook.rows = profHook.rows + 1
     local entry = type(info) == "table" and BT.RouteRecipeInfo(info.name, RecipeOutput(info.recipeID)) or nil
+    if entry and not entry.current then entry = nil end -- nur die aktuelle Empfehlung markieren
     frame.btEntry = entry
     if entry then
         profHook.marked = profHook.marked + 1
