@@ -2196,10 +2196,13 @@ end
 -- Tooltip-Zeilen: Routen-Abschnitt und je Material Bedarf, Bestand und wo es liegt.
 function BT.AddRouteRecipeLines(tip, entry)
     local step = entry.step
-    tip:AddLine(" ")
+    -- Leerzeile nur als Trenner, wenn schon etwas im Tooltip steht (eigener Tooltip beginnt direkt mit dem Titel)
+    local lines = tip.NumLines and tip:NumLines()
+    if type(lines) ~= "number" or lines > 0 then tip:AddLine(" ") end
     tip:AddLine("BerufeTracker |cff999999(" .. BT.FilterLabel() .. ")|r", 1, 0.82, 0)
     if entry.current and entry.guide then
         tip:AddLine(L["Empfohlen als Nächstes laut Guide: %s"]:format(entry.guide), 0.4, 1, 0.4, true)
+        tip:AddLine(" ")
     end
     tip:AddDoubleLine((entry.current and L["Aktueller Routen-Schritt"] or L["Späterer Routen-Schritt"]) .. " " .. step.f .. "-" .. step.t,
         L["%s× offen"]:format(BT.Format(entry.open)), 1, 1, 1, 1, 0.82, 0)
@@ -2256,29 +2259,46 @@ local function RecipeRowLeave(self, owner)
     if rawget(self, "btEntry") and GameTooltip:IsOwned(owner or self) then GameTooltip:Hide() end
 end
 
--- Unsichtbare Fläche über der Zeile (rechts neben den Pfeilen für die Skill-Chance): erkennt nur das Hovern,
--- Klicks und Mausrad gehen an die Zeile darunter. Im Forever-Berufsfenster meldet die Zeile selbst kein Hovern.
+-- Hover ohne eigene Fläche über der Zeile (eine Fläche hätte die Klicks geschluckt, die Zeile wäre nicht mehr
+-- herstellbar): ein Wächter prüft nur, ob die Maus über einer markierten Zeile ist (rechts neben den Pfeilen für
+-- die Skill-Chance, die ihren eigenen Tooltip haben), und zeigt dann den Tooltip. Läuft nur bei offenem Berufsfenster.
 local HOVER_LEFT = 22
-local function CreateRowHover(frame)
-    local hover = CreateFrame("Frame", nil, frame)
-    hover:SetPoint("TOPLEFT", HOVER_LEFT, 0)
-    hover:SetPoint("BOTTOMRIGHT", 0, 0)
-    if hover.SetFrameLevel and frame.GetFrameLevel then pcall(hover.SetFrameLevel, hover, (frame:GetFrameLevel() or 0) + 5) end
-    local okClick = hover.SetMouseClickEnabled and pcall(hover.SetMouseClickEnabled, hover, false)
-    local okMotion = hover.SetMouseMotionEnabled and pcall(hover.SetMouseMotionEnabled, hover, true)
-    if not (okClick and okMotion) then hover:Hide() return nil end -- ohne Durchklicken lieber keine Fläche
-    hover:SetScript("OnEnter", function(self)
-        local row = self:GetParent()
-        if row.LockHighlight then pcall(row.LockHighlight, row) end
-        RecipeRowEnter(row, self)
+local watched = setmetatable({}, { __mode = "k" }) -- markierte Zeilen
+local hoverRow, watcher
+
+local function RowHovered(row)
+    if not (rawget(row, "btEntry") and row:IsVisible() and MouseIsOver and MouseIsOver(row)) then return false end
+    local left, scale = row:GetLeft(), row:GetEffectiveScale()
+    local x = GetCursorPosition and GetCursorPosition()
+    if type(left) ~= "number" or type(x) ~= "number" or type(scale) ~= "number" or scale <= 0 then return true end
+    return x / scale >= left + HOVER_LEFT
+end
+
+function BT.ProfHoverCheck()
+    local found
+    for row in pairs(watched) do
+        if RowHovered(row) then found = row break end
+    end
+    if found == hoverRow then return end
+    if hoverRow and GameTooltip:IsOwned(hoverRow) then GameTooltip:Hide() end
+    hoverRow = found
+    if found then RecipeRowEnter(found) end
+end
+
+local function EnsureHoverWatcher()
+    if watcher then return end
+    watcher = CreateFrame("Frame")
+    local elapsed = 0
+    watcher:SetScript("OnUpdate", function(_, dt)
+        elapsed = elapsed + (dt or 0)
+        if elapsed < 0.05 then return end
+        elapsed = 0
+        if not (ProfessionsFrame and ProfessionsFrame:IsVisible()) then
+            if hoverRow then BT.ProfHoverCheck() end
+            return
+        end
+        if next(watched) or hoverRow then BT.ProfHoverCheck() end
     end)
-    hover:SetScript("OnLeave", function(self)
-        local row = self:GetParent()
-        if row.UnlockHighlight then pcall(row.UnlockHighlight, row) end
-        RecipeRowLeave(row, self)
-    end)
-    hover:Hide()
-    return hover
 end
 
 -- Eine Zeile der Rezeptliste: die aktuelle Empfehlung bekommt einen feinen goldenen Rahmen, einen leicht
@@ -2320,7 +2340,7 @@ local function DecorateRecipeRow(frame, node)
         if hooksecurefunc and type(onLeave) == "function" then pcall(hooksecurefunc, frame, "OnLeave", Leave) end
         frame:HookScript("OnEnter", Enter)
         frame:HookScript("OnLeave", Leave)
-        frame.btHover = CreateRowHover(frame) or false
+        EnsureHoverWatcher()
     end
     profHook.rows = profHook.rows + 1
     local entry = type(info) == "table" and BT.RouteRecipeInfo(info.name, RecipeOutput(info.recipeID)) or nil
@@ -2332,9 +2352,9 @@ local function DecorateRecipeRow(frame, node)
         for _, edge in ipairs(frame.btEdges) do edge:Show() end
         frame.btBg:Show()
         frame.btText:Show()
-        if rawget(frame, "btHover") then frame.btHover:Show() end
+        watched[frame] = true
     else
-        if rawget(frame, "btHover") then frame.btHover:Hide() end
+        watched[frame] = nil
         for _, edge in ipairs(frame.btEdges) do edge:Hide() end
         frame.btBg:Hide()
         frame.btText:Hide()
