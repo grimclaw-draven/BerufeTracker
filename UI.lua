@@ -467,7 +467,7 @@ local function ConfigureRow(row, entry)
     local rightInset = isItem and -280 or ((entry.kind == "step" or entry.kind == "trainer") and -60) or (entry.kind == "info" and -6) or (entry.kind == "prof" and -292) or -190
 
     row.text:ClearAllPoints()
-    row.text:SetPoint("LEFT", (isItem and 28) or ((entry.onToggle or entry.kind == "info") and 26) or ((entry.kind == "step" or entry.kind == "trainer") and 18) or 6, 0)
+    row.text:SetPoint("LEFT", (isItem and 28) or ((entry.onToggle or entry.kind == "info") and 26) or ((entry.kind == "step" or entry.kind == "trainer") and 26) or 6, 0) -- Schritte wie die Infozeilen eingerückt
     row.text:SetPoint("RIGHT", row, "RIGHT", rightInset, 0)
     row.text:SetFontObject((entry.kind == "head") and "GameFontNormal" or (entry.kind == "info" and "GameFontHighlightSmall") or "GameFontHighlight")
     row.text:SetText(entry.text or "")
