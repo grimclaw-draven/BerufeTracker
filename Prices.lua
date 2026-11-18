@@ -41,12 +41,22 @@ function BT.Price(key)
     return nil
 end
 
+-- Geldbetrag mit Münzsymbolen wie bei Bagnon/Blizzard: "3 (Gold) 9 (Silber) 85 (Kupfer)", leere Stellen entfallen.
+local COIN = {
+    gold = "|TInterface\\MoneyFrame\\UI-GoldIcon:0:0:2:0|t",
+    silver = "|TInterface\\MoneyFrame\\UI-SilverIcon:0:0:2:0|t",
+    copper = "|TInterface\\MoneyFrame\\UI-CopperIcon:0:0:2:0|t",
+}
+BT.COIN = COIN
+
 function BT.Money(copper)
-    copper = math.floor(copper + 0.5)
-    local gold, silver = math.floor(copper / 10000), math.floor(copper / 100) % 100
-    if gold > 0 then return BT.Format(gold) .. "g " .. silver .. "s" end
-    if silver > 0 then return silver .. "s " .. (copper % 100) .. "c" end
-    return copper .. "c"
+    copper = math.max(0, math.floor((tonumber(copper) or 0) + 0.5))
+    local gold, silver, rest = math.floor(copper / 10000), math.floor(copper / 100) % 100, copper % 100
+    local parts = {}
+    if gold > 0 then parts[#parts + 1] = BT.Format(gold) .. COIN.gold end
+    if silver > 0 then parts[#parts + 1] = silver .. COIN.silver end
+    if rest > 0 or #parts == 0 then parts[#parts + 1] = rest .. COIN.copper end
+    return table.concat(parts, " ")
 end
 
 local function PriceSorts()
