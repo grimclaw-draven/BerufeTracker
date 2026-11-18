@@ -68,14 +68,34 @@ def absolute_links(line):
     """Relative Links der READMEs (z. B. readme/de.md) zeigen bei CurseForge ins Leere: auf GitHub umbiegen."""
     return re.sub(r'\]\((?!https?://|#)([^)]+)\)', lambda m: f'](https://github.com/{REPO}/blob/main/{m.group(1)})', line)
 
+# Sprachen, die in der CurseForge-Beschreibung vollständig erscheinen; die anderen als Kurzfassung mit Link zur
+# vollständigen README (CurseForge lehnt zu große Beschreibungen ab: "request entity too large", alle zehn ≈ 74 KB).
+FULL_LANGS = (None, 'de')
+
+def first_sentence(text):
+    m = re.match(r'^(.+?[.。!?！？])(?=\s|$)', text)
+    return m.group(1) if m else text
+
+def short_readme(lines, code, name):
+    """Kurzfassung: Einleitung, die Funktionen je mit ihrem ersten Satz, Link zur vollständigen README."""
+    heads = [i for i, l in enumerate(lines) if l.startswith('## ')]
+    out = lines[:heads[0]]
+    for l in lines[heads[0]:heads[1]]:
+        out.append('- ' + first_sentence(l[2:]) if l.startswith('- ') else l)
+    url = f'https://github.com/{REPO}/blob/main/{path_of("readme", code)}'
+    out += ['', f'**→ [BerufeTracker README ({name})]({url})**']
+    return out
+
 def description_md():
-    """CurseForge-Projektbeschreibung als Markdown (Beschreibungsart "Markdown"): alle READMEs untereinander."""
+    """CurseForge-Projektbeschreibung als Markdown (Beschreibungsart "Markdown"): READMEs untereinander, Englisch
+    und Deutsch vollständig, die anderen Sprachen kurz."""
     parts = []
     for index, (code, name) in enumerate(LANGS):
         lines = [absolute_links(l) for l in read(path_of('readme', code))[3:]]  # Zeile 1 Titel, Zeile 3 Sprachleiste
         # ohne Lizenzangaben: letzter Abschnitt (Lizenz) und die "(GPLv3)"-Hinweise bei den Quellen
         last = max(i for i, l in enumerate(lines) if l.startswith('## '))
         lines = [re.sub(r'\s*[(（]GPLv3[)）]', '', l) for l in lines[:last]]
+        if code not in FULL_LANGS: lines = short_readme(lines, code, name)
         body = re.sub(r'\n{3,}', '\n\n', '\n'.join(lines)).strip()
         note = f'\n\n*More languages below: {OTHERS}*' if index == 0 else ''
         parts.append(f'# BerufeTracker ({name}){note}\n\n{body}')
