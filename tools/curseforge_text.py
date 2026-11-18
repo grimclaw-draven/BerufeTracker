@@ -1,6 +1,8 @@
 # Texte für Releases und CurseForge.
 #   python3 tools/curseforge_text.py description <Ausgabedatei>
 #       CurseForge-Projektbeschreibung: alle READMEs als Klartext untereinander, getrennt durch eine Strichlinie.
+#   python3 tools/curseforge_text.py description-md <Ausgabedatei>
+#       Dasselbe als Markdown (bei CurseForge Beschreibungsart "Markdown" wählen und einfügen).
 #   python3 tools/curseforge_text.py changelog <Version> <Ausgabedatei>
 #       CurseForge-Changelog: der komplette Changelog jeder Sprache untereinander (Klartext mit Aufzählungspunkten).
 #       Bricht ab, wenn eine Sprache den Abschnitt der neuen Version noch nicht hat.
@@ -62,6 +64,20 @@ def description():
         sections.append(('BerufeTracker', name, plain(lines[3:])))  # Zeile 1 Titel, Zeile 3 Sprachleiste
     return join(sections)
 
+def absolute_links(line):
+    """Relative Links der READMEs (z. B. readme/de.md) zeigen bei CurseForge ins Leere: auf GitHub umbiegen."""
+    return re.sub(r'\]\((?!https?://|#)([^)]+)\)', lambda m: f'](https://github.com/{REPO}/blob/main/{m.group(1)})', line)
+
+def description_md():
+    """CurseForge-Projektbeschreibung als Markdown (Beschreibungsart "Markdown"): alle READMEs untereinander."""
+    parts = []
+    for index, (code, name) in enumerate(LANGS):
+        lines = [absolute_links(l) for l in read(path_of('readme', code))[3:]]  # Zeile 1 Titel, Zeile 3 Sprachleiste
+        body = re.sub(r'\n{3,}', '\n\n', '\n'.join(lines)).strip()
+        note = f'\n\n*More languages below: {OTHERS}*' if index == 0 else ''
+        parts.append(f'# BerufeTracker ({name}){note}\n\n{body}')
+    return '\n\n---\n\n'.join(parts) + '\n'
+
 def changelog(version):
     sections, missing = [], []
     for code, name in LANGS:
@@ -86,6 +102,7 @@ def release_notes(version):
 if __name__ == '__main__':
     mode = sys.argv[1]
     if mode == 'description': text, out = description(), sys.argv[2]
+    elif mode == 'description-md': text, out = description_md(), sys.argv[2]
     elif mode == 'changelog': text, out = changelog(sys.argv[2]), sys.argv[3]
     elif mode == 'release-notes': text, out = release_notes(sys.argv[2]), sys.argv[3]
     else: sys.exit('description <Datei> | changelog <Version> <Datei> | release-notes <Version> <Datei>')
