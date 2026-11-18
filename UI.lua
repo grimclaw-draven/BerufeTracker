@@ -49,6 +49,7 @@ local function ShowMenu(anchor, options, width, selected, onPick)
             button.label:SetPoint("LEFT", 4, 0)
             button.label:SetPoint("RIGHT", -4, 0)
             button.label:SetJustifyH("LEFT")
+            button.label:SetWordWrap(false)
             menu.buttons[index] = button
         end
         button.label:SetText((option.value == selected and "|cffffd100" or "|cffffffff") .. option.text .. "|r")
@@ -60,6 +61,13 @@ local function ShowMenu(anchor, options, width, selected, onPick)
         button:Show()
     end
     for index = #options + 1, #menu.buttons do menu.buttons[index]:Hide() end
+    -- so breit wie der längste Eintrag, damit nichts umbricht oder überlappt
+    local widest = width
+    for index = 1, #options do
+        local w = menu.buttons[index].label:GetStringWidth()
+        if type(w) == "number" then widest = math.max(widest, math.ceil(w) + 24) end
+    end
+    menu:SetWidth(math.min(widest, 760))
     menu:SetHeight(8 + #options * 20)
     menu:Show()
 end
@@ -957,10 +965,11 @@ local function CreateWindow()
     f.search:SetScript("OnEscapePressed", f.search.ClearFocus)
 
     f.filter = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
-    f.filter:SetSize(170, 22)
+    f.filter:SetSize(240, 22)
     f.filter:SetPoint("TOPLEFT", 16, -55)
     f.filter:SetScript("OnClick", OpenFilterMenu)
     AddDropArrow(f.filter)
+    FitButtonText(f.filter)
 
     f.guideAllLabel = f:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     f.guideAllLabel:SetPoint("TOPLEFT", 18, -61)
@@ -976,11 +985,14 @@ local function CreateWindow()
 
     f.scan = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
     f.scan:SetSize(116, 22)
-    f.scan:SetPoint("TOPLEFT", 194, -55)
+    f.scan:SetPoint("TOPLEFT", 264, -55)
     f.scan:SetScript("OnClick", function() BT.StartScan() end)
 
     f.cost = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    f.cost:SetPoint("TOPRIGHT", -14, -60)
+    f.cost:SetPoint("LEFT", f.scan, "RIGHT", 10, 0) -- zwischen "Preise scannen" und dem rechten Rand
+    f.cost:SetPoint("RIGHT", f, "RIGHT", -14, 0)
+    f.cost:SetJustifyH("RIGHT")
+    f.cost:SetWordWrap(false)
 
     f.filterMenu = CreateFrame("Frame", nil, f)
     f.filterMenu:SetSize(380, 40)
