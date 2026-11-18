@@ -199,6 +199,23 @@ local function Record()
     local _, class = UnitClass("player")
     rec.class = Plain(class) or rec.class
     rec.faction = Plain(UnitFactionGroup("player")) or rec.faction
+    -- für den Tab Charaktere: Stufe, Gold, Gilde (nur lesbare Werte)
+    if UnitLevel then
+        local level = Plain(UnitLevel("player"))
+        if type(level) == "number" and level > 0 then rec.level = level end
+    end
+    if GetMoney then
+        local money = Plain(GetMoney())
+        if type(money) == "number" then rec.money = money end
+    end
+    if IsInGuild and GetGuildInfo then
+        local inGuild = Plain(IsInGuild())
+        if inGuild == false then rec.guild = nil
+        elseif inGuild then
+            local guild = Plain((GetGuildInfo("player")))
+            if type(guild) == "string" and guild ~= "" then rec.guild = guild end
+        end
+    end
     return rec
 end
 
@@ -386,7 +403,9 @@ function BT.ImportBagnon()
         for id, cache in pairs(root) do
             if type(cache) == "table" then
                 local faction = (cache.faction == true and "Alliance") or (cache.faction == false and "Horde") or nil
-                local rec = { bags = {}, bank = {}, mail = {}, class = cache.class, faction = faction }
+                local guild = type(cache.guild) == "table" and cache.guild[1] or nil
+                local rec = { bags = {}, bank = {}, mail = {}, class = cache.class, faction = faction,
+                    level = tonumber(cache.level), money = tonumber(cache.money), guild = type(guild) == "string" and guild or nil }
                 for bag, data in pairs(cache) do
                     if type(bag) == "number" and bag ~= -2 and type(data) == "table" and type(data.items) == "table" then
                         AddCacheItems((bag >= 0 and bag <= NumBags()) and rec.bags or rec.bank, data.items)
@@ -412,6 +431,39 @@ function BT.CharIds()
     end
     table.sort(list)
     return list
+end
+
+-- Reihenfolge im Tab Charaktere: aktiver Charakter, andere Charaktere, dann Gildenbanken in der Reihenfolge
+-- der Charaktere ihrer Gilde (Bank der Gilde des ersten Charakters zuerst), unbekannte Gilden zuletzt.
+function BT.CharOrder()
+    local chars, banks = {}, {}
+    for _, id in ipairs(BT.CharIds()) do
+        if BT.IsGuild(id) then banks[#banks + 1] = id elseif id ~= BT.me then chars[#chars + 1] = id end
+    end
+    if DB.chars[BT.me] or BT.imported[BT.me] then table.insert(chars, 1, BT.me) end
+    local rank = {}
+    for index, id in ipairs(chars) do
+        local guild = BT.CharInfo(id).guild
+        if guild and not rank[guild] then rank[guild] = index end
+    end
+    table.sort(banks, function(a, b)
+        local ra, rb = rank[a:sub(1, -2)] or math.huge, rank[b:sub(1, -2)] or math.huge
+        if ra ~= rb then return ra < rb end
+        return a < b
+    end)
+    for _, id in ipairs(banks) do chars[#chars + 1] = id end
+    return chars
+end
+
+-- Stufe, Gold, Gilde, Klasse eines Charakters: eigener Login hat Vorrang, sonst Bagnon.
+function BT.CharInfo(id)
+    local own, imported = DB.chars[id] or {}, (BT.imported and BT.imported[id]) or {}
+    return {
+        level = own.level or imported.level,
+        money = own.money or imported.money,
+        guild = own.guild or imported.guild,
+        class = own.class or imported.class,
+    }
 end
 
 -- Quelle eines Bereichs: eigener Scan hat Vorrang, sonst Bagnon-Cache.

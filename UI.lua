@@ -825,20 +825,93 @@ local function SectionState(id, section)
     return "|cff999999-|r"
 end
 
+-- Materialien eines Charakters: Stück, verschiedene, davon für die Route gebraucht, Wert (nur mit Preis)
+local function CharStock(id)
+    local count, kinds, needed, value, seen = 0, 0, 0, 0, {}
+    local result = BT.result or {}
+    for _, section in ipairs({ "bags", "bank", "mail" }) do
+        for key, n in pairs(BT.Source(id, section) or {}) do
+            if type(n) == "number" and n > 0 then
+                count = count + n
+                if not seen[key] then seen[key], kinds = true, kinds + 1 end
+                local res = result[key]
+                if res and (res.need or 0) > 0 then needed = needed + n end
+                local price = BT.Price and BT.Price(key)
+                if price then value = value + price * n end
+            end
+        end
+    end
+    return count, kinds, needed, value
+end
+
+local function CharProfessions(id)
+    local rec = BT.db.chars[id]
+    local skills = rec and rec.skills
+    if type(skills) ~= "table" or not next(skills) then return nil end
+    local parts = {}
+    for _, prof in ipairs(BT.PROFS) do
+        local rank = skills[prof.key]
+        if rank then parts[#parts + 1] = BT.ProfTitle(prof) .. " |cffffffff" .. rank .. "|r" end
+    end
+    return #parts > 0 and table.concat(parts, ", ") or nil
+end
+
 local function BuildChars(list)
+    local ids = BT.CharOrder()
+    local chars, banks, money = 0, 0, 0
+    for _, id in ipairs(ids) do
+        if BT.IsGuild(id) then banks = banks + 1 else chars = chars + 1 end
+        if not BT.IsGuild(id) and BT.SameFaction(id) then money = money + (BT.CharInfo(id).money or 0) end
+    end
+    list[#list + 1] = { kind = "info", height = 18, text = "|cff999999" .. L["%d Charaktere, %d Gildenbanken"]:format(chars, banks)
+        .. "  ·  " .. L["Gold (eigene Fraktion):"] .. "|r " .. BT.Money(money) }
+    list[#list + 1] = { kind = "gap", height = 6 }
     list[#list + 1] = { kind = "head", text = L["Name  (Taschen / Bank / Post)"] }
-    for _, id in ipairs(BT.CharIds()) do
-        local own, imported = BT.db.chars[id], BT.imported[id]
-        local class = (own and own.class) or (imported and imported.class)
+    for index, id in ipairs(ids) do
+        local info = BT.CharInfo(id)
+        local guildBank = BT.IsGuild(id)
         local ignored = BT.IsIgnored(id)
+        if index > 1 then list[#list + 1] = { kind = "gap", height = 6 } end
         list[#list + 1] = {
             kind = "char",
-            text = ColorName(id, class) .. (id == BT.me and ("  |cffffd100(" .. L["aktiv"] .. ")|r") or "") .. (BT.IsGuild(id) and ("  |cff999999(" .. L["Gildenbank"] .. ")|r") or ""),
+            text = ColorName(id, info.class) .. (id == BT.me and ("  |cffffd100(" .. L["aktiv"] .. ")|r") or "") .. (guildBank and ("  |cff999999(" .. L["Gildenbank"] .. ")|r") or ""),
             right = SectionState(id, "bags") .. " / " .. SectionState(id, "bank") .. " / " .. SectionState(id, "mail"),
             checked = not ignored,
             onToggle = function(on) BT.db.opt.ignored[id] = not on end,
         }
+        -- Zeile 1: Stufe, Gilde, Gold (Gildenbank: welche Charaktere in der Gilde sind)
+        local parts = {}
+        if guildBank then
+            local members = {}
+            for _, other in ipairs(ids) do
+                if not BT.IsGuild(other) and BT.CharInfo(other).guild == id:sub(1, -2) then members[#members + 1] = other:match("^%S+") end
+            end
+            parts[#parts + 1] = #members > 0 and (L["Gilde von:"] .. " " .. table.concat(members, ", ")) or L["kein eigener Charakter in dieser Gilde bekannt"]
+        else
+            if info.level then parts[#parts + 1] = L["Stufe %d"]:format(info.level) end
+            if info.guild then parts[#parts + 1] = L["Gilde:"] .. " <" .. info.guild .. ">" end
+            if info.money then parts[#parts + 1] = L["Gold:"] .. " " .. BT.Money(info.money) end
+        end
+        if not BT.SameFaction(id) then parts[#parts + 1] = "|cffff6666" .. L["andere Fraktion, zählt nicht mit"] .. "|r"
+        elseif ignored then parts[#parts + 1] = "|cffff9933" .. L["zählt nicht mit"] .. "|r" end
+        if #parts > 0 then list[#list + 1] = { kind = "info", height = 16, text = "|cff999999" .. table.concat(parts, "  ·  ") .. "|r" } end
+        -- Zeile 2: Berufe mit Skill
+        if not guildBank then
+            local profs = CharProfessions(id)
+            list[#list + 1] = { kind = "info", height = 16, text = profs and ("|cff999999" .. L["Berufe:"] .. "|r " .. profs)
+                or ("|cff999999" .. L["Berufe unbekannt – einmal mit diesem Charakter einloggen"] .. "|r") }
+        end
+        -- Zeile 3: Materialien
+        local count, kinds, needed, value = CharStock(id)
+        local text = count > 0 and L["Materialien: %s Stück (%d verschiedene), davon %s gebraucht"]:format(BT.Format(count), kinds, BT.Format(needed))
+            or L["Materialien: keine"]
+        if value > 0 then text = text .. ", " .. L["Wert ca. %s"]:format(BT.Money(value)) end
+        list[#list + 1] = { kind = "info", height = 16, text = "|cff999999" .. text .. "|r" }
     end
+    list[#list + 1] = { kind = "gap", height = 12 }
+    list[#list + 1] = { kind = "divider", height = 6 }
+    list[#list + 1] = { kind = "info", height = 16, text = "|cff999999" .. L["Grün: eigener Scan (Taschen beim Einloggen, Bank und Post beim Öffnen)."]
+        .. (next(BT.imported or {}) and (" " .. L["Gelb: aus Bagnon."]) or "") .. " " .. L["Haken: Bestand zählt mit."] .. "|r" }
 end
 
 local function FilterLabel()
@@ -890,6 +963,8 @@ function BT.RefreshUI()
     end
     for index = #list + 1, #rows do rows[index]:Hide() end
     window.content:SetHeight(math.max(1, y))
+    -- ohne Bedienelemente unter den Tabs (Charaktere) beginnt die Liste direkt darunter
+    window.scroll:SetPoint("TOPLEFT", 12, tab == CHARS and -58 or -CONTENT_TOP)
 
     -- Mindesthöhe: auf dem Tab Route passt der Abschnitt "Dieser Charakter" ganz hinein (höchstens 90 % des Bildschirms)
     local minHeight = MIN_HEIGHT
@@ -1018,8 +1093,8 @@ local function CreateWindow()
     FitButtonText(f.guideAll)
     f.guideAllCost = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     f.guideAllCost:SetPoint("LEFT", f.guideAll, "RIGHT", 8, 0)
-    f.guideAllCost:SetPoint("RIGHT", f, "RIGHT", -14, 0) -- bleibt im Fenster
-    f.guideAllCost:SetJustifyH("LEFT")
+    f.guideAllCost:SetPoint("RIGHT", f, "RIGHT", -16, 0) -- rechtsbündig wie "Grundmaterialien"
+    f.guideAllCost:SetJustifyH("RIGHT")
     f.guideAllCost:SetWordWrap(false)
 
     f.scan = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
