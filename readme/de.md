@@ -34,7 +34,7 @@ Für **WoW Forever**, in der Sprache deines Spiel-Clients: Englisch, Deutsch, Fr
 - Erzadern und Kräuter in der Welt zeigen, was du daraus noch brauchst und ob Sammeln dir noch Skillpunkte bringt.
 - Gegner zeigen, welche deiner benötigten Materialien sie fallen lassen, dazu Stoff von Humanoiden und Leder von Wildtieren (Kürschnern) ihrer Stufe.
 - Waffen und Rüstung zeigen, welches Verzauberungsmaterial Entzaubern ungefähr ergibt, wenn du es brauchst.
-- Das Berufsfenster des Spiels markiert das Rezept, das deine Route als Nächstes empfiehlt; sein Tooltip zeigt die benötigten Materialien und welche Charaktere sie haben.
+- Das Berufsfenster des Spiels umrahmt das Rezept, das deine Route als Nächstes empfiehlt; beim Drüberfahren siehst du, welcher Guide es empfiehlt, die benötigten Materialien und welche Charaktere sie haben.
 
 **Fenster**
 - Tab Charaktere: Stufe, Gilde, Gold, Berufe und Materialien jedes Charakters; Gildenbanken stehen in der Reihenfolge der Charaktere ihrer Gilde. Du wählst, wessen Bestand mitzählt.

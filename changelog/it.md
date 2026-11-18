@@ -9,7 +9,7 @@
 - Niente più scatti dopo la creazione: i percorsi propri vengono calcolati in background all'apertura della finestra
 - Nuovo filtro predefinito "Personaggio attuale"; filtri rinominati in "Tutti i personaggi (professioni apprese)", "Professioni apprese (miglior personaggio)" e "Tutte le professioni (anche non apprese)". Il percorso mostra solo le professioni della selezione, quelle non apprese solo con il primo istruttore
 - Materiali e Percorso mostrano lo stesso costo d'acquisto, inclusi istruttori, ricette e una stima per i materiali senza prezzo
-- Finestra della professione del gioco: la ricetta che il percorso consiglia come prossima è evidenziata; il suo tooltip mostra i materiali e quali personaggi li hanno
+- Finestra della professione del gioco: la ricetta che il percorso consiglia come prossima ha una cornice sottile e uno sfondo colorato; passandoci sopra vedi quale guida la consiglia, i materiali e quali personaggi li hanno
 - Erbe e minerale: il tooltip mostra se la raccolta dà ancora punti abilità
 - Scheda Personaggi: livello, gilda, oro, professioni e materiali di ogni personaggio; le banche di gilda seguono i personaggi della loro gilda
 - Importi in oro con icone delle monete

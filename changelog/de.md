@@ -9,7 +9,7 @@
 - Kein Ruckeln mehr nach dem Herstellen: die eigenen Wege werden beim Öffnen des Fensters im Hintergrund berechnet
 - Neuer Standardfilter „Aktueller Charakter“; Filter umbenannt in „Alle Charaktere (gelernte Berufe)“, „Gelernte Berufe (bester Charakter)“ und „Alle Berufe (auch ungelernte)“. Die Route zeigt nur die Berufe der Auswahl, ungelernte nur mit ihrem ersten Lehrer
 - Materialien und Route zeigen dieselben Kaufkosten, inklusive Lehrer, Rezepte und einer Schätzung für Materialien ohne Preis
-- Berufsfenster des Spiels: das Rezept, das deine Route als Nächstes empfiehlt, ist markiert; sein Tooltip zeigt die Materialien und welche Charaktere sie haben
+- Berufsfenster des Spiels: das Rezept, das deine Route als Nächstes empfiehlt, hat einen feinen Rahmen und einen getönten Hintergrund; beim Drüberfahren siehst du, welcher Guide es empfiehlt, die Materialien und welche Charaktere sie haben
 - Kräuter und Erz: der Tooltip zeigt, ob Sammeln noch Skillpunkte bringt
 - Tab Charaktere: Stufe, Gilde, Gold, Berufe und Materialien jedes Charakters; Gildenbanken stehen bei den Charakteren ihrer Gilde
 - Goldbeträge mit Münzsymbolen

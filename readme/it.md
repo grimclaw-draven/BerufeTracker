@@ -34,7 +34,7 @@ Per **WoW Forever**, nella lingua del tuo client di gioco: inglese, tedesco, fra
 - Le vene di minerale e le erbe nel mondo mostrano quanto ti serve ancora da esse e se raccoglierle ti dà ancora punti abilità.
 - I nemici mostrano quali materiali che ti servono lasciano cadere, oltre alla stoffa degli umanoidi e al cuoio delle bestie (scuoiatura) del loro livello.
 - Armi e armature mostrano quali materiali di incantamento si ottengono circa disincantandole, se ti servono.
-- La finestra della professione del gioco evidenzia la ricetta che il tuo percorso consiglia come prossima; il suo tooltip mostra i materiali necessari e quali personaggi li hanno.
+- La finestra della professione del gioco incornicia la ricetta che il tuo percorso consiglia come prossima; passandoci sopra vedi quale guida la consiglia, i materiali necessari e quali personaggi li hanno.
 
 **Finestra**
 - Scheda Personaggi: livello, gilda, oro, professioni e materiali di ogni personaggio; le banche di gilda seguono i personaggi della loro gilda. Scegli di chi conta la scorta.

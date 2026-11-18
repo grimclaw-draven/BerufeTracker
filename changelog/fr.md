@@ -9,7 +9,7 @@
 - Plus de ralentissement après une fabrication : les chemins propres sont calculés en arrière-plan à l'ouverture de la fenêtre
 - Nouveau filtre par défaut « Personnage actuel » ; filtres renommés « Tous les personnages (métiers appris) », « Métiers appris (meilleur personnage) » et « Tous les métiers (même non appris) ». Le parcours n'affiche que les métiers de la sélection, les non appris seulement avec leur premier maître
 - Composants et Parcours affichent le même coût d'achat, maîtres, recettes et une estimation pour les matériaux sans prix compris
-- Fenêtre de métier du jeu : la recette que votre parcours recommande ensuite est mise en évidence, son infobulle indique les matériaux et quels personnages les possèdent
+- Fenêtre de métier du jeu : la recette que votre parcours recommande ensuite a un fin cadre et un fond teinté ; au survol, vous voyez quel guide la recommande, les matériaux et quels personnages les possèdent
 - Herbes et minerai : l'infobulle indique si la récolte rapporte encore des points de compétence
 - Onglet Personnages : niveau, guilde, or, métiers et matériaux de chaque personnage ; les banques de guilde suivent les personnages de leur guilde
 - Montants en or avec icônes de pièces

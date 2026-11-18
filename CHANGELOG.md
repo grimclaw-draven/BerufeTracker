@@ -9,7 +9,7 @@
 - No more lag after crafting: own routes are calculated in the background when the window opens
 - New default filter "Current character"; filters renamed to "All characters (learned professions)", "Learned professions (best character)" and "All professions (also unlearned)". The route shows only the professions of the selection, unlearned ones only with their first trainer
 - Materials and route show the same purchase cost, including trainers, recipes and an estimate for materials without a price
-- Profession window of the game: the recipe your route recommends next is highlighted, its tooltip shows the materials and which characters hold them
+- Profession window of the game: the recipe your route recommends next has a fine frame and a tinted background; hovering it shows which guide recommends it, the materials and which characters hold them
 - Herbs and ore: the tooltip shows whether gathering still gives skill points
 - Characters tab: level, guild, gold, professions and materials of every character; guild banks follow the characters of their guild
 - Gold amounts with coin icons

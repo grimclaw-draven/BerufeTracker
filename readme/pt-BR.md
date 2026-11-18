@@ -34,7 +34,7 @@ Para **WoW Forever**, no idioma do seu cliente de jogo: inglês, alemão, franc�
 - Os veios de minério e as ervas no mundo mostram o que você ainda precisa deles e se coletá-los ainda rende pontos de perícia.
 - Os inimigos mostram quais materiais de que você precisa eles deixam cair, além de tecido de humanoides e couro de feras (esfolamento) do nível deles.
 - Armas e armaduras mostram quais materiais de encantamento o desencantamento rende aproximadamente, se você precisar deles.
-- A janela de profissão do jogo destaca a receita que sua rota recomenda em seguida; a dica mostra os materiais necessários e quais personagens os têm.
+- A janela de profissão do jogo emoldura a receita que sua rota recomenda em seguida; ao passar o mouse você vê qual guia a recomenda, os materiais necessários e quais personagens os têm.
 
 **Janela**
 - Aba Personagens: nível, guilda, ouro, profissões e materiais de cada personagem; os bancos de guilda seguem os personagens da guilda. Você escolhe qual estoque conta.

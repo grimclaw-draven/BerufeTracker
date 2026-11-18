@@ -34,7 +34,7 @@ Pour **WoW Forever**, dans la langue de votre client de jeu : anglais, allemand,
 - Les filons de minerai et les herbes dans le monde indiquent ce qu'il vous faut encore en tirer et si la récolte vous rapporte encore des points de compétence.
 - Les ennemis indiquent quels matériaux dont vous avez besoin ils laissent tomber, ainsi que le tissu des humanoïdes et le cuir des bêtes (dépeçage) de leur niveau.
 - Les armes et armures indiquent quels matériaux d’enchantement le désenchantement donne environ, si vous en avez besoin.
-- La fenêtre de métier du jeu met en évidence la recette que votre parcours recommande ensuite ; son infobulle indique les matériaux nécessaires et quels personnages les possèdent.
+- La fenêtre de métier du jeu encadre la recette que votre parcours recommande ensuite ; au survol, vous voyez quel guide la recommande, les matériaux nécessaires et quels personnages les possèdent.
 
 **Fenêtre**
 - Onglet Personnages : niveau, guilde, or, métiers et matériaux de chaque personnage ; les banques de guilde suivent les personnages de leur guilde. Vous choisissez quels stocks comptent.

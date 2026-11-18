@@ -9,7 +9,7 @@
 - Sem travadas depois de fabricar: os caminhos próprios são calculados em segundo plano ao abrir a janela
 - Novo filtro padrão "Personagem atual"; filtros renomeados para "Todos os personagens (profissões aprendidas)", "Profissões aprendidas (melhor personagem)" e "Todas as profissões (também não aprendidas)". A rota mostra só as profissões da seleção, as não aprendidas só com o primeiro instrutor
 - Materiais e Rota mostram o mesmo custo de compra, incluindo instrutores, receitas e uma estimativa para materiais sem preço
-- Janela de profissão do jogo: a receita que sua rota recomenda em seguida fica destacada; a dica mostra os materiais e quais personagens os têm
+- Janela de profissão do jogo: a receita que sua rota recomenda em seguida tem uma moldura fina e um fundo tingido; ao passar o mouse você vê qual guia a recomenda, os materiais e quais personagens os têm
 - Ervas e minério: a dica mostra se coletar ainda rende pontos de perícia
 - Aba Personagens: nível, guilda, ouro, profissões e materiais de cada personagem; os bancos de guilda seguem os personagens da guilda
 - Valores em ouro com ícones de moedas

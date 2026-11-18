@@ -34,7 +34,7 @@ For **WoW Forever**, in the language of your game client: English, German, Frenc
 - Ore veins and herbs in the world show what you still need from them and whether gathering them still gives you skill points.
 - Enemies show which of your needed materials they drop, plus cloth from humanoids and leather from beasts (skinning) of their level.
 - Weapons and armor show which enchanting materials disenchanting gives about, if you need them.
-- The game's profession window highlights the recipe your route recommends next; its tooltip shows the materials you need and which characters hold them.
+- The game's profession window frames the recipe your route recommends next; hovering it shows which guide recommends it, the materials you need and which characters hold them.
 
 **Window**
 - Characters tab: level, guild, gold, professions and materials of every character; guild banks follow the characters of their guild. Choose whose stock counts.

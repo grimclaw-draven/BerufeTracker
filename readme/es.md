@@ -34,7 +34,7 @@ Para **WoW Forever**, en el idioma de tu cliente de juego: inglés, alemán, fra
 - Los filones de mineral y las hierbas del mundo muestran lo que aún necesitas de ellos y si recolectarlos todavía te da puntos de habilidad.
 - Los enemigos muestran qué materiales que necesitas sueltan, además del paño de los humanoides y el cuero de las bestias (desuello) de su nivel.
 - Las armas y armaduras muestran qué materiales de encantamiento da aproximadamente desencantarlas, si los necesitas.
-- La ventana de profesión del juego resalta la receta que tu ruta recomienda a continuación; su descripción muestra los materiales necesarios y qué personajes los tienen.
+- La ventana de profesión del juego enmarca la receta que tu ruta recomienda a continuación; al pasar el ratón ves qué guía la recomienda, los materiales necesarios y qué personajes los tienen.
 
 **Ventana**
 - Pestaña Personajes: nivel, hermandad, oro, profesiones y materiales de cada personaje; los bancos de hermandad siguen a los personajes de su hermandad. Tú eliges qué inventario cuenta.
