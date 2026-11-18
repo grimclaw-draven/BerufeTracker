@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.3.0
+
+- Neuer eigener Guide „Schnellster berechneter Weg“: die Rezepte mit der kürzesten Herstellzeit, inklusive Abklingzeiten von Materialien wie Mondstoff
+- Herstellzeit und Kosten ab jetzt unter jedem Beruf, für jeden Guide
+- „Günstigster Guide-Weg“ wird jetzt wie „Günstigster berechneter Weg“ Skillpunkt für Skillpunkt berechnet; keiner der beiden ist je teurer als einer der anderen Guides
+- Die eigenen Wege rechnen die Chance auf einen Skillpunkt für jeden Punkt ein und nutzen deine Materialien nur, solange sie reichen
+- Kein Ruckeln mehr nach dem Herstellen: die eigenen Wege werden beim Öffnen des Fensters im Hintergrund berechnet
+- Neuer Standardfilter „Aktueller Charakter“; Filter umbenannt in „Alle Charaktere (gelernte Berufe)“, „Gelernte Berufe (bester Charakter)“ und „Alle Berufe (auch ungelernte)“. Die Route zeigt nur die Berufe der Auswahl, ungelernte nur mit ihrem ersten Lehrer
+- Materialien und Route zeigen dieselben Kaufkosten, inklusive Lehrer, Rezepte und einer Schätzung für Materialien ohne Preis
+- Berufsfenster des Spiels: das Rezept, das deine Route als Nächstes empfiehlt, ist markiert; sein Tooltip zeigt die Materialien und welche Charaktere sie haben
+- Kräuter und Erz: der Tooltip zeigt, ob Sammeln noch Skillpunkte bringt
+- Tab Charaktere: Stufe, Gilde, Gold, Berufe und Materialien jedes Charakters; Gildenbanken stehen bei den Charakteren ihrer Gilde
+- Goldbeträge mit Münzsymbolen
+- Fenster: Mindestgröße, klarere Einrückung; aufgeklappte Berufe werden je Charakter gemerkt
+- Behoben: Taschen, Skills und Rezepte eines Charakters konnten beim Ausloggen verloren gehen
+
 ## 1.2.0
 
 - Zwei eigene Guides: „Günstigster berechneter Weg“ (aus allen Rezepten des Berufs in den Forever-Spieldaten: je Skillpunkt das billigste Rezept nach Farbe und Chance) und „Günstigster Guide-Weg“ (aus den Schritten der anderen Guides)

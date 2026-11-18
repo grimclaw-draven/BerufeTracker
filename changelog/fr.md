@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.3.0
+
+- Nouveau guide propre « Chemin calculé le plus rapide » : les recettes au temps de fabrication le plus court, temps de recharge de matériaux comme l'étoffe lunaire compris
+- Temps de fabrication et coût à partir de maintenant sous chaque métier, pour chaque guide
+- « Chemin le moins cher des guides » est désormais calculé point par point comme « Chemin calculé le moins cher » ; aucun des deux ne coûte jamais plus cher qu'un des autres guides
+- Les chemins propres tiennent compte de la chance de gagner un point à chaque point et n'utilisent vos matériaux que tant qu'ils suffisent
+- Plus de ralentissement après une fabrication : les chemins propres sont calculés en arrière-plan à l'ouverture de la fenêtre
+- Nouveau filtre par défaut « Personnage actuel » ; filtres renommés « Tous les personnages (métiers appris) », « Métiers appris (meilleur personnage) » et « Tous les métiers (même non appris) ». Le parcours n'affiche que les métiers de la sélection, les non appris seulement avec leur premier maître
+- Composants et Parcours affichent le même coût d'achat, maîtres, recettes et une estimation pour les matériaux sans prix compris
+- Fenêtre de métier du jeu : la recette que votre parcours recommande ensuite est mise en évidence, son infobulle indique les matériaux et quels personnages les possèdent
+- Herbes et minerai : l'infobulle indique si la récolte rapporte encore des points de compétence
+- Onglet Personnages : niveau, guilde, or, métiers et matériaux de chaque personnage ; les banques de guilde suivent les personnages de leur guilde
+- Montants en or avec icônes de pièces
+- Fenêtre : taille minimale, indentation plus claire ; les métiers dépliés sont mémorisés par personnage
+- Corrigé : les sacs, compétences et recettes d'un personnage pouvaient être perdus à la déconnexion
+
 ## 1.2.0
 
 - Deux guides propres : « Chemin calculé le moins cher » (à partir de toutes les recettes du métier dans les données de jeu de Forever : pour chaque point de compétence la recette la moins chère selon la couleur et la chance) et « Chemin le moins cher des guides » (à partir des étapes des autres guides)

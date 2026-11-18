@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.3.0
+
+- New own guide "Fastest calculated route": the recipes with the shortest crafting time, including cooldowns of materials such as Mooncloth
+- Crafting time and cost from now under every profession, for every guide
+- "Cheapest guide route" is now calculated skill point by skill point like "Cheapest calculated route"; neither of them is ever more expensive than one of the other guides
+- Own routes count the skill-up chance of every point and use your materials only as long as they last
+- No more lag after crafting: own routes are calculated in the background when the window opens
+- New default filter "Current character"; filters renamed to "All characters (learned professions)", "Learned professions (best character)" and "All professions (also unlearned)". The route shows only the professions of the selection, unlearned ones only with their first trainer
+- Materials and route show the same purchase cost, including trainers, recipes and an estimate for materials without a price
+- Profession window of the game: the recipe your route recommends next is highlighted, its tooltip shows the materials and which characters hold them
+- Herbs and ore: the tooltip shows whether gathering still gives skill points
+- Characters tab: level, guild, gold, professions and materials of every character; guild banks follow the characters of their guild
+- Gold amounts with coin icons
+- Window: minimum size, clearer indentation; expanded professions are remembered per character
+- Fixed: bags, skills and recipes of a character could be lost on logout
+
 ## 1.2.0
 
 - Two own guides: "Cheapest calculated route" (from all recipes of the profession in the Forever game data: for every skill point the cheapest recipe by color and skill-up chance) and "Cheapest guide route" (from the steps of the other guides)

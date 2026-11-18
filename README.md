@@ -13,12 +13,13 @@ For **WoW Forever**, in the language of your game client: English, German, Frenc
 - What you hold in the bags, bank and mailbox of all your characters of your current faction is deducted. If [BagBrother/Bagnon](https://www.curseforge.com/wow/addons/bagnon) is installed, characters that BerufeTracker does not know yet are included as well.
 - Filters: "Current character" (default) shows only the professions of the logged-in character. "All characters (learned professions)" adds up every character of your faction with their own professions and skill. "Learned professions (best character)" counts each learned profession once, "All professions (also unlearned)" every profession once, unlearned ones from skill 1, or pick a single character. The route shows only the professions of the selection; for a single character, professions not learned yet show only their first trainer. Gathering professions can be left out.
 - Hovering shows the need per profession, price and purchase cost, how the stock is spread across your characters, and where to get the material: nodes with zones, mobs with levels and the nearest vendors of your faction.
-- The auction house scan shows what it would cost to buy everything instead of farming it yourself.
+- The auction house scan shows what it would cost to buy everything instead of farming it yourself. Materials and route show the same purchase cost, including trainers and recipes.
 
 **Route**
 - The step-by-step route of each profession, with how much of it is still open.
 - Choose your guide: Metabot, RankedBoost, Wowhead, wowtbc.gg, GoldGoblin or wow-professions, per profession or for all at once.
-- **Cheapest calculated route:** your own guide, independent of the other guides. For every skill point it picks the cheapest of all the profession's recipes (Forever game data), by recipe color and skill-up chance, with auction house, vendor, trainer and recipe prices. Recipes you know and materials you already have count as free; vendor goods with limited stock only count if they are on the auction house; recipes with a cooldown are left out. **Cheapest guide route** does the same with the steps of the other guides. Both update themselves when your bags change.
+- **Cheapest calculated route:** your own guide, independent of the other guides. For every skill point it picks the cheapest of all the profession's recipes (Forever game data), by recipe color and skill-up chance, with auction house, vendor, trainer and recipe prices. Recipes you know and materials you already have count as free; vendor goods with limited stock only count if they are on the auction house; recipes with a cooldown are left out. **Cheapest guide route** does the same with the steps of the other guides. **Fastest calculated route** picks the recipes with the shortest crafting time and also counts cooldowns of materials such as Mooncloth. Your own routes are never more expensive than any of the other guides and are recalculated when you open the window.
+- Every guide shows the crafting time and the cost from your current skill on; the guide menus compare the cost of all guides.
 - Missing recipes are marked together with where to find them.
 - Trainer visits appear at the right point of the route, with the nearest trainer who teaches you the next rank.
 
@@ -30,9 +31,14 @@ For **WoW Forever**, in the language of your game client: English, German, Frenc
 
 **In the game**
 - Item tooltips (bags, bank, auction house, loot) show how much you still need under your current filter.
-- Ore veins and herbs in the world show what you still need from them.
+- Ore veins and herbs in the world show what you still need from them and whether gathering them still gives you skill points.
 - Enemies show which of your needed materials they drop, plus cloth from humanoids and leather from beasts (skinning) of their level.
 - Weapons and armor show which enchanting materials disenchanting gives about, if you need them.
+- The game's profession window highlights the recipe your route recommends next; its tooltip shows the materials you need and which characters hold them.
+
+**Window**
+- Characters tab: level, guild, gold, professions and materials of every character; guild banks follow the characters of their guild. Choose whose stock counts.
+- The window can be resized; expanded professions are remembered per character.
 
 ## Usage
 

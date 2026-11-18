@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.3.0
+
+- Nuova guida propria "Percorso calcolato più veloce": le ricette con il tempo di creazione più breve, inclusi i tempi di recupero di materiali come la stoffa lunare
+- Tempo di creazione e costo da adesso sotto ogni professione, per ogni guida
+- "Percorso più economico delle guide" ora viene calcolato punto per punto come il "Percorso calcolato più economico"; nessuno dei due costa mai più di una delle altre guide
+- I percorsi propri tengono conto della probabilità di salire a ogni punto e usano i tuoi materiali solo finché bastano
+- Niente più scatti dopo la creazione: i percorsi propri vengono calcolati in background all'apertura della finestra
+- Nuovo filtro predefinito "Personaggio attuale"; filtri rinominati in "Tutti i personaggi (professioni apprese)", "Professioni apprese (miglior personaggio)" e "Tutte le professioni (anche non apprese)". Il percorso mostra solo le professioni della selezione, quelle non apprese solo con il primo istruttore
+- Materiali e Percorso mostrano lo stesso costo d'acquisto, inclusi istruttori, ricette e una stima per i materiali senza prezzo
+- Finestra della professione del gioco: la ricetta che il percorso consiglia come prossima è evidenziata; il suo tooltip mostra i materiali e quali personaggi li hanno
+- Erbe e minerale: il tooltip mostra se la raccolta dà ancora punti abilità
+- Scheda Personaggi: livello, gilda, oro, professioni e materiali di ogni personaggio; le banche di gilda seguono i personaggi della loro gilda
+- Importi in oro con icone delle monete
+- Finestra: dimensione minima, rientri più chiari; le professioni aperte vengono ricordate per personaggio
+- Corretto: borse, abilità e ricette di un personaggio potevano andare perse all'uscita
+
 ## 1.2.0
 
 - Due guide proprie: «Percorso calcolato più economico» (da tutte le ricette della professione nei dati di gioco di Forever: per ogni punto abilità la ricetta più economica per colore e probabilità) e «Percorso più economico delle guide» (dai passi delle altre guide)

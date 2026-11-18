@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.3.0
+
+- Novo guia próprio "Caminho calculado mais rápido": as receitas com o menor tempo de fabricação, incluindo recargas de materiais como o tecido lunar
+- Tempo de fabricação e custo a partir de agora sob cada profissão, para cada guia
+- "Caminho mais barato dos guias" agora é calculado ponto a ponto como o "Caminho calculado mais barato"; nenhum dos dois é mais caro do que um dos outros guias
+- Os caminhos próprios consideram a chance de subir em cada ponto e usam seus materiais só enquanto eles durarem
+- Sem travadas depois de fabricar: os caminhos próprios são calculados em segundo plano ao abrir a janela
+- Novo filtro padrão "Personagem atual"; filtros renomeados para "Todos os personagens (profissões aprendidas)", "Profissões aprendidas (melhor personagem)" e "Todas as profissões (também não aprendidas)". A rota mostra só as profissões da seleção, as não aprendidas só com o primeiro instrutor
+- Materiais e Rota mostram o mesmo custo de compra, incluindo instrutores, receitas e uma estimativa para materiais sem preço
+- Janela de profissão do jogo: a receita que sua rota recomenda em seguida fica destacada; a dica mostra os materiais e quais personagens os têm
+- Ervas e minério: a dica mostra se coletar ainda rende pontos de perícia
+- Aba Personagens: nível, guilda, ouro, profissões e materiais de cada personagem; os bancos de guilda seguem os personagens da guilda
+- Valores em ouro com ícones de moedas
+- Janela: tamanho mínimo, recuo mais claro; as profissões expandidas são lembradas por personagem
+- Corrigido: bolsas, perícias e receitas de um personagem podiam se perder ao sair do jogo
+
 ## 1.2.0
 
 - Dois guias próprios: "Caminho calculado mais barato" (a partir de todas as receitas da profissão nos dados de jogo do Forever: para cada ponto de perícia a receita mais barata por cor e chance) e "Caminho mais barato dos guias" (a partir dos passos dos outros guias)

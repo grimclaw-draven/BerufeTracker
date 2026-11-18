@@ -13,12 +13,13 @@ Para **WoW Forever**, no idioma do seu cliente de jogo: inglês, alemão, franc�
 - O que você tem nas bolsas, no banco e na caixa de correio de todos os seus personagens da sua facção atual é descontado. Se o [BagBrother/Bagnon](https://www.curseforge.com/wow/addons/bagnon) estiver instalado, os personagens que o BerufeTracker ainda não conhece também são incluídos.
 - Filtros: "Personagem atual" (padrão) mostra só as profissões do personagem conectado. "Todos os personagens (profissões aprendidas)" soma todos os personagens da sua facção com suas próprias profissões e perícia. "Profissões aprendidas (melhor personagem)" conta cada profissão aprendida uma vez, "Todas as profissões (também não aprendidas)" cada profissão uma vez, as não aprendidas a partir de 1, ou escolha um único personagem. A rota mostra só as profissões da seleção; para um personagem, as profissões ainda não aprendidas mostram só o primeiro instrutor. As profissões de coleta podem ser deixadas de fora.
 - Ao passar o mouse, aparecem a necessidade por profissão, o preço e o custo de compra, como o estoque está distribuído entre seus personagens e onde conseguir o material: pontos de coleta com zonas, monstros com níveis e os vendedores mais próximos da sua facção.
-- A varredura da Casa de Leilões mostra quanto custaria comprar tudo em vez de coletar você mesmo.
+- A varredura da Casa de Leilões mostra quanto custaria comprar tudo em vez de coletar você mesmo. Materiais e Rota mostram o mesmo custo de compra, incluindo instrutores e receitas.
 
 **Rota**
 - A rota passo a passo de cada profissão, com quanto ainda falta.
 - Escolha seu guia: Metabot, RankedBoost, Wowhead, wowtbc.gg, GoldGoblin ou wow-professions, por profissão ou para todas de uma vez.
-- **Caminho calculado mais barato:** um guia próprio, independente dos outros guias. Para cada ponto de perícia ele escolhe a mais barata de todas as receitas da profissão (dados de jogo do Forever), pela cor da receita e pela chance de subir, com preços da casa de leilões, vendedores, instrutores e receitas. Receitas conhecidas e materiais que você já tem contam como grátis; itens de vendedor com estoque limitado só contam se estiverem na casa de leilões; receitas com recarga ficam de fora. **Caminho mais barato dos guias** faz o mesmo com os passos dos outros guias. Ambos se atualizam assim que suas bolsas mudam.
+- **Caminho calculado mais barato:** um guia próprio, independente dos outros guias. Para cada ponto de perícia ele escolhe a mais barata de todas as receitas da profissão (dados de jogo do Forever), pela cor da receita e pela chance de subir, com preços da casa de leilões, vendedores, instrutores e receitas. Receitas conhecidas e materiais que você já tem contam como grátis; itens de vendedor com estoque limitado só contam se estiverem na casa de leilões; receitas com recarga ficam de fora. **Caminho mais barato dos guias** faz o mesmo com os passos dos outros guias. **Caminho calculado mais rápido** escolhe as receitas com o menor tempo de fabricação e também considera recargas de materiais como o tecido lunar. Seus caminhos próprios nunca são mais caros do que qualquer um dos outros guias e são recalculados ao abrir a janela.
+- Cada guia mostra o tempo de fabricação e o custo a partir da sua perícia atual; os menus de guias comparam o custo de todos os guias.
 - As receitas que faltam são marcadas junto com onde encontrá-las.
 - As visitas ao instrutor aparecem no ponto certo da rota, com o instrutor mais próximo que ensina o próximo nível.
 
@@ -30,9 +31,14 @@ Para **WoW Forever**, no idioma do seu cliente de jogo: inglês, alemão, franc�
 
 **No jogo**
 - As dicas de itens (bolsas, banco, Casa de Leilões, saque) mostram quanto você ainda precisa com o filtro atual.
-- Os veios de minério e as ervas no mundo mostram o que você ainda precisa deles.
+- Os veios de minério e as ervas no mundo mostram o que você ainda precisa deles e se coletá-los ainda rende pontos de perícia.
 - Os inimigos mostram quais materiais de que você precisa eles deixam cair, além de tecido de humanoides e couro de feras (esfolamento) do nível deles.
 - Armas e armaduras mostram quais materiais de encantamento o desencantamento rende aproximadamente, se você precisar deles.
+- A janela de profissão do jogo destaca a receita que sua rota recomenda em seguida; a dica mostra os materiais necessários e quais personagens os têm.
+
+**Janela**
+- Aba Personagens: nível, guilda, ouro, profissões e materiais de cada personagem; os bancos de guilda seguem os personagens da guilda. Você escolhe qual estoque conta.
+- A janela pode ser redimensionada; as profissões expandidas são lembradas por personagem.
 
 ## Uso
 

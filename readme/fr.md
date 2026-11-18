@@ -13,12 +13,13 @@ Pour **WoW Forever**, dans la langue de votre client de jeu : anglais, allemand,
 - Ce que vous avez dans les sacs, la banque et la boîte aux lettres de tous vos personnages de votre faction actuelle est déduit. Si [BagBrother/Bagnon](https://www.curseforge.com/wow/addons/bagnon) est installé, les personnages que BerufeTracker ne connaît pas encore sont aussi pris en compte.
 - Filtres : « Personnage actuel » (par défaut) n'affiche que les métiers du personnage connecté. « Tous les personnages (métiers appris) » additionne tous les personnages de votre faction avec leurs propres métiers et compétences. « Métiers appris (meilleur personnage) » compte chaque métier appris une fois, « Tous les métiers (même non appris) » chaque métier une fois, les non appris à partir de 1, ou choisissez un seul personnage. Le parcours n'affiche que les métiers de la sélection ; pour un personnage, les métiers pas encore appris n'affichent que leur premier maître. Les métiers de récolte peuvent être exclus.
 - Le survol affiche le besoin par métier, le prix et le coût d'achat, la répartition du stock entre vos personnages et où obtenir le matériau : gisements avec zones, monstres avec niveaux et marchands les plus proches de votre faction.
-- Le scan de l'hôtel des ventes indique ce que coûterait l'achat de tout au lieu de le récolter vous-même.
+- Le scan de l'hôtel des ventes indique ce que coûterait l'achat de tout au lieu de le récolter vous-même. Composants et Parcours affichent le même coût d'achat, maîtres et recettes compris.
 
 **Parcours**
 - Le parcours pas à pas de chaque métier, avec ce qu'il en reste à faire.
 - Choisissez votre guide : Metabot, RankedBoost, Wowhead, wowtbc.gg, GoldGoblin ou wow-professions, par métier ou pour tous à la fois.
-- **Chemin calculé le moins cher :** un guide propre, indépendant des autres guides. Pour chaque point de compétence, il choisit la moins chère de toutes les recettes du métier (données de jeu de Forever), selon la couleur de la recette et la chance de gagner un point, avec les prix de l'hôtel des ventes, des marchands, des maîtres et des recettes. Les recettes connues et les composants déjà possédés sont gratuits ; les articles de marchand en stock limité ne comptent que s'ils sont à l'hôtel des ventes ; les recettes avec temps de recharge sont exclues. **Chemin le moins cher des guides** fait de même avec les étapes des autres guides. Les deux se mettent à jour dès que vos sacs changent.
+- **Chemin calculé le moins cher :** un guide propre, indépendant des autres guides. Pour chaque point de compétence, il choisit la moins chère de toutes les recettes du métier (données de jeu de Forever), selon la couleur de la recette et la chance de gagner un point, avec les prix de l'hôtel des ventes, des marchands, des maîtres et des recettes. Les recettes connues et les composants déjà possédés sont gratuits ; les articles de marchand en stock limité ne comptent que s'ils sont à l'hôtel des ventes ; les recettes avec temps de recharge sont exclues. **Chemin le moins cher des guides** fait de même avec les étapes des autres guides. **Chemin calculé le plus rapide** choisit les recettes au temps de fabrication le plus court et tient aussi compte des temps de recharge de matériaux comme l'étoffe lunaire. Vos propres chemins ne coûtent jamais plus cher qu'un des autres guides et sont recalculés à l'ouverture de la fenêtre.
+- Chaque guide affiche le temps de fabrication et le coût à partir de votre compétence actuelle ; les menus des guides comparent le coût de tous les guides.
 - Les recettes manquantes sont signalées avec l'endroit où les trouver.
 - Les visites chez le maître apparaissent au bon moment du parcours, avec le maître le plus proche qui vous enseigne le rang suivant.
 
@@ -30,9 +31,14 @@ Pour **WoW Forever**, dans la langue de votre client de jeu : anglais, allemand,
 
 **Dans le jeu**
 - Les infobulles d'objets (sacs, banque, hôtel des ventes, butin) indiquent combien il vous en faut encore avec votre filtre actuel.
-- Les filons de minerai et les herbes dans le monde indiquent ce qu'il vous faut encore en tirer.
+- Les filons de minerai et les herbes dans le monde indiquent ce qu'il vous faut encore en tirer et si la récolte vous rapporte encore des points de compétence.
 - Les ennemis indiquent quels matériaux dont vous avez besoin ils laissent tomber, ainsi que le tissu des humanoïdes et le cuir des bêtes (dépeçage) de leur niveau.
 - Les armes et armures indiquent quels matériaux d’enchantement le désenchantement donne environ, si vous en avez besoin.
+- La fenêtre de métier du jeu met en évidence la recette que votre parcours recommande ensuite ; son infobulle indique les matériaux nécessaires et quels personnages les possèdent.
+
+**Fenêtre**
+- Onglet Personnages : niveau, guilde, or, métiers et matériaux de chaque personnage ; les banques de guilde suivent les personnages de leur guilde. Vous choisissez quels stocks comptent.
+- La fenêtre est redimensionnable ; les métiers dépliés sont mémorisés par personnage.
 
 ## Utilisation
 

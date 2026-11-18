@@ -13,12 +13,13 @@ Für **WoW Forever**, in der Sprache deines Spiel-Clients: Englisch, Deutsch, Fr
 - Gegengerechnet wird, was du in Taschen, Bank und Post aller Charaktere deiner aktuellen Fraktion hast. Wenn [BagBrother/Bagnon](https://www.curseforge.com/wow/addons/bagnon) installiert ist, kommen auch Charaktere dazu, die BerufeTracker noch nicht kennt.
 - Filter: „Aktueller Charakter“ (Standard) zeigt nur die Berufe des eingeloggten Charakters. „Alle Charaktere (gelernte Berufe)“ zählt jeden Charakter deiner Fraktion mit seinen eigenen Berufen und seinem Skill zusammen. „Gelernte Berufe (bester Charakter)“ zählt jeden gelernten Beruf einmal, „Alle Berufe (auch ungelernte)“ jeden Beruf einmal, ungelernte ab Skill 1, oder du wählst einen einzelnen Charakter. Die Route zeigt nur die Berufe der Auswahl; bei einem Charakter stehen noch nicht gelernte Berufe nur mit ihrem ersten Lehrer da. Sammelberufe lassen sich ausschließen.
 - Beim Drüberfahren siehst du den Bedarf je Beruf, Preis und Kaufkosten, die Verteilung auf deine Charaktere und woher du das Material bekommst: Vorkommen mit Zonen, Gegner mit Stufen und die nächsten Händler deiner Fraktion.
-- Mit dem Auktionshaus-Scan siehst du, was es kosten würde, alles zu kaufen statt selbst zu farmen.
+- Mit dem Auktionshaus-Scan siehst du, was es kosten würde, alles zu kaufen statt selbst zu farmen. Materialien und Route zeigen dieselben Kaufkosten, inklusive Lehrer und Rezepte.
 
 **Route**
 - Die Schritt-für-Schritt-Route jedes Berufs mit dem Stand, wie viel davon noch offen ist.
 - Guides sind wählbar: Metabot, RankedBoost, Wowhead, wowtbc.gg, GoldGoblin und wow-professions, je Beruf oder für alle gemeinsam.
-- **Günstigster berechneter Weg:** eigener Guide, unabhängig von den anderen Guides. Er wählt für jeden Skillpunkt das billigste aller Rezepte des Berufs (Forever-Spieldaten), nach Rezeptfarbe und Chance auf einen Skillpunkt, mit Auktionshaus-, Händler-, Lehrer- und Rezeptpreisen. Gelernte Rezepte und vorhandene Materialien zählen gratis; Händlerware mit begrenztem Vorrat zählt nur, wenn sie im Auktionshaus zu haben ist; Rezepte mit Abklingzeit bleiben außen vor. **Günstigster Guide-Weg** macht dasselbe mit den Schritten der anderen Guides. Beide aktualisieren sich, sobald sich deine Taschen ändern.
+- **Günstigster berechneter Weg:** eigener Guide, unabhängig von den anderen Guides. Er wählt für jeden Skillpunkt das billigste aller Rezepte des Berufs (Forever-Spieldaten), nach Rezeptfarbe und Chance auf einen Skillpunkt, mit Auktionshaus-, Händler-, Lehrer- und Rezeptpreisen. Gelernte Rezepte und vorhandene Materialien zählen gratis; Händlerware mit begrenztem Vorrat zählt nur, wenn sie im Auktionshaus zu haben ist; Rezepte mit Abklingzeit bleiben außen vor. **Günstigster Guide-Weg** macht dasselbe mit den Schritten der anderen Guides. **Schnellster berechneter Weg** wählt die Rezepte mit der kürzesten Herstellzeit und rechnet auch Abklingzeiten von Materialien wie Mondstoff ein. Die eigenen Wege sind nie teurer als einer der anderen Guides und werden beim Öffnen des Fensters neu berechnet.
+- Jeder Guide zeigt Herstellzeit und Kosten ab deinem aktuellen Skill; die Guide-Menüs vergleichen die Kosten aller Guides.
 - Fehlende Rezepte sind mit Fundort markiert.
 - Lehrer-Besuche erscheinen an der richtigen Stelle der Route, mit dem nächstgelegenen Lehrer, der dir die nächste Stufe beibringt.
 
@@ -30,9 +31,14 @@ Für **WoW Forever**, in der Sprache deines Spiel-Clients: Englisch, Deutsch, Fr
 
 **Im Spiel**
 - Item-Tooltips (Taschen, Bank, Auktionshaus, Beute) zeigen, wie viel du nach deinem aktuellen Filter noch brauchst.
-- Erzadern und Kräuter in der Welt zeigen, was du daraus noch brauchst.
+- Erzadern und Kräuter in der Welt zeigen, was du daraus noch brauchst und ob Sammeln dir noch Skillpunkte bringt.
 - Gegner zeigen, welche deiner benötigten Materialien sie fallen lassen, dazu Stoff von Humanoiden und Leder von Wildtieren (Kürschnern) ihrer Stufe.
 - Waffen und Rüstung zeigen, welches Verzauberungsmaterial Entzaubern ungefähr ergibt, wenn du es brauchst.
+- Das Berufsfenster des Spiels markiert das Rezept, das deine Route als Nächstes empfiehlt; sein Tooltip zeigt die benötigten Materialien und welche Charaktere sie haben.
+
+**Fenster**
+- Tab Charaktere: Stufe, Gilde, Gold, Berufe und Materialien jedes Charakters; Gildenbanken stehen in der Reihenfolge der Charaktere ihrer Gilde. Du wählst, wessen Bestand mitzählt.
+- Das Fenster lässt sich in der Größe ändern; aufgeklappte Berufe merkt es sich je Charakter.
 
 ## Bedienung
 
