@@ -73,6 +73,9 @@ def description_md():
     parts = []
     for index, (code, name) in enumerate(LANGS):
         lines = [absolute_links(l) for l in read(path_of('readme', code))[3:]]  # Zeile 1 Titel, Zeile 3 Sprachleiste
+        # ohne Lizenzangaben: letzter Abschnitt (Lizenz) und die "(GPLv3)"-Hinweise bei den Quellen
+        last = max(i for i, l in enumerate(lines) if l.startswith('## '))
+        lines = [re.sub(r'\s*[(（]GPLv3[)）]', '', l) for l in lines[:last]]
         body = re.sub(r'\n{3,}', '\n\n', '\n'.join(lines)).strip()
         note = f'\n\n*More languages below: {OTHERS}*' if index == 0 else ''
         parts.append(f'# BerufeTracker ({name}){note}\n\n{body}')
