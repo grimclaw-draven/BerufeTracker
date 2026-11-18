@@ -447,6 +447,24 @@ local function CreateRow()
     return row
 end
 
+-- Einrückung: Kinder stehen um so viel weiter rechts wie ihr Eltern-Eintrag gegenüber dessen Überschrift
+-- (Abschnitt "[-]" bei 6, Beruf "[-]" bei 26 -> Inhalt des Berufs bei 46); der Strich steht mittig unter "[-]".
+local INDENT, PROF_X = 20, 26
+local toggleWidth
+local function ToggleCenter(row)
+    if not toggleWidth then
+        local w = row.text.GetStringWidth and select(2, pcall(function()
+            local probe = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+            probe:SetText("[-]")
+            local width = probe:GetStringWidth()
+            probe:Hide()
+            return width
+        end))
+        toggleWidth = (type(w) == "number" and w > 4 and w < 40) and w or 12
+    end
+    return math.floor(toggleWidth / 2 + 0.5)
+end
+
 local function ConfigureRow(row, entry)
     row.entry = entry
     local isItem = entry.kind == "item"
@@ -468,7 +486,16 @@ local function ConfigureRow(row, entry)
     local rightInset = isItem and -280 or ((entry.kind == "step" or entry.kind == "trainer") and -60) or (entry.kind == "info" and -6) or (entry.kind == "prof" and -292) or -190
 
     row.text:ClearAllPoints()
-    row.text:SetPoint("LEFT", (isItem and 28) or ((entry.onToggle or entry.kind == "info") and 26) or ((entry.kind == "step" or entry.kind == "trainer") and 26) or 6, 0) -- Schritte wie die Infozeilen eingerückt
+    local left = (isItem and 6 + INDENT + 22) or (entry.child and PROF_X + INDENT)
+        or ((entry.onToggle or entry.kind == "prof" or entry.kind == "info" or entry.kind == "step" or entry.kind == "trainer") and PROF_X) or 6
+    row.text:SetPoint("LEFT", left, 0)
+    row.icon:ClearAllPoints()
+    row.icon:SetPoint("LEFT", 6 + INDENT, 0) -- Materialien unter ihrer Kategorie eingerückt
+    -- senkrechter Strich der Route mittig unter dem "[-]" des Berufs
+    local lineX = (entry.child and PROF_X or 6) + ToggleCenter(row) - 1
+    row.guide:ClearAllPoints()
+    row.guide:SetPoint("TOPLEFT", lineX, 0)
+    row.guide:SetPoint("BOTTOMLEFT", lineX, 0)
     row.text:SetPoint("RIGHT", row, "RIGHT", rightInset, 0)
     row.text:SetFontObject((entry.kind == "head") and "GameFontNormal" or (entry.kind == "info" and "GameFontHighlightSmall") or "GameFontHighlight")
     row.text:SetText(entry.text or "")
@@ -731,7 +758,10 @@ local function AddGroup(list, profs, onlyMissing, trainerOnly)
     for index, prof in ipairs(profs) do
         if index > 1 then list[#list + 1] = { kind = "gap", height = 10 } end
         list.detailFrom = nil
+        local head = #list + 1
         AddProfession(list, prof, onlyMissing, trainerOnly)
+        -- alles unter der Berufszeile gehört zum Beruf und wird eingerückt
+        for row = head + 1, #list do list[row].child = true end
         -- aufgeklappte Zeilen markieren: sie zählen nicht zur Mindesthöhe des Fensters
         if list.detailFrom then
             for row = list.detailFrom, #list do list[row].detail = true end
