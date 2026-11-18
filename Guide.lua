@@ -517,15 +517,27 @@ function BT.StepTemplate(step)
     return TEMPLATE_BY_EN[step.en]
 end
 
--- Voraussichtliche Herstellungen für einen Skillpunkt bei Skill s: nach Rezeptfarbe und Chance, für jeden Guide
--- gleich. Nur wenn das Rezept unbekannt ist oder der Guide es außerhalb seiner Farben nutzt: die Zahl des Guides.
+-- Herstellungen für einen Skillpunkt bei Skill s, wie gerechnet wird: eigene Rezept-Schritte nach Rezeptfarbe und
+-- Chance; Schritte der fremden Guides (und von dort übernommene Abschnitte) mit der Zahl des Guides - die fremden
+-- Guides bleiben so, wie sie sind, und der eigene Weg ist nie teurer als ein Guide.
 StepCrafts = function(step, s)
-    local tpl = BT.StepTemplate(step)
-    local c = tpl and CraftsPerPoint(tpl, s)
+    local c = step.l and step.y and step.g and CraftsPerPoint(step, s)
     if c then return c end
     return step.c / math.max(1, step.t - step.f)
 end
 BT.StepCrafts = StepCrafts
+
+-- Nur zur Anzeige: voraussichtliche Herstellungen nach Chance ab Skill "from" (auch für Schritte fremder Guides);
+-- nil, wenn das Rezept unbekannt ist.
+function BT.ExpectedCrafts(step, from)
+    local tpl = BT.StepTemplate(step)
+    if not tpl then return nil end
+    local sum = 0
+    for s = math.max(from or step.f, step.f), step.t - 1 do
+        sum = sum + (CraftsPerPoint(tpl, s) or step.c / math.max(1, step.t - step.f))
+    end
+    return math.ceil(sum - 1e-9)
+end
 
 local MAX_SKILL = 300
 

@@ -234,13 +234,16 @@ local function StepTooltip(row)
         GameTooltip:AddLine("  " .. reagent[2] .. "× " .. BT.ItemName(reagent[1]), 1, 1, 1)
     end
     if not step.lump then
-        -- voraussichtliche Herstellungen nach Chance; die Zahl des Guides zum Vergleich, wenn sie abweicht
-        local expected = BT.RemainingCrafts(step, step.f)
-        GameTooltip:AddDoubleLine(L["Noch offen"], L["%s von %s"]:format(BT.Format(BT.StepRemaining(step, prof)), BT.Format(expected)), 1, 0.82, 0, 1, 1, 1)
-        if BT.StepTemplate and BT.StepTemplate(step) then
+        local total = BT.RemainingCrafts(step, step.f)
+        GameTooltip:AddDoubleLine(L["Noch offen"], L["%s von %s"]:format(BT.Format(BT.StepRemaining(step, prof)), BT.Format(total)), 1, 0.82, 0, 1, 1, 1)
+        if step.y then
             GameTooltip:AddLine(L["Voraussichtlich nach Chance auf einen Skillpunkt"], 0.7, 0.7, 0.7)
-            if not step.y and step.c ~= expected then
-                GameTooltip:AddDoubleLine(L["Laut Guide"], L["%s×"]:format(BT.Format(step.c)), 0.7, 0.7, 0.7, 0.7, 0.7, 0.7)
+        else
+            -- Zahl des Guides; zum Vergleich die voraussichtliche Menge nach Chance, wenn sie abweicht
+            local expected = BT.ExpectedCrafts and BT.ExpectedCrafts(step, (BT.Skill(prof)))
+            local open = BT.StepRemaining(step, prof)
+            if expected and open > 0 and expected ~= open then
+                GameTooltip:AddDoubleLine(L["Voraussichtlich nach Chance"], L["%s×"]:format(BT.Format(expected)), 0.7, 0.7, 0.7, 0.7, 0.7, 0.7)
             end
         end
     end
