@@ -2,7 +2,8 @@
 local ADDON, BT = ...
 local L = BT.L
 
-local WIDTH, ROW_HEIGHT, MATERIALS, ROUTE, CHARS = 640, 22, 1, 2, 3
+local WIDTH, ROW_HEIGHT, MATERIALS, ROUTE, CHARS = 700, 22, 1, 2, 3
+local MIN_WIDTH, MIN_HEIGHT, CONTENT_TOP, CONTENT_BOTTOM = 700, 360, 106, 12
 local QUESTION = "Interface\\Icons\\INV_Misc_QuestionMark"
 local tab, window = ROUTE, nil
 local rows = {}
@@ -790,6 +791,7 @@ local function BuildRoute(list)
         local focus = BT.FocusChar()
         list[#list + 1] = SectionHead(focus and focus ~= BT.me and L["Charakter: %s"]:format(focus) or "Dieser Charakter", current)
         AddGroup(list, current, onlyMissing)
+        list.firstSectionEnd = #list -- bis hierher muss das Fenster mindestens hoch sein
         list[#list + 1] = { kind = "gap", height = 12 }
         list[#list + 1] = { kind = "divider", height = 6 }
         list[#list + 1] = { kind = "gap", height = 12 }
@@ -883,6 +885,21 @@ function BT.RefreshUI()
     for index = #list + 1, #rows do rows[index]:Hide() end
     window.content:SetHeight(math.max(1, y))
 
+    -- Mindesthöhe: auf dem Tab Route passt der Abschnitt "Dieser Charakter" ganz hinein (höchstens 90 % des Bildschirms)
+    local minHeight = MIN_HEIGHT
+    if tab == ROUTE and list.firstSectionEnd then
+        local section = 0
+        for index = 1, list.firstSectionEnd do section = section + (list[index].height or ROW_HEIGHT) end
+        local screen = UIParent and UIParent.GetHeight and UIParent:GetHeight()
+        local cap = (type(screen) == "number" and screen > 0) and screen * 0.9 or 1400
+        minHeight = math.max(MIN_HEIGHT, math.min(CONTENT_TOP + section + CONTENT_BOTTOM, cap))
+    end
+    if window.SetResizeBounds then window:SetResizeBounds(MIN_WIDTH, minHeight, 1600, 1400)
+    elseif window.SetMinResize then window:SetMinResize(MIN_WIDTH, minHeight) end
+    local h = window.GetHeight and window:GetHeight()
+    if type(h) == "number" and h < minHeight then window:SetHeight(minHeight) end
+    window.minHeight = minHeight
+
     local need, have = BT.needTotal or 0, BT.haveTotal or 0
     local percent = need > 0 and math.floor(have / need * 100) or 100
     window.summary:SetText(L["Grundmaterialien:"] .. " " .. BT.Format(have) .. " / " .. BT.Format(need) .. "  (" .. percent .. " %)")
@@ -959,7 +976,10 @@ local function CreateWindow()
     end
 
     f.summary = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    f.summary:SetPoint("TOPRIGHT", -16, -32)
+    f.summary:SetPoint("LEFT", f.tabs[CHARS], "RIGHT", 10, 0) -- zwischen den Tabs und dem rechten Rand
+    f.summary:SetPoint("RIGHT", f, "RIGHT", -16, 0)
+    f.summary:SetJustifyH("RIGHT")
+    f.summary:SetWordWrap(false)
 
     f.searchLabel = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     f.searchLabel:SetPoint("TOPLEFT", 16, -85)
@@ -989,6 +1009,9 @@ local function CreateWindow()
     FitButtonText(f.guideAll)
     f.guideAllCost = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     f.guideAllCost:SetPoint("LEFT", f.guideAll, "RIGHT", 8, 0)
+    f.guideAllCost:SetPoint("RIGHT", f, "RIGHT", -14, 0) -- bleibt im Fenster
+    f.guideAllCost:SetJustifyH("LEFT")
+    f.guideAllCost:SetWordWrap(false)
 
     f.scan = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
     f.scan:SetSize(116, 22)
@@ -1046,11 +1069,11 @@ local function CreateWindow()
     -- Größe frei ziehbar (Griff unten rechts); die Größe bleibt gespeichert.
     if f.SetResizable then
         f:SetResizable(true)
-        if f.SetResizeBounds then f:SetResizeBounds(560, 360, 1600, 1400)
-        elseif f.SetMinResize then f:SetMinResize(560, 360) f:SetMaxResize(1600, 1400) end
+        if f.SetResizeBounds then f:SetResizeBounds(MIN_WIDTH, MIN_HEIGHT, 1600, 1400)
+        elseif f.SetMinResize then f:SetMinResize(MIN_WIDTH, MIN_HEIGHT) f:SetMaxResize(1600, 1400) end
     end
     local saved = BT.db and BT.db.opt.windowSize
-    if type(saved) == "table" and saved[1] and saved[2] then f:SetSize(saved[1], saved[2]) end
+    if type(saved) == "table" and saved[1] and saved[2] then f:SetSize(math.max(MIN_WIDTH, saved[1]), math.max(MIN_HEIGHT, saved[2])) end
     f:SetScript("OnSizeChanged", function(self, width)
         if type(width) == "number" then self.content:SetWidth(math.max(1, width - 46)) end
     end)
