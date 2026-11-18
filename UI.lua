@@ -473,7 +473,8 @@ local function ConfigureRow(row, entry)
     row:EnableMouse(entry.kind ~= "gap" and entry.kind ~= "divider" and entry.kind ~= "info" and entry.kind ~= "action")
     row.actionButton:SetShown(entry.kind == "action")
     if entry.actionText then row.actionButton:SetText(entry.actionText) end
-    row.guide:SetShown(entry.kind == "step" or entry.kind == "trainer")
+    -- senkrechter Strich: durch alles, was zu einem Beruf gehört, und vom "[-]" des Berufs abwärts
+    row.guide:SetShown(entry.child or entry.hasChildren or entry.kind == "step" or entry.kind == "trainer")
     row.line:SetShown(entry.kind == "divider")
     row.icon:SetShown(isItem)
     row.barBg:SetShown(isItem)
@@ -492,9 +493,9 @@ local function ConfigureRow(row, entry)
     row.icon:ClearAllPoints()
     row.icon:SetPoint("LEFT", 6 + INDENT, 0) -- Materialien unter ihrer Kategorie eingerückt
     -- senkrechter Strich der Route mittig unter dem "[-]" des Berufs
-    local lineX = (entry.child and PROF_X or 6) + ToggleCenter(row) - 1
+    local lineX = ((entry.child or entry.hasChildren) and PROF_X or 6) + ToggleCenter(row) - 1
     row.guide:ClearAllPoints()
-    row.guide:SetPoint("TOPLEFT", lineX, 0)
+    row.guide:SetPoint("TOPLEFT", lineX, entry.hasChildren and -((entry.height or ROW_HEIGHT) / 2 + 7) or 0)
     row.guide:SetPoint("BOTTOMLEFT", lineX, 0)
     row.text:SetPoint("RIGHT", row, "RIGHT", rightInset, 0)
     row.text:SetFontObject((entry.kind == "head") and "GameFontNormal" or (entry.kind == "info" and "GameFontHighlightSmall") or "GameFontHighlight")
@@ -762,6 +763,7 @@ local function AddGroup(list, profs, onlyMissing, trainerOnly)
         AddProfession(list, prof, onlyMissing, trainerOnly)
         -- alles unter der Berufszeile gehört zum Beruf und wird eingerückt
         for row = head + 1, #list do list[row].child = true end
+        if #list > head then list[head].hasChildren = true end -- Strich beginnt unter dem "[-]" des Berufs
         -- aufgeklappte Zeilen markieren: sie zählen nicht zur Mindesthöhe des Fensters
         if list.detailFrom then
             for row = list.detailFrom, #list do list[row].detail = true end
