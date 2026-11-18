@@ -670,6 +670,7 @@ local function AddProfession(list, prof, onlyMissing, trainerOnly)
         list[#list + 1] = { kind = "info", height = 16, text = "|cff999999" .. L["Gelernt:"] .. "|r " .. table.concat(learned, ", ") }
     end
     if not open or off then return end
+    list.detailFrom = #list + 1
  local activeSteps = guide.steps
     if guide.lump then
         list[#list + 1] = { kind = "info", height = 16, text = "|cff999999" .. L["Nur Einkaufsliste, keine einzelnen Rezepte"] .. "|r" }
@@ -729,7 +730,12 @@ end
 local function AddGroup(list, profs, onlyMissing, trainerOnly)
     for index, prof in ipairs(profs) do
         if index > 1 then list[#list + 1] = { kind = "gap", height = 10 } end
+        list.detailFrom = nil
         AddProfession(list, prof, onlyMissing, trainerOnly)
+        -- aufgeklappte Zeilen markieren: sie zählen nicht zur Mindesthöhe des Fensters
+        if list.detailFrom then
+            for row = list.detailFrom, #list do list[row].detail = true end
+        end
     end
 end
 
@@ -889,7 +895,10 @@ function BT.RefreshUI()
     local minHeight = MIN_HEIGHT
     if tab == ROUTE and list.firstSectionEnd then
         local section = 0
-        for index = 1, list.firstSectionEnd do section = section + (list[index].height or ROW_HEIGHT) end
+        -- eingeklappte Größe: Aufklappen ändert die Fensterhöhe nicht
+        for index = 1, list.firstSectionEnd do
+            if not list[index].detail then section = section + (list[index].height or ROW_HEIGHT) end
+        end
         local screen = UIParent and UIParent.GetHeight and UIParent:GetHeight()
         local cap = (type(screen) == "number" and screen > 0) and screen * 0.9 or 1400
         minHeight = math.max(MIN_HEIGHT, math.min(CONTENT_TOP + section + CONTENT_BOTTOM, cap))
