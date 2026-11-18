@@ -623,7 +623,14 @@ local function TrainerEntry(prof, rank, current)
     return { kind = "trainer", rank = rank, nearest = nearest, text = text, right = right, learned = learned, note = note }
 end
 
-local function AddProfession(list, prof, onlyMissing)
+local function AddProfession(list, prof, onlyMissing, trainerOnly)
+    if trainerOnly then
+        -- noch nicht gelernt: nur sagen, wo man ihn lernt
+        list[#list + 1] = { kind = "prof", text = "|cffffd100" .. BT.ProfTitle(prof) .. "|r  |cff999999" .. L["noch nicht gelernt"] .. "|r", right = "" }
+        local first = BT.TRAINERS[prof.key] and BT.TRAINERS[prof.key][1]
+        if first then list[#list + 1] = TrainerEntry(prof, first, false) end
+        return
+    end
     local skill, who = BT.Skill(prof.key)
     local off = BT.db.opt.off[prof.key]
     local key = prof.key
@@ -703,10 +710,10 @@ local function AddProfession(list, prof, onlyMissing)
     AddRanksBefore(nil)
 end
 
-local function AddGroup(list, profs, onlyMissing)
+local function AddGroup(list, profs, onlyMissing, trainerOnly)
     for index, prof in ipairs(profs) do
         if index > 1 then list[#list + 1] = { kind = "gap", height = 10 } end
-        AddProfession(list, prof, onlyMissing)
+        AddProfession(list, prof, onlyMissing, trainerOnly)
     end
 end
 
@@ -725,24 +732,45 @@ local function SectionHead(title, profs)
     }
 end
 
+local SECONDARY = { ["first-aid"] = true, cooking = true, fishing = true } -- Nebenberufe
+
 local function BuildRoute(list)
     local onlyMissing = BT.db.opt.onlyMissing
     AddCollapseAll(list)
-    local current, others, gathering = {}, {}, {}
+    local current, others, gathering, learnable = {}, {}, {}, {}
+    local focus = BT.FocusChar()
+    local filter = BT.MatFilter()
+    -- Charakter gewählt: dessen Hauptberufe zählen (zwei sind möglich)
+    local mains = 0
+    if focus then
+        for _, prof in ipairs(BT.PROFS) do
+            if not SECONDARY[prof.key] and BT.IsCurrentProf(prof.key) then mains = mains + 1 end
+        end
+    end
     for _, prof in ipairs(BT.PROFS) do
-        -- gelernte Berufe des Charakters immer oben, auch Sammelberufe (sie sind Hauptberufe)
-        local group = (BT.IsCurrentProf(prof.key) and current) or (prof.gather and gathering) or others
-        group[#group + 1] = prof
+        local group
+        if focus then
+            -- nur die Berufe dieses Charakters; ungelernte Nebenberufe und (bei weniger als zwei Hauptberufen)
+            -- ungelernte Hauptberufe nur mit dem ersten Lehrer
+            if BT.IsCurrentProf(prof.key) then group = current
+            elseif SECONDARY[prof.key] or mains < 2 then group = learnable end
+        elseif filter == "once" or BT.LearnedByAnyone(prof.key) then
+            -- gelernte Berufe des Charakters oben, auch Sammelberufe (sie sind Hauptberufe)
+            group = (BT.IsCurrentProf(prof.key) and current) or (prof.gather and gathering) or others
+        end
+        if group then group[#group + 1] = prof end
     end
     -- Dieser Charakter: erst die Hauptberufe, dann Erste Hilfe und Kochkunst, Angeln zuletzt (sonst alphabetisch)
     local RANK = { ["first-aid"] = 1, cooking = 1, fishing = 2 }
     local order = {}
     for index, prof in ipairs(BT.PROFS) do order[prof.key] = index end
-    table.sort(current, function(a, b)
+    local function ByKind(a, b)
         local ra, rb = RANK[a.key] or 0, RANK[b.key] or 0
         if ra ~= rb then return ra < rb end
         return order[a.key] < order[b.key]
-    end)
+    end
+    table.sort(current, ByKind)
+    table.sort(learnable, ByKind)
     if #current > 0 then
         local focus = BT.FocusChar()
         list[#list + 1] = SectionHead(focus and focus ~= BT.me and L["Charakter: %s"]:format(focus) or "Dieser Charakter", current)
@@ -751,13 +779,20 @@ local function BuildRoute(list)
         list[#list + 1] = { kind = "divider", height = 6 }
         list[#list + 1] = { kind = "gap", height = 12 }
     end
-    list[#list + 1] = SectionHead("Weitere Berufe", others)
-    AddGroup(list, others, onlyMissing)
-    list[#list + 1] = { kind = "gap", height = 12 }
-    list[#list + 1] = { kind = "divider", height = 6 }
-    list[#list + 1] = { kind = "gap", height = 12 }
-    list[#list + 1] = SectionHead("Sammelberufe", gathering)
-    AddGroup(list, gathering, onlyMissing)
+    local groups = { { "Weitere Berufe", others }, { "Sammelberufe", gathering }, { "Noch nicht gelernt", learnable, true } }
+    local first = true
+    for _, entry in ipairs(groups) do
+        if #entry[2] > 0 then
+            if not first then
+                list[#list + 1] = { kind = "gap", height = 12 }
+                list[#list + 1] = { kind = "divider", height = 6 }
+                list[#list + 1] = { kind = "gap", height = 12 }
+            end
+            first = false
+            list[#list + 1] = SectionHead(entry[1], entry[2])
+            AddGroup(list, entry[2], onlyMissing, entry[3])
+        end
+    end
 end
 
 local function SectionState(id, section)
@@ -786,9 +821,9 @@ end
 local function FilterLabel()
     local filter = BT.db.opt.matFilter
     if filter == "me" then return L["Aktueller Charakter"] .. (BT.me and (": " .. BT.me:match("^%S+")) or "") end
-    if filter == "learned" then return L["Gelernte Berufe"] end
-    if filter == "once" then return L["Jeder Beruf einmal"] end
-    return filter or L["Alle Berufe"]
+    if filter == "learned" then return L["Gelernte Berufe (bester Charakter)"] end
+    if filter == "once" then return L["Alle Berufe (auch ungelernte)"] end
+    return filter or L["Alle Charaktere (gelernte Berufe)"]
 end
 
 BT.FilterLabel = function() return FilterLabel() end
@@ -796,9 +831,9 @@ BT.FilterLabel = function() return FilterLabel() end
 local function OpenFilterMenu(button)
     local options = {
         { text = L["Aktueller Charakter"] .. "  |cff999999" .. L["immer der eingeloggte Charakter"] .. "|r", value = "me" },
-        { text = L["Alle Berufe"] .. "  |cff999999" .. L["jeder Charakter mit seinen Berufen"] .. "|r" },
-        { text = L["Gelernte Berufe"] .. "  |cff999999" .. L["jeder einmal, bester Charakter"] .. "|r", value = "learned" },
-        { text = L["Jeder Beruf einmal"] .. "  |cff999999" .. L["auch ungelernte, bester Charakter"] .. "|r", value = "once" },
+        { text = L["Alle Charaktere (gelernte Berufe)"] .. "  |cff999999" .. L["jeder Charakter mit seinen Berufen"] .. "|r" },
+        { text = L["Gelernte Berufe (bester Charakter)"] .. "  |cff999999" .. L["jeder gelernte Beruf einmal"] .. "|r", value = "learned" },
+        { text = L["Alle Berufe (auch ungelernte)"] .. "  |cff999999" .. L["jeder Beruf einmal, ungelernte ab Skill 1"] .. "|r", value = "once" },
     }
     for _, id in ipairs(BT.FilterChars()) do
         local names = {}

@@ -11,7 +11,7 @@ For **WoW Forever**, in the language of your game client: English, German, Frenc
 **Materials**
 - Total need of all professions, broken down to base materials. A Bronze Bar, for example, counts as Copper and Tin Bars, and those in turn as ore.
 - What you hold in the bags, bank and mailbox of all your characters of your current faction is deducted. If [BagBrother/Bagnon](https://www.curseforge.com/wow/addons/bagnon) is installed, characters that BerufeTracker does not know yet are included as well.
-- Filters: "All professions" adds up every character of your faction with their own professions and skill. "Learned professions" counts each learned profession once, "Each profession once" every profession once including unlearned ones, or pick a single character. Gathering professions can be left out.
+- Filters: "Current character" (default) shows only the professions of the logged-in character. "All characters (learned professions)" adds up every character of your faction with their own professions and skill. "Learned professions (best character)" counts each learned profession once, "All professions (also unlearned)" every profession once, unlearned ones from skill 1, or pick a single character. The route shows only the professions of the selection; for a single character, professions not learned yet show only their first trainer. Gathering professions can be left out.
 - Hovering shows the need per profession, price and purchase cost, how the stock is spread across your characters, and where to get the material: nodes with zones, mobs with levels and the nearest vendors of your faction.
 - The auction house scan shows what it would cost to buy everything instead of farming it yourself.
 

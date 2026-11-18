@@ -449,7 +449,7 @@ function BT.IsIgnored(id)
     return ignored
 end
 
--- Im Filter gewählter Charakter (Materialien-Filter); nil bei "Alle Berufe", "Gelernte Berufe", "Jeder Beruf einmal".
+-- Im Filter gewählter Charakter; nil bei "Alle Charaktere", "Gelernte Berufe (bester Charakter)", "Alle Berufe (auch ungelernte)".
 -- Wirksamer Filter: "me" = der gerade eingeloggte Charakter (Standard), sonst der gespeicherte Wert.
 function BT.MatFilter()
     local filter = DB and DB.opt.matFilter
@@ -804,6 +804,14 @@ local function RemainingCrafts(step, skill)
     return math.ceil(step.c * (step.t - skill) / (step.t - step.f))
 end
 BT.RemainingCrafts = RemainingCrafts
+
+-- Hat irgendein Charakter der eigenen Fraktion (nicht ausgeblendet) den Beruf gelernt?
+function BT.LearnedByAnyone(profKey)
+    for id, rec in pairs(DB.chars) do
+        if rec.skills and rec.skills[profKey] and not BT.IsIgnored(id) and BT.SameFaction(id) then return true end
+    end
+    return false
+end
 
 -- Zählt der Beruf beim aktuellen Filter mit (wie in der Materialliste)?
 BT.FilteredSkills = function(profKey) return FilteredSkills(profKey) end
