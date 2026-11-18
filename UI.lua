@@ -2238,6 +2238,49 @@ end
 
 local profHook = { hooked = false, rows = 0, marked = 0 }
 
+local function RecipeRowEnter(self, owner)
+    profHook.enter = (profHook.enter or 0) + 1
+    local entry = rawget(self, "btEntry")
+    if not entry then return end
+    owner = owner or self
+    local now = GetTime and GetTime() or 0
+    if rawget(self, "btEnterAt") == now and GameTooltip:IsOwned(owner) then return end -- schon von der anderen Stelle
+    self.btEnterAt = now
+    if not GameTooltip:IsOwned(owner) then GameTooltip:SetOwner(owner, "ANCHOR_RIGHT") end
+    BT.AddRouteRecipeLines(GameTooltip, entry)
+    GameTooltip:Show()
+    profHook.shown = (profHook.shown or 0) + 1
+end
+
+local function RecipeRowLeave(self, owner)
+    if rawget(self, "btEntry") and GameTooltip:IsOwned(owner or self) then GameTooltip:Hide() end
+end
+
+-- Unsichtbare Fläche über der Zeile (rechts neben den Pfeilen für die Skill-Chance): erkennt nur das Hovern,
+-- Klicks und Mausrad gehen an die Zeile darunter. Im Forever-Berufsfenster meldet die Zeile selbst kein Hovern.
+local HOVER_LEFT = 22
+local function CreateRowHover(frame)
+    local hover = CreateFrame("Frame", nil, frame)
+    hover:SetPoint("TOPLEFT", HOVER_LEFT, 0)
+    hover:SetPoint("BOTTOMRIGHT", 0, 0)
+    if hover.SetFrameLevel and frame.GetFrameLevel then pcall(hover.SetFrameLevel, hover, (frame:GetFrameLevel() or 0) + 5) end
+    local okClick = hover.SetMouseClickEnabled and pcall(hover.SetMouseClickEnabled, hover, false)
+    local okMotion = hover.SetMouseMotionEnabled and pcall(hover.SetMouseMotionEnabled, hover, true)
+    if not (okClick and okMotion) then hover:Hide() return nil end -- ohne Durchklicken lieber keine Fläche
+    hover:SetScript("OnEnter", function(self)
+        local row = self:GetParent()
+        if row.LockHighlight then pcall(row.LockHighlight, row) end
+        RecipeRowEnter(row, self)
+    end)
+    hover:SetScript("OnLeave", function(self)
+        local row = self:GetParent()
+        if row.UnlockHighlight then pcall(row.UnlockHighlight, row) end
+        RecipeRowLeave(row, self)
+    end)
+    hover:Hide()
+    return hover
+end
+
 -- Eine Zeile der Rezeptliste: die aktuelle Empfehlung bekommt einen feinen goldenen Rahmen, einen leicht
 -- getönten Hintergrund und rechts die offene Anzahl.
 local function DecorateRecipeRow(frame, node)
@@ -2265,14 +2308,19 @@ local function DecorateRecipeRow(frame, node)
         frame.btEdges = edges
         frame.btText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
         frame.btText:SetPoint("RIGHT", -4, 0)
-        frame:HookScript("OnEnter", function(self)
-            local entry = rawget(self, "btEntry")
-            if not entry then return end
-            if not GameTooltip:IsOwned(self) then GameTooltip:SetOwner(self, "ANCHOR_RIGHT") end
-            BT.AddRouteRecipeLines(GameTooltip, entry)
-            GameTooltip:Show()
-        end)
-        frame:HookScript("OnLeave", function(self) if rawget(self, "btEntry") and GameTooltip:IsOwned(self) then GameTooltip:Hide() end end)
+    end
+    -- Tooltip: das Spiel setzt die Hover-Skripte der Zeilen teils neu (wiederverwendete Zeilen); deshalb an der
+    -- Methode der Zeile (OnEnter/OnLeave aus dem Mixin) einhängen und zusätzlich am Skript, doppelt wird abgefangen.
+    if not rawget(frame, "btHooked") then
+        frame.btHooked = true
+        local onEnter, onLeave = rawget(frame, "OnEnter"), rawget(frame, "OnLeave")
+        local function Enter(self) RecipeRowEnter(self) end -- weitere Argumente (z. B. motion) nicht als Besitzer nehmen
+        local function Leave(self) RecipeRowLeave(self) end
+        if hooksecurefunc and type(onEnter) == "function" then pcall(hooksecurefunc, frame, "OnEnter", Enter) end
+        if hooksecurefunc and type(onLeave) == "function" then pcall(hooksecurefunc, frame, "OnLeave", Leave) end
+        frame:HookScript("OnEnter", Enter)
+        frame:HookScript("OnLeave", Leave)
+        frame.btHover = CreateRowHover(frame) or false
     end
     profHook.rows = profHook.rows + 1
     local entry = type(info) == "table" and BT.RouteRecipeInfo(info.name, RecipeOutput(info.recipeID)) or nil
@@ -2284,7 +2332,9 @@ local function DecorateRecipeRow(frame, node)
         for _, edge in ipairs(frame.btEdges) do edge:Show() end
         frame.btBg:Show()
         frame.btText:Show()
+        if rawget(frame, "btHover") then frame.btHover:Show() end
     else
+        if rawget(frame, "btHover") then frame.btHover:Hide() end
         for _, edge in ipairs(frame.btEdges) do edge:Hide() end
         frame.btBg:Hide()
         frame.btText:Hide()
@@ -2337,6 +2387,7 @@ function BT.PrintProfessionDebug()
     local tag = "|cffffcc00BerufeTracker:|r "
     print(tag .. "Berufsfenster gefunden: " .. tostring(RecipeScrollBox() ~= nil) .. ", Haken gesetzt: " .. tostring(profHook.hooked))
     print(tag .. "Zeilen geprüft: " .. profHook.rows .. ", markiert: " .. profHook.marked .. (profHook.error and (", Fehler: " .. profHook.error) or ""))
+    print(tag .. "Hover erkannt: " .. (profHook.enter or 0) .. ", Tooltip gezeigt: " .. (profHook.shown or 0))
     local count = 0
     for _ in pairs(BT.RouteRecipeIndex()) do count = count + 1 end
     print(tag .. "Offene Routen-Rezepte (Namen und Item-IDs): " .. count)
