@@ -1006,7 +1006,7 @@ function BT.RefreshUI()
     window.guideAll:SetText(next(BT.db.opt.guide) and L["gemischt"] or BT.GlobalGuideTitle())
     window.guideAllCost:SetShown(tab == ROUTE)
     if tab == ROUTE and BT.GuideCosts then
-        window.guideAllCost:SetText(CostSummary(BT.GuideCosts().active))
+        window.guideAllCost:SetText(L["Kaufkosten"] .. ": " .. CostSummary(BT.GuideCosts().active)) -- gleicher Text wie Materialien
     end
     window.scan:SetShown(tab == MATERIALS)
     window.scan:SetEnabled(BT.atAH or BT.scanText ~= nil)
