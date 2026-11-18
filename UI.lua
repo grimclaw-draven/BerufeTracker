@@ -383,7 +383,7 @@ local function CreateRow()
 
     row.barBg = row:CreateTexture(nil, "BACKGROUND")
     row.barBg:SetSize(130, 12)
-    row.barBg:SetPoint("RIGHT", -140, 0)
+    row.barBg:SetPoint("RIGHT", -206, 0) -- Platz für fünfstelliges Gold mit Silber und Kupfer
     row.barBg:SetColorTexture(0.15, 0.15, 0.15, 0.9)
     row.barFill = row:CreateTexture(nil, "BORDER")
     row.barFill:SetHeight(12)
@@ -393,7 +393,7 @@ local function CreateRow()
     row.count:SetPoint("CENTER", row.barBg, "CENTER", 0, 0)
 
     row.cost = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    row.cost:SetPoint("RIGHT", -64, 0)
+    row.cost:SetPoint("RIGHT", -80, 0) -- rechts davon "123× bauen"
     row.cost:SetJustifyH("RIGHT")
 
     row.actionButton = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
@@ -484,7 +484,7 @@ local function ConfigureRow(row, entry)
     row.guideButton:SetShown(entry.guideTitle ~= nil)
     if entry.guideTitle then row.guideButton:SetText(entry.guideTitle) end
     row.right:SetText(entry.right or "")
-    local rightInset = isItem and -280 or ((entry.kind == "step" or entry.kind == "trainer") and -60) or (entry.kind == "info" and -6) or (entry.kind == "prof" and -292) or -190
+    local rightInset = isItem and -342 or ((entry.kind == "step" or entry.kind == "trainer") and -60) or (entry.kind == "info" and -6) or (entry.kind == "prof" and -292) or -190
 
     row.text:ClearAllPoints()
     local left = (isItem and 6 + INDENT + 22) or (entry.child and PROF_X + INDENT)
