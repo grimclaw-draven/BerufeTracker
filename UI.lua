@@ -941,6 +941,16 @@ local function OpenFilterMenu(button)
     ShowMenu(button, options, 380, BT.db.opt.matFilter, function(value) BT.db.opt.matFilter = value end)
 end
 
+-- Kosten der gewählten Guides, gleich in Route und Materialliste: "ca. X (davon Lehrer/Rezepte Y, geschätzt Z)"
+local function CostSummary(active)
+    local text = "|cffffd100" .. L["ca. %s"]:format(BT.Money(active.total or 0)) .. "|r"
+    local extra = {}
+    if (active.learn or 0) > 0 then extra[#extra + 1] = L["davon Lehrer/Rezepte %s"]:format(BT.Money(active.learn)) end
+    if (active.guess or 0) >= 1 then extra[#extra + 1] = L["geschätzt %s"]:format(BT.Money(active.guess)) end
+    if #extra > 0 then text = text .. " |cff999999(" .. table.concat(extra, ", ") .. ")|r" end
+    return text
+end
+
 function BT.RefreshUI()
     if not window or not window:IsShown() then return end
     local list = {}
@@ -996,21 +1006,16 @@ function BT.RefreshUI()
     window.guideAll:SetText(next(BT.db.opt.guide) and L["gemischt"] or BT.GlobalGuideTitle())
     window.guideAllCost:SetShown(tab == ROUTE)
     if tab == ROUTE and BT.GuideCosts then
-        local active = BT.GuideCosts().active
-        local text = L["ca. %s"]:format(BT.Money(active.total))
-        if (active.learn or 0) > 0 then text = text .. " |cff999999(" .. L["davon Lehrer/Rezepte %s"]:format(BT.Money(active.learn)) .. ")|r" end
-        window.guideAllCost:SetText(text)
+        window.guideAllCost:SetText(CostSummary(BT.GuideCosts().active))
     end
     window.scan:SetShown(tab == MATERIALS)
     window.scan:SetEnabled(BT.atAH or BT.scanText ~= nil)
     window.scan:SetText(BT.scanText or L["Preise scannen"])
     window.cost:SetShown(tab == MATERIALS)
-    local learnText = ""
+    -- gleicher Betrag wie in der Route (gleiche Rechnung, gleiche Momentaufnahme)
     if tab == MATERIALS and BT.GuideCosts then
-        local learn = BT.GuideCosts().active.learn or 0
-        if learn > 0 then learnText = "  |cff999999+ " .. L["Lehrer/Rezepte %s"]:format(BT.Money(learn)) .. "|r" end
+        window.cost:SetText(L["Kaufkosten"] .. ": " .. CostSummary(BT.GuideCosts().active))
     end
-    window.cost:SetText(L["Kaufkosten"] .. ": |cffffd100" .. BT.Money(BT.cost or 0) .. "|r" .. learnText .. ((BT.unpriced or 0) > 0 and ("  |cff999999(" .. L["%d ohne Preis"]:format(BT.unpriced) .. ")|r") or ""))
     window.missing:SetShown(tab ~= CHARS)
     window.missing:ClearAllPoints()
     window.missing:SetPoint("TOPLEFT", tab == MATERIALS and 200 or 12, -80) -- ohne Suchfeld rückt es nach links
