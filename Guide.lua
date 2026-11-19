@@ -628,8 +628,10 @@ local function ComputePlans(mode, yield)
             -- liegt, gleich ab dem aktuellen Skill herstellen, solange sie Punkte bringen (z. B. Gegengift aus
             -- vorhandenen Giftbeuteln, Matschschnapper vor dem Wels). Die Planung oben sieht das nicht, weil
             -- Bestand bis zum Aufbrauchen als gratis gilt, egal wann man ihn nutzt. Zuerst das Rezept, das am
-            -- frühesten grau wird, bei Gleichstand das mit dem kleineren Vorrat. Die echte Simulation entscheidet.
-            if mode == "cost" and skill > 0 then
+            -- frühesten grau wird, bei Gleichstand das mit dem kleineren Vorrat. Die echte Simulation entscheidet
+            -- (gilt für den günstigsten und den schnellsten berechneten Weg; beim schnellsten zählt Zeit vor Gold,
+            -- die Variante gewinnt dort also nur ohne zusätzliche Herstellzeit). Der Guide-Weg hat keine Einzelrezepte.
+            if mode ~= "cheapest" and skill > 0 then
                 local left, s, prefix = {}, skill, {}
                 for key, count in pairs(stock) do left[key] = count end
                 while s < MAX_SKILL do
