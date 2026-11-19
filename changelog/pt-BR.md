@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.4.0
+
+- "Destacar coletáveis" (antes "Destacar minério/ervas") liga automaticamente se o personagem tiver Herborismo, Mineração ou Esfolamento, com um efeito de brilho bem maior: brilho pulsante, feixe de luz e estrelas girando ao redor do objeto
+- Esfolamento: feras esfoláveis também brilham (bege claro), em cinza se sua perícia não for suficiente
+- Nova opção "Som" ao lado (ou /berufe glitzern ton): um aviso baixo assim que houver algo coletável por perto, uma vez por objeto; com ou sem brilho
+- Funciona junto com PÄNIK Gildentools em vez de ficar desligado; desligue minério e ervas lá, senão os dois brilham
+- A dica de ervas e minério termina com uma linha vazia, separando as linhas de outros addons
+
 ## 1.3.2
 
 - Botão do minimapa: dica com uma breve descrição e o que clicar e arrastar fazem

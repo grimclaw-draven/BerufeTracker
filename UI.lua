@@ -1054,11 +1054,10 @@ function BT.RefreshUI()
     window.missing:SetChecked(BT.db.opt.onlyMissing)
     window.noGather:SetShown(tab == MATERIALS)
     window.noGather:SetChecked(BT.db.opt.noGather)
-    local glowConflict = BT.NodeGlowConflict and BT.NodeGlowConflict()
     window.nodeGlow:SetShown(tab == MATERIALS)
-    window.nodeGlow:SetChecked(BT.db.opt.nodeGlow == true and not glowConflict)
-    window.nodeGlow:SetEnabled(not glowConflict)
-    window.nodeGlowLabel:SetTextColor(glowConflict and 0.5 or 1, glowConflict and 0.5 or 1, glowConflict and 0.5 or 1)
+    window.nodeGlow:SetChecked(BT.NodeGlowOn and BT.NodeGlowOn() or false)
+    window.nodeSound:SetShown(tab == MATERIALS)
+    window.nodeSound:SetChecked(BT.NodeSoundOn and BT.NodeSoundOn() or false)
     for index, button in ipairs(window.tabs) do
         if index == tab then button:LockHighlight() else button:UnlockHighlight() end
     end
@@ -1184,26 +1183,46 @@ local function CreateWindow()
     noGatherLabel:SetPoint("LEFT", f.noGather, "RIGHT", 2, 0)
     noGatherLabel:SetText(L["Sammelberufe ausschließen"])
 
-    -- Erze und Kräuter in der Welt hervorheben (NodeGlow.lua); aus, wenn ein anderes Addon das schon macht
+    -- Erze und Kräuter in der Welt hervorheben (NodeGlow.lua); automatisch an mit Kräuterkunde/Bergbau
     f.nodeGlow = CreateFrame("CheckButton", nil, f, "UICheckButtonTemplate")
     f.nodeGlow:SetSize(22, 22)
-    f.nodeGlow:SetPoint("TOPLEFT", 490, -80)
+    f.nodeGlow:SetPoint("TOPLEFT", 470, -80)
     f.nodeGlow:SetScript("OnClick", function(self)
         if BT.SetNodeGlow then BT.SetNodeGlow(self:GetChecked()) end
         BT.RefreshUI()
     end)
     f.nodeGlow:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        GameTooltip:AddLine(L["Erze/Kräuter hervorheben"], 1, 1, 1)
-        GameTooltip:AddLine(L["Kräuter und Erzadern in der Nähe leuchten: hell, wenn du das Material brauchst oder Sammeln noch Skillpunkte bringt, sonst grau. Nutzt das Soft Targeting des Spiels; die Spieleinstellungen werden beim Abschalten wiederhergestellt."], 0.8, 0.8, 0.8, true)
+        GameTooltip:AddLine(L["Sammelbares hervorheben"], 1, 1, 1)
+        GameTooltip:AddLine(L["Kräuter, Erzadern und häutbare Tiere in der Nähe leuchten: hell, wenn du das Material brauchst oder Sammeln noch Skillpunkte bringt, sonst grau. Nutzt das Soft Targeting des Spiels; die Spieleinstellungen werden beim Abschalten wiederhergestellt."], 0.8, 0.8, 0.8, true)
+        GameTooltip:AddLine(L["Automatisch an, wenn der Charakter Kräuterkunde, Bergbau oder Kürschnerei hat. Das Spiel zeigt immer nur das nächste Objekt in bis zu ca. 15 m Entfernung."], 0.8, 0.8, 0.8, true)
         local other = BT.NodeGlowConflict and BT.NodeGlowConflict()
-        if other then GameTooltip:AddLine(L["Aus, weil %s das schon macht."]:format(other), 1, 0.4, 0.4, true) end
+        if other then GameTooltip:AddLine(L["Läuft zusammen mit %s; schalte dort Erz und Kräuter aus, sonst leuchten beide."]:format(other), 1, 0.82, 0, true) end
         GameTooltip:Show()
     end)
     f.nodeGlow:SetScript("OnLeave", function() GameTooltip:Hide() end)
     f.nodeGlowLabel = f.nodeGlow:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     f.nodeGlowLabel:SetPoint("LEFT", f.nodeGlow, "RIGHT", 2, 0)
-    f.nodeGlowLabel:SetText(L["Erze/Kräuter hervorheben"])
+    f.nodeGlowLabel:SetText(L["Sammelbares hervorheben"])
+
+    -- Ton, sobald etwas Sammelbares in der Nähe ist; unabhängig vom Leuchten
+    f.nodeSound = CreateFrame("CheckButton", nil, f, "UICheckButtonTemplate")
+    f.nodeSound:SetSize(22, 22)
+    f.nodeSound:SetPoint("LEFT", f.nodeGlowLabel, "RIGHT", 6, 0)
+    f.nodeSound:SetScript("OnClick", function(self)
+        if BT.SetNodeSound then BT.SetNodeSound(self:GetChecked()) end
+        BT.RefreshUI()
+    end)
+    f.nodeSound:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:AddLine(L["Ton"], 1, 1, 1)
+        GameTooltip:AddLine(L["Leiser Ton, sobald ein Kraut, eine Erzader oder ein häutbares Tier in der Nähe ist, das du sammeln kannst. Unabhängig vom Leuchten; folgt der Lautstärke für Soundeffekte."], 0.8, 0.8, 0.8, true)
+        GameTooltip:Show()
+    end)
+    f.nodeSound:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    local nodeSoundLabel = f.nodeSound:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    nodeSoundLabel:SetPoint("LEFT", f.nodeSound, "RIGHT", 2, 0)
+    nodeSoundLabel:SetText(L["Ton"])
 
     f.scroll = CreateFrame("ScrollFrame", nil, f, "UIPanelScrollFrameTemplate")
     f.scroll:SetPoint("TOPLEFT", 12, -106)
@@ -2100,6 +2119,7 @@ local function HookItemTooltips()
             end
         end
         if not any and not gathered then tip:AddLine(L["Wird nicht mehr gebraucht"], 0.6, 0.6, 0.6) end
+        tip:AddLine(" ") -- Abstand zu den Zeilen anderer Addons (AllTheThings, Questie …) darunter
         -- Größe nur auf dem OnShow-Weg anpassen; während der Verarbeitung des Inhalts macht das Spiel es selbst
         if fromShow then tip:Show() end
     end

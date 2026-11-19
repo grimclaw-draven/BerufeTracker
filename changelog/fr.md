@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.4.0
+
+- « Mettre en évidence la récolte » (anciennement « Mettre en évidence minerai/herbes ») est activé automatiquement si le personnage connaît l'herboristerie, le minage ou le dépeçage, avec un effet scintillant bien plus grand : lueur pulsante, rayon de lumière et étoiles qui tournent autour de l'objet
+- Dépeçage : les bêtes dépeçables brillent aussi (beige clair), en gris si votre compétence est trop basse
+- Nouvelle option « Son » à côté (ou /berufe glitzern ton) : un son discret dès qu'une ressource récoltable est proche, une fois par objet ; avec ou sans lueur
+- Fonctionne avec PÄNIK Gildentools au lieu de rester désactivé ; désactivez-y le minerai et les herbes, sinon les deux brillent
+- L'infobulle des herbes et du minerai se termine par une ligne vide, pour séparer les lignes des autres addons
+
 ## 1.3.2
 
 - Bouton de la minicarte : infobulle avec une courte description et l'effet du clic et du glisser

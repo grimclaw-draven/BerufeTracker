@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.4.0
+
+- «Evidenzia raccoglibili» (prima «Evidenzia minerali/erbe») si attiva automaticamente se il personaggio conosce Erbalismo, Estrazione o Scuoiatura, con un effetto scintillante molto più grande: bagliore pulsante, raggio di luce e stelle che girano intorno all'oggetto
+- Scuoiatura: anche le bestie scuoiabili brillano (beige chiaro), grigie se la tua abilità non basta
+- Nuova opzione «Suono» accanto (o /berufe glitzern ton): un avviso leggero appena c'è qualcosa da raccogliere vicino, una volta per oggetto; con o senza bagliore
+- Funziona insieme a PÄNIK Gildentools invece di restare spento; disattiva lì minerali ed erbe, altrimenti brillano entrambi
+- Il tooltip di erbe e minerali termina con una riga vuota, per separare le righe di altri addon
+
 ## 1.3.2
 
 - Pulsante della minimappa: tooltip con una breve descrizione e cosa fanno clic e trascinamento

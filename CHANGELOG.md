@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.4.0
+
+- "Highlight gatherables" (formerly "Highlight ore/herbs") is on automatically when the character has Herbalism, Mining or Skinning, with a much bigger sparkle effect: pulsing glow, light beam and twinkling stars circling the object
+- Skinning: skinnable beasts glow too (light beige), gray if your skill is too low
+- New option "Sound" next to it (or /berufe glitzern ton): a quiet ping as soon as something you can gather is nearby, once per object; works with or without the glow
+- Works together with PÄNIK Gildentools instead of staying off; turn off ore and herbs there, otherwise both glow
+- Herb and ore tooltip ends with an empty line, so lines of other addons below are set apart
+
 ## 1.3.2
 
 - Minimap button: tooltip with a short description and what clicking and dragging do

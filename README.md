@@ -32,7 +32,7 @@ For **WoW Forever**, in the language of your game client: English, German, Frenc
 **In the game**
 - Item tooltips (bags, bank, auction house, loot) show how much you still need under your current filter.
 - Ore veins and herbs in the world show what you still need from them and about how often you still need to gather them: until they turn gray and for your professions.
-- **Highlight ore/herbs** (Materials tab or `/berufe glitzern`): herbs and ore veins nearby glow, bright when you need the material or gathering still gives skill points, otherwise gray. Stays off while PÄNIK Gildentools or another addon already does this.
+- **Highlight gatherables** (Materials tab or `/berufe glitzern`): herbs, ore veins and skinnable beasts nearby glow, bright when you need the material or gathering still gives skill points, otherwise gray. On automatically when the character has Herbalism, Mining or Skinning (the game only reveals the nearest object, up to about 15 m). Separately, **Sound** (next to it or `/berufe glitzern ton`) plays a quiet ping as soon as something you can gather is nearby. Works together with PÄNIK Gildentools; turn off ore and herbs there, otherwise both glow.
 - Enemies show which of your needed materials they drop, plus cloth from humanoids and leather from beasts (skinning) of their level.
 - Weapons and armor show which enchanting materials disenchanting gives about, if you need them.
 - The game's profession window frames the recipe your route recommends next; hovering it shows which guide recommends it, the materials you need and which characters hold them.

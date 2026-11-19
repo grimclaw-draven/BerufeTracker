@@ -32,7 +32,7 @@ Para **WoW Forever**, no idioma do seu cliente de jogo: inglês, alemão, franc�
 **No jogo**
 - As dicas de itens (bolsas, banco, Casa de Leilões, saque) mostram quanto você ainda precisa com o filtro atual.
 - Os veios de minério e as ervas no mundo mostram o que você ainda precisa deles e quantas vezes, aproximadamente, ainda deve coletá-los: até ficarem cinza e para suas profissões.
-- **Destacar minério/ervas** (aba Materiais ou `/berufe glitzern`): ervas e veios próximos brilham, forte se você precisa do material ou se coletar ainda rende pontos, senão cinza. Fica desligado enquanto PÄNIK Gildentools ou outro addon já fizer isso.
+- **Destacar coletáveis** (aba Materiais ou `/berufe glitzern`): ervas, veios e feras esfoláveis próximos brilham, forte se você precisa do material ou coletar ainda dá pontos, senão cinza. Ligado automaticamente se o personagem tiver Herborismo, Mineração ou Esfolamento (o jogo só revela o objeto mais próximo, até cerca de 15 m). Separadamente, **Som** (ao lado ou `/berufe glitzern ton`) toca um aviso baixo assim que houver algo coletável por perto. Funciona junto com PÄNIK Gildentools; desligue minério e ervas lá, senão os dois brilham.
 - Os inimigos mostram quais materiais de que você precisa eles deixam cair, além de tecido de humanoides e couro de feras (esfolamento) do nível deles.
 - Armas e armaduras mostram quais materiais de encantamento o desencantamento rende aproximadamente, se você precisar deles.
 - A janela de profissão do jogo emoldura a receita que sua rota recomenda em seguida; ao passar o mouse você vê qual guia a recomenda, os materiais necessários e quais personagens os têm.

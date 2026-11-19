@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.4.0
+
+- „Sammelbares hervorheben“ (früher „Erze/Kräuter hervorheben“) ist automatisch an, wenn der Charakter Kräuterkunde, Bergbau oder Kürschnerei hat, mit deutlich größerem Glitzereffekt: pulsierender Schein, Lichtstrahl und funkelnde Sterne, die um das Objekt kreisen
+- Kürschnerei: häutbare Tiere leuchten ebenfalls (hellbeige), grau, wenn dein Skill nicht reicht
+- Neue Option „Ton“ daneben (oder /berufe glitzern ton): ein leiser Hinweiston, sobald etwas Sammelbares in der Nähe ist, einmal je Objekt; mit oder ohne Leuchten
+- Läuft zusammen mit PÄNIK Gildentools, statt auszubleiben; dort Erz und Kräuter ausschalten, sonst leuchten beide
+- Tooltip von Kräutern und Erz endet mit einer Leerzeile, damit die Zeilen anderer Addons darunter abgesetzt sind
+
 ## 1.3.2
 
 - Minimap-Button: Tooltip mit kurzer Beschreibung und was Klicken und Ziehen bewirken

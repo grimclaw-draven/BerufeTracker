@@ -32,7 +32,7 @@ Para **WoW Forever**, en el idioma de tu cliente de juego: inglés, alemán, fra
 **En el juego**
 - Las descripciones de objetos (bolsas, banco, casa de subastas, botín) muestran cuánto te falta todavía con tu filtro actual.
 - Los filones de mineral y las hierbas del mundo muestran lo que aún necesitas de ellos y cuántas veces más, aproximadamente, deberías recolectarlos: hasta que se vuelvan grises y para tus profesiones.
-- **Resaltar mineral/hierbas** (pestaña Materiales o `/berufe glitzern`): las hierbas y filones cercanos brillan, intenso si necesitas el material o recolectar aún da puntos, si no gris. Se queda desactivado mientras PÄNIK Gildentools u otro addon ya lo haga.
+- **Resaltar recolectables** (pestaña Materiales o `/berufe glitzern`): las hierbas, filones y bestias desollables cercanas brillan, intenso si necesitas el material o recolectar aún da puntos, si no gris. Se activa automáticamente si el personaje tiene Herboristería, Minería o Desuello (el juego solo muestra el objeto más cercano, hasta unos 15 m). Por separado, **Sonido** (al lado o `/berufe glitzern ton`) reproduce un aviso suave en cuanto hay algo recolectable cerca. Funciona junto con PÄNIK Gildentools; desactiva allí mineral y hierbas, si no brillan ambos.
 - Los enemigos muestran qué materiales que necesitas sueltan, además del paño de los humanoides y el cuero de las bestias (desuello) de su nivel.
 - Las armas y armaduras muestran qué materiales de encantamiento da aproximadamente desencantarlas, si los necesitas.
 - La ventana de profesión del juego enmarca la receta que tu ruta recomienda a continuación; al pasar el ratón ves qué guía la recomienda, los materiales necesarios y qué personajes los tienen.

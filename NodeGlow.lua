@@ -7,9 +7,18 @@
 --     dir noch Skillpunkte bringt,
 --   * schwach und grau, wenn nicht (oder wenn dein Skill dafür noch nicht reicht).
 --
+-- Kürschnern: Leichen sind Einheiten mit geschütztem Namen/GUID. Erkannt wird über das Mauszeiger-Symbol, das das
+-- Spiel für das Ziel zeigen würde (SetUnitCursorTexture: "Skin" bzw. "UnableSkin" = Skill reicht nicht).
+-- Ton (opt.nodeSound, Standard aus, unabhängig vom Leuchten): leiser Hinweis, sobald ein Objekt in der Nähe ist,
+-- das du sammeln kannst (Skill reicht), einmal je Objekt.
+-- Standardmäßig an, sobald der eingeloggte Charakter Kräuterkunde, Bergbau oder Kürschnerei hat (opt.nodeGlow nil = automatisch,
+-- true/false = vom Spieler gewählt). Weiter weg sieht kein Addon Objekte: das Spiel gibt nur das eine Soft-Target
+-- im Nahbereich (ca. 15 m) preis.
 -- Geänderte Spieleinstellungen werden vorher gesichert und beim Abschalten wiederhergestellt.
--- Kollisionsschutz: Läuft ein Addon, das dieselben Einstellungen ändert (PÄNIK Gildentools, ForeverLootSparkles,
--- Lueur), bleibt dieses Modul ganz aus und fasst nichts an. In Instanzen und im Kampf ist es ebenfalls aus.
+-- Zusammenspiel: Läuft ein Addon, das dieselben Einstellungen ändert (PÄNIK Gildentools, ForeverLootSparkles,
+-- Lueur), setzt dieses Modul dieselben Werte mit, sichert und stellt aber nichts zurück (das macht das andere
+-- Addon). Die Plakette wird dann am tatsächlichen Wert geprüft, weil das andere Addon sie bei Kräutern/Erzen
+-- schließen kann, wenn es dort selbst nichts anzeigt. In Instanzen und im Kampf ist es aus.
 local _, BT = ...
 
 local CONFLICTS = { "PaenikGildentools", "ForeverLootSparkles", "Lueur" }
@@ -22,7 +31,8 @@ local CVARS = {
 local PLATE = "SoftTargetNameplateInteract" -- Plakette nur, solange ein Kraut/Erz anvisiert ist
 local UNIT = "softinteract"
 local STAR = "Interface\\Cooldown\\star4"
-local COLORS = { herbalism = { 0.45, 1, 0.45 }, mining = { 1, 0.62, 0.25 } }
+local COLORS = { herbalism = { 0.45, 1, 0.45 }, mining = { 1, 0.62, 0.25 }, skinning = { 1, 0.85, 0.6 } }
+local SOUND = 3175 -- SOUNDKIT.MAP_PING: kurzes, leises Pling
 
 local function Plain(v)
     if v == nil or (issecretvalue and issecretvalue(v)) then return nil end
@@ -61,12 +71,35 @@ local function InInstance()
 end
 local function InCombat() return InCombatLockdown ~= nil and InCombatLockdown() end
 
-local function Wanted()
-    return BT.db and BT.db.opt.nodeGlow == true and not BT.NodeGlowConflict() and not InInstance()
+local function HasGatherProf()
+    local rec = BT.db and BT.me and BT.db.chars[BT.me]
+    local skills = rec and rec.skills
+    return skills ~= nil and ((skills.herbalism or 0) > 0 or (skills.mining or 0) > 0 or (skills.skinning or 0) > 0)
 end
+
+function BT.NodeSoundOn()
+    return BT.db ~= nil and BT.db.opt.nodeSound == true
+end
+
+-- An? Vom Spieler gewählt, sonst automatisch mit Kräuterkunde/Bergbau.
+function BT.NodeGlowOn()
+    local opt = BT.db and BT.db.opt
+    if not opt then return false end
+    if opt.nodeGlow ~= nil then return opt.nodeGlow == true end
+    return HasGatherProf()
+end
+
+local function Wanted()
+    return (BT.NodeGlowOn() or BT.NodeSoundOn()) and not InInstance()
+end
+local function Coop() return BT.NodeGlowConflict() ~= nil end
 
 -- Einstellungen sichern/setzen bzw. zurücknehmen (nur außerhalb des Kampfes möglich)
 local function Apply()
+    if Coop() then -- das andere Addon sichert und stellt zurück
+        for name, value in pairs(CVARS) do SetCV(name, value) end
+        return
+    end
     local saved = BT.db.opt.glowSaved or {}
     BT.db.opt.glowSaved = saved
     for name, value in pairs(CVARS) do
@@ -85,32 +118,57 @@ local function Restore()
     BT.db.opt.glowSaved = nil
 end
 
--- Leuchten: Schein und zwei gegenläufig drehende Sterne, pulsierend
+-- Leuchten: großer pulsierender Schein, zwei gegenläufig drehende Sterne, ein senkrechter Lichtstrahl, ein
+-- waagerechter Blitz und funkelnde kleine Sterne, die um das Objekt kreisen
+local SPARKS = 8
 local fx, anchor
 local function CreateEffect()
     fx = CreateFrame("Frame")
     fx:SetSize(1, 1)
     fx:Hide()
-    local function Layer(size, alpha)
-        local t = fx:CreateTexture(nil, "OVERLAY")
-        t:SetTexture(STAR)
-        t:SetBlendMode("ADD")
-        t:SetSize(size, size)
-        t:SetPoint("CENTER")
-        t.base = alpha
-        return t
+    local function Layer(w, h, alpha)
+        local tex = fx:CreateTexture(nil, "OVERLAY")
+        tex:SetTexture(STAR)
+        tex:SetBlendMode("ADD")
+        tex:SetSize(w, h)
+        tex:SetPoint("CENTER")
+        tex.base = alpha
+        return tex
     end
-    fx.glow, fx.outer, fx.inner = Layer(84, 0.35), Layer(50, 0.85), Layer(34, 0.75)
+    fx.glow, fx.outer, fx.inner = Layer(170, 170, 0.45), Layer(110, 110, 0.9), Layer(64, 64, 0.85)
+    fx.beam = Layer(26, 220, 0.55)
+    fx.flare = Layer(150, 18, 0.5)
+    fx.sparks = {}
+    for i = 1, SPARKS do
+        local spark = Layer(22, 22, 1)
+        spark.phase = (i - 1) / SPARKS * 2 * math.pi
+        spark.speed = 0.6 + (i % 3) * 0.25
+        spark.radius = 38 + (i % 4) * 12
+        fx.sparks[i] = spark
+    end
     fx.t = 0
     fx:SetScript("OnUpdate", function(self, elapsed)
         self.t = self.t + math.min(elapsed or 0, 0.1)
-        local c, level = self.color, self.level or 1
-        local pulse = 0.75 + 0.25 * math.sin(self.t * 3)
+        local t, c, level = self.t, self.color, self.level or 1
+        local pulse = 0.7 + 0.3 * math.sin(t * 3)
+        local grow = 1 + 0.12 * math.sin(t * 3)
+        self.glow:SetSize(170 * grow, 170 * grow)
         self.glow:SetVertexColor(c[1], c[2], c[3], self.glow.base * level * pulse)
         self.outer:SetVertexColor(c[1], c[2], c[3], self.outer.base * level)
-        self.outer:SetRotation(self.t * 0.8)
+        self.outer:SetRotation(t * 0.8)
         self.inner:SetVertexColor(1, 1, 1, self.inner.base * level * pulse)
-        self.inner:SetRotation(-self.t * 1.3)
+        self.inner:SetRotation(-t * 1.3)
+        self.beam:SetVertexColor(c[1], c[2], c[3], self.beam.base * level * (0.6 + 0.4 * math.sin(t * 2)))
+        self.flare:SetVertexColor(1, 1, 1, self.flare.base * level * pulse)
+        for _, spark in ipairs(self.sparks) do
+            local a = spark.phase + t * spark.speed
+            spark:ClearAllPoints()
+            spark:SetPoint("CENTER", self, "CENTER", math.cos(a) * spark.radius,
+                math.sin(a) * spark.radius * 0.6 + 10 * math.sin(t * 2 + spark.phase))
+            local twinkle = math.max(0, math.sin(t * 4 + spark.phase * 3))
+            spark:SetVertexColor(1, 1, 0.9, level * twinkle)
+            spark:SetRotation(a * 2)
+        end
     end)
 end
 
@@ -137,7 +195,13 @@ end
 
 local plateOpen
 local function SetPlate(open)
-    if plateOpen == open or InCombat() then return end
+    if InCombat() then return end
+    if Coop() then
+        -- nur öffnen, nie schließen (das andere Addon braucht sie evtl. für seine Objekte); tatsächlichen Wert prüfen
+        if open and GetCV(PLATE) ~= "1" then SetCV(PLATE, "1") end
+        return
+    end
+    if plateOpen == open then return end
     plateOpen = open
     SetCV(PLATE, open and "1" or "0")
 end
@@ -162,20 +226,78 @@ local function Judge(name)
     local skill = rec and rec.skills and rec.skills[kind]
     if skill and skill >= req and skill < req + 100 then useful = true end -- bringt noch Skillpunkte
     if skill and skill < req then useful = false end                     -- noch nicht sammelbar
-    return kind, useful
+    return kind, useful, skill ~= nil and skill >= req
+end
+
+-- Häutbare Leiche? Über das Mauszeiger-Symbol des Ziels (Name/GUID von Gegnern sind in WoW Forever geschützt).
+local probe, skinIDs
+local function SkinCursor(unit)
+    if not SetUnitCursorTexture then return nil end
+    if not probe then
+        probe = UIParent:CreateTexture(nil, "BACKGROUND")
+        probe:Hide()
+        skinIDs = {}
+        if GetFileIDFromPath then
+            for _, file in ipairs({ "Skin", "UnableSkin" }) do
+                local id = Safe(GetFileIDFromPath, "Interface\\Cursor\\" .. file)
+                if id then skinIDs[id] = file end
+            end
+        end
+    end
+    local ok, set = pcall(SetUnitCursorTexture, probe, unit, nil, true)
+    if not ok or Plain(set) == false then return nil end
+    local tex = Plain(probe:GetTexture())
+    local name = type(tex) == "number" and skinIDs[tex] or (type(tex) == "string" and tex)
+    if type(name) ~= "string" and probe.GetAtlas then name = Plain(probe:GetAtlas()) end
+    if type(name) ~= "string" then return nil end
+    name = name:lower()
+    if not name:find("skin", 1, true) then return nil end
+    return name:find("unable", 1, true) and "unable" or "able"
+end
+BT.SkinCursor = SkinCursor
+
+local function JudgeCorpse()
+    local rec = BT.me and BT.db.chars[BT.me]
+    local skill = rec and rec.skills and rec.skills.skinning
+    if not skill or skill <= 0 then return nil end -- ohne Kürschnerei keine Leichen hervorheben
+    if Safe(UnitIsDead, UNIT) ~= true then return nil end
+    local cursor = SkinCursor(UNIT)
+    if not cursor then return nil end
+    return "skinning", cursor == "able", cursor == "able"
+end
+
+-- Ton: einmal je Objekt, wenn es sammelbar ist; Objekt = Art + Name (GUID ist bei Leichen geschützt)
+local lastSoundKey, lastSoundAt = nil, 0
+local function MaybeSound(key)
+    if not key then lastSoundKey = nil return end
+    if not BT.NodeSoundOn() or key == lastSoundKey then return end
+    local now = GetTime and GetTime() or 0
+    lastSoundKey = key
+    if now - lastSoundAt < 1.5 then return end -- nicht mehrmals kurz hintereinander
+    lastSoundAt = now
+    if PlaySound then pcall(PlaySound, SOUND, "SFX") end
+    BT.glowDebug.sounds = (BT.glowDebug.sounds or 0) + 1
 end
 
 BT.glowDebug = { checks = 0, shown = 0 }
 local function Evaluate()
     if not Wanted() or InCombat() then HideEffect() return end
     BT.glowDebug.checks = BT.glowDebug.checks + 1
-    if Safe(UnitIsGameObject, UNIT) ~= true then SetPlate(false) HideEffect() return end
-    local name = Safe(UnitName, UNIT)
-    local kind, useful
-    if type(name) == "string" then kind, useful = Judge(name) end
+    -- das andere Addon kann seine Werte zurückgestellt haben (dort alles abgeschaltet)
+    if Coop() and GetCV("SoftTargetInteract") ~= CVARS.SoftTargetInteract then Apply() end
+    local kind, useful, gatherable, name
+    if Safe(UnitIsGameObject, UNIT) == true then
+        name = Safe(UnitName, UNIT)
+        if type(name) == "string" then kind, useful, gatherable = Judge(name) end
+    elseif Safe(UnitExists, UNIT) == true then
+        kind, useful, gatherable = JudgeCorpse()
+        name = kind and "corpse"
+    end
     BT.glowDebug.last = name
-    SetPlate(kind ~= nil)
-    local plate = kind and C_NamePlate and Safe(C_NamePlate.GetNamePlateForUnit, UNIT)
+    MaybeSound(gatherable and (kind .. ":" .. tostring(name)) or nil)
+    local glow = BT.NodeGlowOn()
+    SetPlate(glow and kind ~= nil)
+    local plate = glow and kind and C_NamePlate and Safe(C_NamePlate.GetNamePlateForUnit, UNIT)
     if not plate then HideEffect() return end
     ShowEffect(plate, useful and COLORS[kind] or { 0.6, 0.6, 0.6 }, useful and 1 or 0.35)
     BT.glowDebug.shown = BT.glowDebug.shown + 1
@@ -201,13 +323,19 @@ end
 BT.UpdateNodeGlow = Update
 
 function BT.SetNodeGlow(on)
-    BT.db.opt.nodeGlow = on and true or nil
+    BT.db.opt.nodeGlow = on and true or false
     Update()
+end
+
+function BT.SetNodeSound(on)
+    BT.db.opt.nodeSound = on and true or nil
+    Update()
+    if on and PlaySound then pcall(PlaySound, SOUND, "SFX") end -- zum Probehören
 end
 
 local events = CreateFrame("Frame")
 for _, event in ipairs({ "PLAYER_LOGIN", "PLAYER_ENTERING_WORLD", "ZONE_CHANGED_NEW_AREA", "PLAYER_REGEN_DISABLED",
-    "PLAYER_REGEN_ENABLED", "PLAYER_SOFT_INTERACT_CHANGED" }) do
+    "PLAYER_REGEN_ENABLED", "PLAYER_SOFT_INTERACT_CHANGED", "SKILL_LINES_CHANGED" }) do
     pcall(events.RegisterEvent, events, event)
 end
 events:SetScript("OnEvent", function(_, event)
@@ -220,6 +348,9 @@ events:SetScript("OnEvent", function(_, event)
     elseif event == "PLAYER_REGEN_ENABLED" then
         plateOpen = nil
         if pending then Update() end
+    elseif event == "SKILL_LINES_CHANGED" then
+        -- neu gelernter Sammelberuf schaltet das Leuchten automatisch an (Skills liest Core.lua zuerst ein)
+        if C_Timer and C_Timer.After then C_Timer.After(1, function() if (ticker ~= nil) ~= Wanted() then Update() end end) end
     elseif event == "PLAYER_LOGIN" then
         -- Kontoeinstellungen können nach dem Login nachgeladen werden: kurz danach erneut setzen
         if C_Timer and C_Timer.After then
@@ -234,8 +365,11 @@ end)
 -- Diagnose: /berufe glitzern debug
 function BT.PrintNodeGlowDebug()
     local tag = "|cffffcc00BerufeTracker:|r "
-    print(tag .. "Erze/Kräuter hervorheben: " .. tostring(BT.db.opt.nodeGlow == true) .. ", anderes Addon: "
-        .. tostring(BT.NodeGlowConflict()) .. ", aktiv: " .. tostring(ticker ~= nil))
+    print(tag .. "Erze/Kräuter hervorheben: " .. tostring(BT.NodeGlowOn()) .. " (Einstellung " .. tostring(BT.db.opt.nodeGlow)
+        .. "), zusammen mit: " .. tostring(BT.NodeGlowConflict()) .. ", aktiv: " .. tostring(ticker ~= nil)
+        .. ", Plakette: " .. tostring(GetCV(PLATE)))
+    print(tag .. "Ton: " .. tostring(BT.NodeSoundOn()) .. ", gespielt: " .. (BT.glowDebug.sounds or 0)
+        .. ", Häuten-Symbol am Ziel: " .. tostring(SkinCursor(UNIT)))
     print(tag .. "Prüfungen: " .. BT.glowDebug.checks .. ", Leuchten gezeigt: " .. BT.glowDebug.shown
         .. ", zuletzt: " .. tostring(BT.glowDebug.last))
 end

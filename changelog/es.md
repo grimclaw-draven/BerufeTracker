@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.4.0
+
+- «Resaltar recolectables» (antes «Resaltar mineral/hierbas») se activa automáticamente si el personaje tiene Herboristería, Minería o Desuello, con un efecto brillante mucho mayor: resplandor pulsante, rayo de luz y estrellas que giran alrededor del objeto
+- Desuello: las bestias desollables también brillan (beige claro), en gris si tu habilidad no alcanza
+- Nueva opción «Sonido» al lado (o /berufe glitzern ton): un aviso suave en cuanto hay algo recolectable cerca, una vez por objeto; con o sin brillo
+- Funciona junto con PÄNIK Gildentools en lugar de quedarse desactivado; desactiva allí mineral y hierbas, si no brillan ambos
+- La descripción de hierbas y mineral termina con una línea vacía para separar las líneas de otros addons
+
 ## 1.3.2
 
 - Botón del minimapa: descripción emergente con una breve explicación y qué hacen hacer clic y arrastrar
