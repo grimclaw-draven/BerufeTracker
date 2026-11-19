@@ -52,9 +52,10 @@ end
 BT.MarketPrice = Market
 
 -- Kosten, ein Rezept zu lernen: 0, wenn bekannt oder das Rezept-Item schon da ist.
-local function LearnCost(step)
+local currentProf -- Beruf, der gerade gerechnet wird (für "gelernt" beim richtigen Charakter)
+local function LearnCost(step, profKey)
     if step.src == "A" then return 0, "auto" end
-    if BT.RecipeStatus(step) ~= "missing" then return 0, "known" end
+    if BT.RecipeStatus(step, profKey or currentProf) ~= "missing" then return 0, "known" end
     if step.src == "R" then
         local slug = step.rc and step.rc.slug
         if not slug then return UNAVAILABLE, "unavailable" end
@@ -568,42 +569,104 @@ local function ComputePlans(mode, yield)
     local out = {}
     for _, prof in ipairs(BT.PROFS) do
         local templates = mode == "cheapest" and {} or TEMPLATES[prof.key]
+        currentProf = prof.key
         if templates and not prof.gather then
             local skill = BT.Skill(prof.key) or 0
             local blocks = Candidates(prof)
-            local freeUntil = FreeUntil(stock, nil, MAX_SKILL)
             -- Mehrere Runden: jede plant mit dem Verbrauch der vorigen. Gewählt wird die Runde, die laut
             -- Verbrauchssimulation wirklich am wenigsten kostet (Gold bzw. Zeit), nicht einfach die letzte.
-            local segments, reached, consumer, bestScore
-            for _ = 1, 6 do
-                local Price = MakeTimedPricer(freeUntil, priceMode)
-                local breaks = {}
-                for _, at in pairs(freeUntil) do breaks[at] = true end
-                local segs, reach = PlanAll(templates, blocks, skill, Price, false, breaks, priceMode, yield)
-                if reach < MAX_SKILL then segs, reach = PlanAll(templates, blocks, skill, Price, true, breaks, priceMode, yield) end
-                local copy = {}
-                for key, count in pairs(stock) do copy[key] = count end
-                local cons = Simulate(segs, skill, copy, nil, priceMode)
-                local score = cons.bought + cons.seconds * TimeWeight(priceMode)
-                for _, seg in ipairs(segs) do
-                    local src = seg.block or seg.cand
-                    local _, open = SegmentCrafts(seg, skill)
-                    if seg.to > skill then score = score + LearnValue(src.learn, priceMode) end
-                    score = score + open * CastTime(src.step) * TimeWeight(priceMode)
+            -- prefix: schon feststehende Abschnitte ab dem aktuellen Skill (Gratis-Material zuerst, siehe unten);
+            -- geplant wird dann ab startSkill mit dem Bestand, der danach übrig ist.
+            local function Rounds(prefix, startSkill, startStock, maxRounds)
+                local freeUntil = FreeUntil(startStock, nil, MAX_SKILL)
+                local segments, reached, consumer, bestScore
+                for _ = 1, maxRounds do
+                    local Price = MakeTimedPricer(freeUntil, priceMode)
+                    local breaks = {}
+                    for _, at in pairs(freeUntil) do breaks[at] = true end
+                    local segs, reach = PlanAll(templates, blocks, startSkill, Price, false, breaks, priceMode, yield)
+                    if reach < MAX_SKILL then segs, reach = PlanAll(templates, blocks, startSkill, Price, true, breaks, priceMode, yield) end
+                    if #prefix > 0 then
+                        local all = {}
+                        for _, seg in ipairs(prefix) do all[#all + 1] = seg end
+                        for _, seg in ipairs(segs) do
+                            if seg.to > startSkill then
+                                seg.from = math.max(seg.from, startSkill)
+                                all[#all + 1] = seg
+                            end
+                        end
+                        segs = all
+                    end
+                    local copy = {}
+                    for key, count in pairs(stock) do copy[key] = count end
+                    local cons = Simulate(segs, skill, copy, nil, priceMode)
+                    local score = cons.bought + cons.seconds * TimeWeight(priceMode)
+                    for _, seg in ipairs(segs) do
+                        local src = seg.block or seg.cand
+                        local _, open = SegmentCrafts(seg, skill)
+                        if seg.to > skill then score = score + LearnValue(src.learn, priceMode) end
+                        score = score + open * CastTime(src.step) * TimeWeight(priceMode)
+                    end
+                    if not bestScore or score < bestScore then
+                        bestScore, segments, reached, consumer = score, segs, reach, cons
+                    end
+                    -- einmal als knapp erkannt, bleibt ein Material knapp (sonst pendelt die Planung zwischen zwei Wegen)
+                    local nextFree, changed = FreeUntil(startStock, cons, MAX_SKILL), false
+                    for key, value in pairs(nextFree) do
+                        value = math.min(value, freeUntil[key] or value)
+                        nextFree[key] = value
+                        if freeUntil[key] ~= value then changed = true end
+                    end
+                    freeUntil = nextFree
+                    if yield then yield() end
+                    if not changed then break end
                 end
-                if not bestScore or score < bestScore then
-                    bestScore, segments, reached, consumer = score, segs, reach, cons
+                return segments, reached, consumer, bestScore
+            end
+            local segments, reached, consumer, bestScore = Rounds({}, skill, stock, 6)
+            -- Variante "Gratis-Material zuerst": Rezepte, die man schon kann und deren Material komplett im Bestand
+            -- liegt, gleich ab dem aktuellen Skill herstellen, solange sie Punkte bringen (z. B. Gegengift aus
+            -- vorhandenen Giftbeuteln, Matschschnapper vor dem Wels). Die Planung oben sieht das nicht, weil
+            -- Bestand bis zum Aufbrauchen als gratis gilt, egal wann man ihn nutzt. Zuerst das Rezept, das am
+            -- frühesten grau wird, bei Gleichstand das mit dem kleineren Vorrat. Die echte Simulation entscheidet.
+            if mode == "cost" and skill > 0 then
+                local left, s, prefix = {}, skill, {}
+                for key, count in pairs(stock) do left[key] = count end
+                while s < MAX_SKILL do
+                    local best, bestHave
+                    for _, step in ipairs(templates) do
+                        local crafts = CraftsPerPoint(step, s)
+                        if crafts and LearnCost(step) == 0 and not (BT.CRAFT_EXCLUDE and BT.CRAFT_EXCLUDE[step.en]) then
+                            local have = math.huge
+                            for _, r in ipairs(step.r) do have = math.min(have, (left[r[1]] or 0) / r[2]) end
+                            if have >= crafts and (not best or step.g < best.g or (step.g == best.g and have < bestHave)) then
+                                best, bestHave = step, have
+                            end
+                        end
+                    end
+                    if not best then break end
+                    local from = s
+                    while s < MAX_SKILL do
+                        local crafts = CraftsPerPoint(best, s)
+                        local enough = crafts ~= nil
+                        -- der letzte Punkt darf auch mit etwas weniger als den erwarteten Herstellungen klappen
+                        for _, r in ipairs(best.r) do
+                            if not enough or (left[r[1]] or 0) < crafts * r[2] * 0.5 then enough = false end
+                        end
+                        if not enough then break end
+                        for _, r in ipairs(best.r) do left[r[1]] = math.max(0, left[r[1]] - crafts * r[2]) end
+                        if best.out then left[best.out] = (left[best.out] or 0) + crafts * (best.mk or 1) end
+                        s = s + 1
+                    end
+                    prefix[#prefix + 1] = { cand = { step = best, learn = 0, how = "known", value = 0 }, from = from, to = s }
                 end
-                -- einmal als knapp erkannt, bleibt ein Material knapp (sonst pendelt die Planung zwischen zwei Wegen)
-                local nextFree, changed = FreeUntil(stock, cons, MAX_SKILL), false
-                for key, value in pairs(nextFree) do
-                    value = math.min(value, freeUntil[key] or value)
-                    nextFree[key] = value
-                    if freeUntil[key] ~= value then changed = true end
+                if #prefix > 0 and s < MAX_SKILL then
+                    local segs2, reach2, cons2, score2 = Rounds(prefix, s, left, 3)
+                    -- bei (fast) Gleichstand, bis 1 Silber, gewinnt "Gratis-Material zuerst": so erwartet man es
+                    if score2 and score2 <= bestScore + 100 then
+                        segments, reached, consumer, bestScore = segs2, reach2, cons2, score2
+                    end
                 end
-                freeUntil = nextFree
-                if yield then yield() end
-                if not changed then break end
             end
             local steps, seconds = {}, 0
             for _, seg in ipairs(segments) do
@@ -759,7 +822,7 @@ EvalSteps = function(steps, profKey, stock, skill)
             if amounts.out then stock[step.out] = (stock[step.out] or 0) + amounts.out end
             if not step.lump and not learned[step.en] then
                 learned[step.en] = true
-                local learn = LearnCost(step)
+                local learn = LearnCost(step, profKey)
                 -- lange Abklingzeit oder nur über Quest: so nicht machbar, wie ein fehlendes Rezept zählen
                 if learn >= UNAVAILABLE or (BT.CRAFT_EXCLUDE and BT.CRAFT_EXCLUDE[step.en]) then missing = missing + 1 else learnCost = learnCost + learn end
             end

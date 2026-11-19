@@ -538,9 +538,25 @@ function BT.IsCurrentProf(profKey)
 end
 
 -- Zustand eines Rezepts: "known" (gelernt), "owned" (Rezept-Item vorhanden) oder "missing".
-function BT.RecipeStatus(step)
+-- Mit profKey zählt "gelernt" nur beim Charakter, dessen Skill die Route bestimmt (ein Rezept, das ein anderer
+-- Charakter kann, bringt diesem keine Skillpunkte). Ein Rezept-Item in irgendeiner Tasche zählt weiter (handelbar).
+local ownerCache, ownerStamp = {}, nil
+function BT.RecipeStatus(step, profKey)
+    local only
+    if profKey then
+        -- Charakter der Route je Beruf zwischenspeichern (wird in den Rechnungen sehr oft gefragt)
+        local stamp = tostring(BT.solveStamp) .. "|" .. tostring(DB.opt.matFilter)
+        if ownerStamp ~= stamp then ownerCache, ownerStamp = {}, stamp end
+        local cached = ownerCache[profKey]
+        if cached == nil then
+            local _, who = BT.Skill(profKey)
+            cached = (who and DB.chars[who]) and who or false
+            ownerCache[profKey] = cached
+        end
+        only = cached or nil
+    end
     for id, rec in pairs(DB.chars) do
-        if rec.known and not BT.IsIgnored(id) then
+        if rec.known and not BT.IsIgnored(id) and (not only or id == only) then
             for _, alias in ipairs(step.aliases) do
                 if rec.known[alias] then return "known", id end
             end

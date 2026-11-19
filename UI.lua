@@ -225,7 +225,7 @@ local function StepTooltip(row)
     GameTooltip:AddLine(BT.StepName(step), 1, 1, 1)
     GameTooltip:AddLine(({ R = L["Benötigt ein Rezept-Item"], T = L["Beim Lehrer"], A = L["Automatisch gelernt"] })[step.src] or " ", 0.7, 0.7, 0.7)
     if step.src == "R" then
-        local state, who = BT.RecipeStatus(step)
+        local state, who = BT.RecipeStatus(step, prof)
         GameTooltip:AddLine(" ")
         if step.rc then GameTooltip:AddLine(BT.RecipeItemName(step.rc), 1, 0.82, 0) end
         if state == "known" then
@@ -610,12 +610,12 @@ local function BuildMaterials(list)
     for _, category in ipairs(categories) do AddItems(list, category.index, category.title, onlyMissing, search) end
 end
 
-local function RecipeTag(step)
+local function RecipeTag(step, profKey)
     local excluded = BT.CRAFT_EXCLUDE and BT.CRAFT_EXCLUDE[step.en]
     if excluded == "cooldown" then return "  |cffff9933[" .. L["lange Abklingzeit"] .. "]|r" end
     if excluded == "quest" then return "  |cffff9933[" .. L["nur über Quest"] .. "]|r" end
     if step.src ~= "R" then return "" end
-    local state, who = BT.RecipeStatus(step)
+    local state, who = BT.RecipeStatus(step, profKey)
     if state == "known" then return "  |cff33cc33[" .. L["gelernt"] .. "]|r" end
     if state == "owned" then return "  |cffffcc33[" .. L["im Besitz: %s"]:format(who) .. "]|r" end
     return "  |cffff6666[" .. L["Rezept fehlt"] .. "]|r"
@@ -626,7 +626,7 @@ local function RecipeCounts(prof)
     for _, step in ipairs(BT.GuideSteps(prof)) do
         if step.src == "R" and BT.StepRemaining(step, prof.key) > 0 then
             total = total + 1
-            if BT.RecipeStatus(step) ~= "missing" then found = found + 1 end
+            if BT.RecipeStatus(step, prof.key) ~= "missing" then found = found + 1 end
         end
     end
     return total, found
@@ -747,7 +747,7 @@ local function AddProfession(list, prof, onlyMissing, trainerOnly)
         local remaining = BT.StepRemaining(step, prof.key)
         if not onlyMissing or remaining > 0 then
             local range = step.f .. "-" .. step.t .. "  " .. BT.StepName(step)
-            local text = remaining == 0 and ("|cff777777" .. range .. "|r") or (range .. RecipeTag(step))
+            local text = remaining == 0 and ("|cff777777" .. range .. "|r") or (range .. RecipeTag(step, prof.key))
             list[#list + 1] = { kind = "step", prof = prof.key, step = step, text = text,
                 right = remaining == 0 and ("|cff33cc33" .. L["fertig"] .. "|r") or (step.lump and L["offen"] or (remaining .. "×")) }
         end
@@ -1520,6 +1520,19 @@ BT.GATHER_REQ = GATHER_REQ
 
 -- Zeile "Kräuterkunde (75): Sammeln bringt Skillpunkte" für den aktuellen (bzw. im Filter gewählten) Charakter.
 -- Gibt true zurück, wenn eine Zeile hinzukam.
+-- Sammeln (Classic): orange und gelb (bis Stufe + 50) bringt fast immer einen Punkt, grün (bis + 100) immer
+-- seltener, danach grau. Geschätzt wie beim Herstellen, Chance im Grünen linear fallend (mindestens 20 %).
+local GATHER_YIELD = 2 -- Stück je Sammeln, grob
+local function GatherUntilGray(skill, req)
+    local green, gray, total = req + 50, req + 100, 0
+    for s = skill, gray - 1 do
+        local chance = 1
+        if s >= green then chance = math.max(0.2, (gray - s) / (gray - green)) end
+        total = total + 1 / chance
+    end
+    return math.ceil(total)
+end
+
 local function GatherLine(tip, key)
     local id = BT.FocusChar and BT.FocusChar() or BT.me
     local rec = id and BT.db.chars[id]
@@ -1534,7 +1547,14 @@ local function GatherLine(tip, key)
             elseif skill < need + 100 then
                 local r, g, b = 1, 0.5, 0.25 -- orange
                 if skill >= need + 50 then r, g, b = 0.25, 0.75, 0.25 elseif skill >= need + 25 then r, g, b = 1, 1, 0 end
-                tip:AddLine(L["%s: Sammeln bringt Skillpunkte"]:format(name), r, g, b)
+                -- wie oft noch sammeln, bis es nichts mehr bringt: Skillpunkte bis grau, dazu der Bedarf der Berufe
+                local toGray = GatherUntilGray(skill, need)
+                local res = BT.result and BT.result[key]
+                local forCrafts = res and math.ceil((res.missing or 0) / GATHER_YIELD) or 0
+                tip:AddLine(L["%s: noch ca. %d× sammeln"]:format(name, math.max(toGray, forCrafts)), r, g, b)
+                if forCrafts > 0 then
+                    tip:AddLine("   " .. L["bis grau ca. %d×, für Berufe ca. %d× (%s Stück)"]:format(toGray, forCrafts, BT.Format(res.missing)), 0.7, 0.7, 0.7)
+                end
             else
                 tip:AddLine(L["%s: grau, keine Skillpunkte mehr"]:format(name), 0.5, 0.5, 0.5)
             end
@@ -1558,7 +1578,7 @@ AddNeedLines = function(tip, key, allProfs)
     tip:AddDoubleLine(L["Benötigt"], BT.Format(res.need), 1, 1, 1, 1, 1, 1)
     tip:AddDoubleLine(L["Im Besitz"], BT.Format(res.have), 1, 1, 1, 1, 1, 1)
     if res.missing > 0 then
-        tip:AddDoubleLine(L["Fehlt noch"], BT.Format(res.missing), 1, 1, 1, 1, 0.4, 0.4)
+        tip:AddDoubleLine(L["Fehlt noch"], BT.Format(res.missing), 1, 0.4, 0.4, 1, 0.4, 0.4)
     else
         tip:AddLine(L["Genug vorhanden"], 0.2, 0.8, 0.2)
     end
