@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.2
+
+- Minimap-Button: Tooltip mit kurzer Beschreibung und was Klicken und Ziehen bewirken
+- Der Minimap-Button nutzt LibDBIcon, wenn ein anderes Addon die Bibliothek mitbringt; Minimap-Sammler (z. B. Leatrix Plus) zeigen ihn dann mit eigenem Tooltip
+- Die Addon-Liste zeigt die Versionsnummer statt „@project-version@“
+
 ## 1.3.1
 
 - Neue Option „Erze/Kräuter hervorheben“ (Tab Materialien oder /berufe glitzern): Kräuter und Erzadern in der Nähe leuchten, hell, wenn du das Material brauchst oder Sammeln noch Skillpunkte bringt; bleibt aus, solange PÄNIK Gildentools oder ein anderes Addon das schon macht

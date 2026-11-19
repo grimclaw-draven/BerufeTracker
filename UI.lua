@@ -1241,8 +1241,42 @@ local function CreateWindow()
     f:Hide()
 end
 
+local function FillMinimapTooltip(tip)
+    tip:AddLine("BerufeTracker")
+    tip:AddLine(L["Materialbedarf aller Berufe bis 300, über alle Charaktere und Banken"], 1, 1, 1, true)
+    tip:AddLine(" ")
+    tip:AddLine(L["Klicken: Fenster öffnen"], 0.2, 1, 0.2)
+    tip:AddLine(L["Ziehen: Symbol verschieben"], 0.2, 1, 0.2)
+end
+
+-- Über LibDBIcon, wenn ein anderes Addon die Bibliothek mitbringt: Minimap-Sammler (Leatrix Plus, MinimapButtonBag …)
+-- erkennen das Symbol dann als normales Addon-Symbol samt Tooltip. Sonst ein eigener Knopf.
+local function RegisterLibDBIcon()
+    local stub = _G.LibStub
+    if type(stub) ~= "table" or not stub.GetLibrary then return false end
+    local ldb = stub:GetLibrary("LibDataBroker-1.1", true)
+    local icon = stub:GetLibrary("LibDBIcon-1.0", true)
+    if not ldb or not icon then return false end
+    local ok = pcall(function()
+        local opt = BT.db.opt
+        opt.minimapIcon = opt.minimapIcon or { minimapPos = opt.minimapAngle or 200 }
+        local obj = ldb:GetDataObjectByName("BerufeTracker") or ldb:NewDataObject("BerufeTracker", {
+            type = "launcher",
+            label = "BerufeTracker",
+            icon = "Interface\\Icons\\Trade_BlackSmithing",
+            OnClick = function() BT.Toggle() end,
+            OnTooltipShow = function(tip) if tip and tip.AddLine then FillMinimapTooltip(tip) end end,
+        })
+        if not icon:IsRegistered("BerufeTracker") then icon:Register("BerufeTracker", obj, opt.minimapIcon) end
+    end)
+    return ok
+end
+
+BT.RegisterMinimapIcon = RegisterLibDBIcon
+
 local function CreateMinimapButton()
-    local button = CreateFrame("Button", "BerufeTrackerMinimapButton", Minimap)
+    if RegisterLibDBIcon() then return end
+    local button = CreateFrame("Button", "BerufeTracker_MinimapButton", Minimap)
     button:SetSize(31, 31)
     button:SetFrameStrata("MEDIUM")
     button:SetFrameLevel(8)
@@ -1278,8 +1312,7 @@ local function CreateMinimapButton()
     button:SetScript("OnDragStop", function(self) self:SetScript("OnUpdate", nil) end)
     button:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_LEFT")
-        GameTooltip:AddLine("BerufeTracker")
-        GameTooltip:AddLine(L["Klicken: Fenster öffnen"], 1, 1, 1)
+        FillMinimapTooltip(GameTooltip)
         GameTooltip:Show()
     end)
     button:SetScript("OnLeave", function() GameTooltip:Hide() end)

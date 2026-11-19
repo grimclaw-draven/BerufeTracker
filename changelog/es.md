@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.2
+
+- Botón del minimapa: descripción emergente con una breve explicación y qué hacen hacer clic y arrastrar
+- El botón del minimapa usa LibDBIcon si otro addon incluye la biblioteca; los recolectores de botones (p. ej. Leatrix Plus) lo muestran con su propia descripción
+- La lista de addons muestra el número de versión en lugar de "@project-version@"
+
 ## 1.3.1
 
 - Nueva opción «Resaltar mineral/hierbas» (pestaña Materiales o /berufe glitzern): las hierbas y filones cercanos brillan, intenso si necesitas el material o recolectar aún da puntos; se queda desactivada mientras PÄNIK Gildentools u otro addon ya lo haga

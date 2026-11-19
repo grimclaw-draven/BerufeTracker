@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.2
+
+- Botão do minimapa: dica com uma breve descrição e o que clicar e arrastar fazem
+- O botão do minimapa usa LibDBIcon quando outro addon traz a biblioteca; coletores de botões (ex.: Leatrix Plus) o mostram com sua própria dica
+- A lista de addons mostra o número da versão em vez de "@project-version@"
+
 ## 1.3.1
 
 - Nova opção "Destacar minério/ervas" (aba Materiais ou /berufe glitzern): ervas e veios próximos brilham, forte se você precisa do material ou se coletar ainda rende pontos; fica desligada enquanto PÄNIK Gildentools ou outro addon já fizer isso

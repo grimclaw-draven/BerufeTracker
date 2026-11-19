@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.2
+
+- Pulsante della minimappa: tooltip con una breve descrizione e cosa fanno clic e trascinamento
+- Il pulsante della minimappa usa LibDBIcon se un altro addon fornisce la libreria; i raccoglitori di pulsanti (es. Leatrix Plus) lo mostrano con il proprio tooltip
+- L'elenco degli addon mostra il numero di versione invece di "@project-version@"
+
 ## 1.3.1
 
 - Nuova opzione "Evidenzia minerali/erbe" (scheda Materiali o /berufe glitzern): erbe e vene vicine brillano, intense se ti serve il materiale o se raccogliere dà ancora punti; resta spenta finché PÄNIK Gildentools o un altro addon lo fa già

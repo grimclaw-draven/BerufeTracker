@@ -21,6 +21,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      # Die .toc trägt die Version fest ein (das Spiel zeigt sie auch im Git-Ordner an); sie muss zum Tag passen
+      - name: Version in der .toc prüfen
+        run: |
+          grep -qx "## Version: ${{ github.ref_name }}" *.toc || { echo "::error::## Version in der .toc passt nicht zum Tag ${{ github.ref_name }}"; exit 1; }
+
       # Fehlt der Abschnitt der neuen Version in einer Sprache, bricht der Release hier ab
       - name: Changelog-Texte bauen
         run: |

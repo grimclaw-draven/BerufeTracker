@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.2
+
+- Bouton de la minicarte : infobulle avec une courte description et l'effet du clic et du glisser
+- Le bouton de la minicarte utilise LibDBIcon si un autre addon fournit la bibliothèque ; les collecteurs de boutons (p. ex. Leatrix Plus) l'affichent alors avec sa propre infobulle
+- La liste des addons affiche le numéro de version au lieu de « @project-version@ »
+
 ## 1.3.1
 
 - Nouvelle option « Mettre en évidence minerai/herbes » (onglet Composants ou /berufe glitzern) : les herbes et filons proches brillent, vif si vous avez besoin du matériau ou si la récolte rapporte encore des points ; reste désactivée tant que PÄNIK Gildentools ou un autre addon le fait déjà

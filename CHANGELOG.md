@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.2
+
+- Minimap button: tooltip with a short description and what clicking and dragging do
+- Minimap button uses LibDBIcon when another addon provides it, so minimap button collectors (e.g. Leatrix Plus) show it with its own tooltip
+- The addon list shows the version number instead of "@project-version@"
+
 ## 1.3.1
 
 - New option "Highlight ore/herbs" (Materials tab or /berufe glitzern): herbs and ore veins nearby glow, bright when you need the material or gathering still gives skill points; stays off while PÄNIK Gildentools or another addon already does this
