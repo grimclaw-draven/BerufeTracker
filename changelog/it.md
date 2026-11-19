@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.1
+
+- Nuova opzione "Evidenzia minerali/erbe" (scheda Materiali o /berufe glitzern): erbe e vene vicine brillano, intense se ti serve il materiale o se raccogliere dà ancora punti; resta spenta finché PÄNIK Gildentools o un altro addon lo fa già
+- I percorsi calcolati usano prima i materiali che hai già, finché danno punti (es. Antidoto prima di Benda di lana, Dentice prima di Pesce gatto); il percorso più veloce solo se non costa tempo in più
+- Le ricette contano come apprese solo per il personaggio del percorso se ha la professione; altrimenti contano quelle degli altri personaggi
+- Tooltip di erbe e minerali: quante volte circa raccogliere ancora, fino al grigio e per le tue professioni
+- Tooltip: "Manca ancora" è in rosso
+
 ## 1.3.0
 
 - Nuova guida propria "Percorso calcolato più veloce": le ricette con il tempo di creazione più breve, inclusi i tempi di recupero di materiali come la stoffa lunare

@@ -31,7 +31,8 @@ Für **WoW Forever**, in der Sprache deines Spiel-Clients: Englisch, Deutsch, Fr
 
 **Im Spiel**
 - Item-Tooltips (Taschen, Bank, Auktionshaus, Beute) zeigen, wie viel du nach deinem aktuellen Filter noch brauchst.
-- Erzadern und Kräuter in der Welt zeigen, was du daraus noch brauchst und ob Sammeln dir noch Skillpunkte bringt.
+- Erzadern und Kräuter in der Welt zeigen, was du daraus noch brauchst und wie oft du ungefähr noch sammeln solltest: bis sie grau werden und für deine Berufe.
+- **Erze/Kräuter hervorheben** (Tab Materialien oder `/berufe glitzern`): Kräuter und Erzadern in der Nähe leuchten, hell, wenn du das Material brauchst oder Sammeln noch Skillpunkte bringt, sonst grau. Bleibt aus, solange PÄNIK Gildentools oder ein anderes Addon das schon macht.
 - Gegner zeigen, welche deiner benötigten Materialien sie fallen lassen, dazu Stoff von Humanoiden und Leder von Wildtieren (Kürschnern) ihrer Stufe.
 - Waffen und Rüstung zeigen, welches Verzauberungsmaterial Entzaubern ungefähr ergibt, wenn du es brauchst.
 - Das Berufsfenster des Spiels umrahmt das Rezept, das deine Route als Nächstes empfiehlt; beim Drüberfahren siehst du, welcher Guide es empfiehlt, die benötigten Materialien und welche Charaktere sie haben.

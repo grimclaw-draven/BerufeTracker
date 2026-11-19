@@ -31,7 +31,8 @@ Per **WoW Forever**, nella lingua del tuo client di gioco: inglese, tedesco, fra
 
 **Nel gioco**
 - I tooltip degli oggetti (borse, banca, casa d'aste, bottino) mostrano quanto ti serve ancora con il filtro attuale.
-- Le vene di minerale e le erbe nel mondo mostrano quanto ti serve ancora da esse e se raccoglierle ti dà ancora punti abilità.
+- Le vene di minerale e le erbe nel mondo mostrano quanto ti serve ancora da esse e quante volte, circa, dovresti ancora raccoglierle: fino al grigio e per le tue professioni.
+- **Evidenzia minerali/erbe** (scheda Materiali o `/berufe glitzern`): erbe e vene vicine brillano, intense se ti serve il materiale o se raccogliere dà ancora punti, altrimenti grigie. Resta spento finché PÄNIK Gildentools o un altro addon lo fa già.
 - I nemici mostrano quali materiali che ti servono lasciano cadere, oltre alla stoffa degli umanoidi e al cuoio delle bestie (scuoiatura) del loro livello.
 - Armi e armature mostrano quali materiali di incantamento si ottengono circa disincantandole, se ti servono.
 - La finestra della professione del gioco incornicia la ricetta che il tuo percorso consiglia come prossima; passandoci sopra vedi quale guida la consiglia, i materiali necessari e quali personaggi li hanno.

@@ -31,7 +31,8 @@ Pour **WoW Forever**, dans la langue de votre client de jeu : anglais, allemand,
 
 **Dans le jeu**
 - Les infobulles d'objets (sacs, banque, hôtel des ventes, butin) indiquent combien il vous en faut encore avec votre filtre actuel.
-- Les filons de minerai et les herbes dans le monde indiquent ce qu'il vous faut encore en tirer et si la récolte vous rapporte encore des points de compétence.
+- Les filons de minerai et les herbes dans le monde indiquent ce qu'il vous faut encore en tirer et combien de fois environ les récolter encore : jusqu'au gris et pour vos métiers.
+- **Mettre en évidence minerai/herbes** (onglet Composants ou `/berufe glitzern`) : les herbes et filons proches brillent, vif si vous avez besoin du matériau ou si la récolte rapporte encore des points, sinon gris. Reste désactivé tant que PÄNIK Gildentools ou un autre addon le fait déjà.
 - Les ennemis indiquent quels matériaux dont vous avez besoin ils laissent tomber, ainsi que le tissu des humanoïdes et le cuir des bêtes (dépeçage) de leur niveau.
 - Les armes et armures indiquent quels matériaux d’enchantement le désenchantement donne environ, si vous en avez besoin.
 - La fenêtre de métier du jeu encadre la recette que votre parcours recommande ensuite ; au survol, vous voyez quel guide la recommande, les matériaux nécessaires et quels personnages les possèdent.

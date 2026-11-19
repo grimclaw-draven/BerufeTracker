@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.1
+
+- New option "Highlight ore/herbs" (Materials tab or /berufe glitzern): herbs and ore veins nearby glow, bright when you need the material or gathering still gives skill points; stays off while PÄNIK Gildentools or another addon already does this
+- Calculated routes use materials you already have first while they still give skill points (e.g. Anti-Venom before Wool Bandage, Mud Snapper before Catfish); the fastest route only if it costs no extra time
+- Recipes count as learned only for the character of the route if that character has the profession; otherwise recipes of your other characters count
+- Herb and ore tooltip: about how often you still need to gather, until gray and for your professions
+- Tooltip: "Still missing" is red
+
 ## 1.3.0
 
 - New own guide "Fastest calculated route": the recipes with the shortest crafting time, including cooldowns of materials such as Mooncloth

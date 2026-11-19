@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.1
+
+- Neue Option „Erze/Kräuter hervorheben“ (Tab Materialien oder /berufe glitzern): Kräuter und Erzadern in der Nähe leuchten, hell, wenn du das Material brauchst oder Sammeln noch Skillpunkte bringt; bleibt aus, solange PÄNIK Gildentools oder ein anderes Addon das schon macht
+- Die berechneten Wege verbrauchen vorhandenes Material zuerst, solange es noch Skillpunkte bringt (z. B. Gegengift vor Wollverband, Matschschnapper vor Wels); der schnellste Weg nur, wenn es keine zusätzliche Zeit kostet
+- Rezepte zählen nur beim Charakter der Route als gelernt, wenn er den Beruf hat; sonst zählen die Rezepte deiner anderen Charaktere
+- Tooltip von Kräutern und Erz: wie oft du ungefähr noch sammeln solltest, bis grau und für deine Berufe
+- Tooltip: „Fehlt noch“ ist rot
+
 ## 1.3.0
 
 - Neuer eigener Guide „Schnellster berechneter Weg“: die Rezepte mit der kürzesten Herstellzeit, inklusive Abklingzeiten von Materialien wie Mondstoff

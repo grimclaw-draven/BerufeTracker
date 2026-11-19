@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.1
+
+- Nueva opción «Resaltar mineral/hierbas» (pestaña Materiales o /berufe glitzern): las hierbas y filones cercanos brillan, intenso si necesitas el material o recolectar aún da puntos; se queda desactivada mientras PÄNIK Gildentools u otro addon ya lo haga
+- Las rutas calculadas usan primero los materiales que ya tienes mientras aún den puntos (p. ej. Antídoto antes que Venda de lana, Pargo antes que Bagre); la ruta más rápida solo si no cuesta tiempo extra
+- Las recetas solo cuentan como aprendidas para el personaje de la ruta si tiene la profesión; si no, cuentan las de tus otros personajes
+- Descripción de hierbas y mineral: cuántas veces aproximadamente debes recolectar aún, hasta gris y para tus profesiones
+- Descripción: «Falta» aparece en rojo
+
 ## 1.3.0
 
 - Nueva guía propia «Ruta calculada más rápida»: las recetas con el menor tiempo de fabricación, incluidos los tiempos de reutilización de materiales como el paño lunar

@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.1
+
+- Nouvelle option « Mettre en évidence minerai/herbes » (onglet Composants ou /berufe glitzern) : les herbes et filons proches brillent, vif si vous avez besoin du matériau ou si la récolte rapporte encore des points ; reste désactivée tant que PÄNIK Gildentools ou un autre addon le fait déjà
+- Les chemins calculés utilisent d'abord les matériaux que vous avez, tant qu'ils rapportent des points (p. ex. Anti-venin avant Bandage en laine, Vivaneau avant Poisson-chat) ; le chemin le plus rapide seulement sans temps supplémentaire
+- Les recettes ne comptent comme apprises que pour le personnage du parcours s'il a le métier ; sinon celles de vos autres personnages comptent
+- Infobulle des herbes et du minerai : combien de fois environ récolter encore, jusqu'au gris et pour vos métiers
+- Infobulle : « Manquant » est en rouge
+
 ## 1.3.0
 
 - Nouveau guide propre « Chemin calculé le plus rapide » : les recettes au temps de fabrication le plus court, temps de recharge de matériaux comme l'étoffe lunaire compris

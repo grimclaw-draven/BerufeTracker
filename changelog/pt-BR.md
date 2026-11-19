@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.1
+
+- Nova opção "Destacar minério/ervas" (aba Materiais ou /berufe glitzern): ervas e veios próximos brilham, forte se você precisa do material ou se coletar ainda rende pontos; fica desligada enquanto PÄNIK Gildentools ou outro addon já fizer isso
+- Os caminhos calculados usam primeiro os materiais que você já tem enquanto ainda rendem pontos (ex.: Antídoto antes de Atadura de lã, Pargo antes de Bagre); o caminho mais rápido só se não custar tempo extra
+- Receitas só contam como aprendidas para o personagem da rota se ele tiver a profissão; senão contam as dos seus outros personagens
+- Dica de ervas e minério: quantas vezes, aproximadamente, ainda coletar, até cinza e para suas profissões
+- Dica: "Falta" aparece em vermelho
+
 ## 1.3.0
 
 - Novo guia próprio "Caminho calculado mais rápido": as receitas com o menor tempo de fabricação, incluindo recargas de materiais como o tecido lunar

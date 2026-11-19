@@ -20,3 +20,4 @@ Core.lua
 Guide.lua
 Prices.lua
 UI.lua
+NodeGlow.lua

@@ -1190,6 +1190,16 @@ SlashCmdList.BERUFETRACKER = function(input)
         BT.PrintMobDebug()
     elseif cmd == "profdebug" then
         BT.PrintProfessionDebug()
+    elseif cmd == "glitzern" or cmd == "glow" then
+        if arg1 == "debug" then BT.PrintNodeGlowDebug() return end
+        local other = BT.NodeGlowConflict()
+        if other then
+            print("|cffffcc00BerufeTracker:|r " .. L["Aus, weil %s das schon macht."]:format(other))
+            return
+        end
+        BT.SetNodeGlow(BT.db.opt.nodeGlow ~= true)
+        print("|cffffcc00BerufeTracker:|r " .. L["Erze/Kräuter hervorheben"] .. ": " .. (BT.db.opt.nodeGlow and L["an"] or L["aus"]))
+        if BT.RefreshUI then BT.RefreshUI() end
     elseif cmd == "scan" then
         BT.StartScan()
     elseif cmd == "skill" and arg1 then

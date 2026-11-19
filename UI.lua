@@ -1054,6 +1054,11 @@ function BT.RefreshUI()
     window.missing:SetChecked(BT.db.opt.onlyMissing)
     window.noGather:SetShown(tab == MATERIALS)
     window.noGather:SetChecked(BT.db.opt.noGather)
+    local glowConflict = BT.NodeGlowConflict and BT.NodeGlowConflict()
+    window.nodeGlow:SetShown(tab == MATERIALS)
+    window.nodeGlow:SetChecked(BT.db.opt.nodeGlow == true and not glowConflict)
+    window.nodeGlow:SetEnabled(not glowConflict)
+    window.nodeGlowLabel:SetTextColor(glowConflict and 0.5 or 1, glowConflict and 0.5 or 1, glowConflict and 0.5 or 1)
     for index, button in ipairs(window.tabs) do
         if index == tab then button:LockHighlight() else button:UnlockHighlight() end
     end
@@ -1178,6 +1183,27 @@ local function CreateWindow()
     local noGatherLabel = f.noGather:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     noGatherLabel:SetPoint("LEFT", f.noGather, "RIGHT", 2, 0)
     noGatherLabel:SetText(L["Sammelberufe ausschließen"])
+
+    -- Erze und Kräuter in der Welt hervorheben (NodeGlow.lua); aus, wenn ein anderes Addon das schon macht
+    f.nodeGlow = CreateFrame("CheckButton", nil, f, "UICheckButtonTemplate")
+    f.nodeGlow:SetSize(22, 22)
+    f.nodeGlow:SetPoint("TOPLEFT", 490, -80)
+    f.nodeGlow:SetScript("OnClick", function(self)
+        if BT.SetNodeGlow then BT.SetNodeGlow(self:GetChecked()) end
+        BT.RefreshUI()
+    end)
+    f.nodeGlow:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:AddLine(L["Erze/Kräuter hervorheben"], 1, 1, 1)
+        GameTooltip:AddLine(L["Kräuter und Erzadern in der Nähe leuchten: hell, wenn du das Material brauchst oder Sammeln noch Skillpunkte bringt, sonst grau. Nutzt das Soft Targeting des Spiels; die Spieleinstellungen werden beim Abschalten wiederhergestellt."], 0.8, 0.8, 0.8, true)
+        local other = BT.NodeGlowConflict and BT.NodeGlowConflict()
+        if other then GameTooltip:AddLine(L["Aus, weil %s das schon macht."]:format(other), 1, 0.4, 0.4, true) end
+        GameTooltip:Show()
+    end)
+    f.nodeGlow:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    f.nodeGlowLabel = f.nodeGlow:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    f.nodeGlowLabel:SetPoint("LEFT", f.nodeGlow, "RIGHT", 2, 0)
+    f.nodeGlowLabel:SetText(L["Erze/Kräuter hervorheben"])
 
     f.scroll = CreateFrame("ScrollFrame", nil, f, "UIPanelScrollFrameTemplate")
     f.scroll:SetPoint("TOPLEFT", 12, -106)
@@ -1488,6 +1514,8 @@ local function ItemsOfNode(name)
     end
     return itemsByNode[name]
 end
+
+BT.ItemsOfNode = ItemsOfNode
 
 -- Handwerksmaterial laut Spiel (Item-Klasse 7, "Handwerkswaren")?
 local TRADE_GOODS = (Enum and Enum.ItemClass and Enum.ItemClass.Tradegoods) or 7
