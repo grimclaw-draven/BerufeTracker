@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.5.0
+
+- Gathering areas: under Herbalism, Mining, Skinning and Fishing the route lists the best maps for your current skill, by density and distance, with the skill range in which each pays off and colored by difficulty. Click opens the map, right-click hides everything again
+- World map: spawn points and a loop route for your gathering professions on every zone map and on the minimap; herbs as squares, ore as diamonds
+- World map panel (button at the bottom left): turn Herbalism and Mining on or off, a combined route for both, single materials with their icon, and skill colors (gray to red)
+- Hovering a zone on the world map shows the skill range of your gathering professions there
+- Spawn points missing from the data are learned when you gather there
+- Fishing: skill range per zone and recommendation of the most demanding zone where you still catch reliably
+- Trainers: many missing trainers added (other titles, WoW Forever trainers); trainers teach one rank higher than in Classic, as seen in game
+- Click on a trainer or material: waypoint and map open at the nearest one, each further click goes to the next one ("trainer 1 of 18")
+- BerufeTracker tab at the profession window (next to the ATT tab): docks the route of the open profession beside it
+- Highlight and sound only for gathering professions the character has learned; skinnable corpses that still have loot are recognized; works together with PÄNIK's NPC pause
+- Enemy tooltip: "Skinning" in the skill color for this beast; beasts that cannot be skinned no longer show leather
+- Herb and ore tooltip shows the current chance of a skill point
+- Waypoint bar now sits next to the minimap
+- Click on a route step or a craftable material: the profession window opens with the recipe selected and the amount filled in (at most what you can craft now); recipe missing: waypoint to the recipe vendor or trainer
+- Tooltips of route steps and craftable materials show the current chance of a skill point when crafting
+- Right-click on the minimap button, the map button or a gathering area shows or hides spawn points and routes; your selection is kept
+
 ## 1.4.0
 
 - "Highlight gatherables" (formerly "Highlight ore/herbs") is on automatically when the character has Herbalism, Mining or Skinning, with a much bigger sparkle effect: pulsing glow, light beam and twinkling stars circling the object

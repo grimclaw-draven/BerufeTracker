@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.5.0
+
+- Zonas de recolección: bajo Herboristería, Minería, Desuello y Pesca la ruta muestra los mejores mapas para tu habilidad actual por densidad y cercanía, con el rango en que compensan y coloreados por dificultad. Clic abre el mapa, clic derecho lo oculta todo
+- Mapa del mundo: puntos de aparición y ruta para tus profesiones de recolección en cada mapa de zona y en el minimapa; hierbas como cuadrados, mineral como rombos
+- Panel en el mapa (botón abajo a la izquierda): activar Herboristería y Minería, ruta conjunta para ambas, materiales sueltos con icono y colores de habilidad (gris a rojo)
+- Al pasar sobre una zona en el mapa del mundo se muestra el rango de habilidad de tus profesiones de recolección
+- Los lugares que faltan en los datos se aprenden al recolectar
+- Pesca: rango de habilidad por zona y recomendación de la zona más exigente donde aún pescas con seguridad
+- Instructores: muchos instructores que faltaban añadidos (otros títulos, instructores de WoW Forever); enseñan un rango más que en Classic, como se vio en el juego
+- Clic en un instructor o material: punto de ruta y mapa al más cercano, cada clic siguiente pasa al siguiente («instructor 1 de 18»)
+- Pestaña de BerufeTracker en la ventana de profesiones (junto a la de ATT): acopla la ruta de la profesión abierta al lado
+- Brillo y sonido solo para profesiones de recolección aprendidas; se reconocen cadáveres desollables con botín; compatible con la pausa de PNJ de PÄNIK
+- Descripción de enemigos: «Desuello» en el color de habilidad para esa bestia; las bestias no desollables ya no muestran cuero
+- La descripción de hierbas y mineral muestra la probabilidad actual de un punto de habilidad
+- La barra de punto de ruta está ahora junto al minimapa
+- Clic en un paso de la ruta o un material fabricable: se abre la ventana de profesión con la receta seleccionada y la cantidad (como máximo lo que puedes fabricar ahora); si falta la receta: punto de ruta al vendedor o instructor
+- Las descripciones de pasos y materiales fabricables muestran la probabilidad actual de un punto de habilidad
+- Clic derecho en el botón del minimapa, del mapa o en una zona de recolección: mostrar u ocultar puntos y rutas; tu selección se mantiene
+
 ## 1.4.0
 
 - «Resaltar recolectables» (antes «Resaltar mineral/hierbas») se activa automáticamente si el personaje tiene Herboristería, Minería o Desuello, con un efecto brillante mucho mayor: resplandor pulsante, rayo de luz y estrellas que giran alrededor del objeto

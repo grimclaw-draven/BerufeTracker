@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.5.0
+
+- Zone di raccolta: sotto Erbalismo, Estrazione, Scuoiatura e Pesca il percorso mostra le mappe migliori per la tua abilità attuale per densità e vicinanza, con l'intervallo in cui convengono e colorate per difficoltà. Clic apre la mappa, clic destro nasconde tutto
+- Mappa del mondo: punti di comparsa e giro per le tue professioni di raccolta su ogni mappa di zona e sulla minimappa; erbe come quadrati, minerali come rombi
+- Pannello sulla mappa (pulsante in basso a sinistra): attiva Erbalismo ed Estrazione, giro comune per entrambe, singoli materiali con icona e colori di abilità (dal grigio al rosso)
+- Passando su una zona della mappa del mondo compare l'intervallo di abilità delle tue professioni di raccolta
+- I punti mancanti nei dati vengono appresi durante la raccolta
+- Pesca: intervallo di abilità per zona e consiglio della zona più impegnativa in cui peschi ancora con sicurezza
+- Istruttori: aggiunti molti istruttori mancanti (altri titoli, istruttori di WoW Forever); insegnano un grado in più rispetto a Classic, come visto in gioco
+- Clic su un istruttore o materiale: waypoint e mappa sul più vicino, ogni clic successivo passa al successivo ("istruttore 1 di 18")
+- Scheda BerufeTracker sulla finestra delle professioni (accanto a quella di ATT): aggancia lì accanto il percorso della professione aperta
+- Bagliore e suono solo per le professioni di raccolta apprese; riconosciuti i cadaveri scuoiabili con bottino; funziona con la pausa PNG di PÄNIK
+- Tooltip dei nemici: "Scuoiatura" nel colore di abilità per quella bestia; le bestie non scuoiabili non mostrano più cuoio
+- Il tooltip di erbe e minerali mostra la probabilità attuale di un punto abilità
+- La barra del waypoint è ora accanto alla minimappa
+- Clic su un passo del percorso o un materiale realizzabile: si apre la finestra della professione con la ricetta selezionata e la quantità inserita (al massimo quanto puoi realizzare ora); ricetta mancante: waypoint al mercante o istruttore
+- I tooltip di passi e materiali realizzabili mostrano la probabilità attuale di un punto abilità
+- Clic destro sul pulsante della minimappa, della mappa o su una zona di raccolta: mostra o nasconde punti e percorsi; la selezione resta
+
 ## 1.4.0
 
 - «Evidenzia raccoglibili» (prima «Evidenzia minerali/erbe») si attiva automaticamente se il personaggio conosce Erbalismo, Estrazione o Scuoiatura, con un effetto scintillante molto più grande: bagliore pulsante, raggio di luce e stelle che girano intorno all'oggetto

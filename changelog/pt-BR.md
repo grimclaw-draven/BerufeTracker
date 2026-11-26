@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.5.0
+
+- Áreas de coleta: em Herborismo, Mineração, Esfolamento e Pesca a rota mostra os melhores mapas para sua perícia atual por densidade e proximidade, com a faixa em que compensam e coloridos pela dificuldade. Clique abre o mapa, clique direito oculta tudo
+- Mapa-múndi: pontos de surgimento e rota para suas profissões de coleta em cada mapa de zona e no minimapa; ervas como quadrados, minério como losangos
+- Painel no mapa (botão no canto inferior esquerdo): ligar Herborismo e Mineração, rota conjunta para ambas, materiais individuais com ícone e cores de perícia (cinza a vermelho)
+- Ao passar sobre uma zona no mapa-múndi aparece a faixa de perícia das suas profissões de coleta
+- Locais que faltam nos dados são aprendidos ao coletar
+- Pesca: faixa de perícia por zona e recomendação da zona mais exigente onde você ainda pesca com segurança
+- Instrutores: muitos instrutores que faltavam adicionados (outros títulos, instrutores do WoW Forever); ensinam um nível acima do Classic, como visto no jogo
+- Clique em um instrutor ou material: ponto de rota e mapa no mais próximo, cada clique seguinte vai ao próximo ("instrutor 1 de 18")
+- Aba do BerufeTracker na janela de profissões (ao lado da aba do ATT): encaixa a rota da profissão aberta ao lado
+- Brilho e som só para profissões de coleta aprendidas; cadáveres esfoláveis com saque são reconhecidos; funciona com a pausa de PNJ do PÄNIK
+- Dica de inimigos: "Esfolamento" na cor de perícia para essa fera; feras não esfoláveis não mostram mais couro
+- A dica de ervas e minério mostra a chance atual de um ponto de perícia
+- A barra de ponto de rota agora fica ao lado do minimapa
+- Clique em uma etapa da rota ou material fabricável: a janela de profissão abre com a receita selecionada e a quantidade preenchida (no máximo o que você pode fabricar agora); receita faltando: ponto de rota ao vendedor ou instrutor
+- As dicas de etapas e materiais fabricáveis mostram a chance atual de um ponto de perícia
+- Clique direito no botão do minimapa, do mapa ou em uma área de coleta: mostrar ou ocultar pontos e rotas; sua seleção é mantida
+
 ## 1.4.0
 
 - "Destacar coletáveis" (antes "Destacar minério/ervas") liga automaticamente se o personagem tiver Herborismo, Mineração ou Esfolamento, com um efeito de brilho bem maior: brilho pulsante, feixe de luz e estrelas girando ao redor do objeto

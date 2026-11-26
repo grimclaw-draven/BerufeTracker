@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.5.0
+
+- Zones de récolte : sous Herboristerie, Minage, Dépeçage et Pêche, le parcours liste les meilleures cartes pour votre compétence actuelle selon densité et distance, avec la plage où elles sont rentables et colorées selon la difficulté. Clic : ouvre la carte, clic droit : tout masquer
+- Carte du monde : points d'apparition et circuit pour vos métiers de récolte sur chaque carte de zone et sur la minicarte ; herbes en carrés, minerai en losanges
+- Panneau sur la carte (bouton en bas à gauche) : activer Herboristerie et Minage, circuit commun pour les deux, matériaux un par un avec icône et couleurs de compétence (gris à rouge)
+- Survoler une zone sur la carte du monde affiche la plage de compétence de vos métiers de récolte
+- Les emplacements absents des données sont appris lors de la récolte
+- Pêche : plage de compétence par zone et recommandation de la zone la plus exigeante où vous attrapez encore sûrement
+- Maîtres : de nombreux maîtres manquants ajoutés (autres titres, maîtres de WoW Forever) ; les maîtres enseignent un rang de plus qu'en Classic, comme observé en jeu
+- Clic sur un maître ou un matériau : point de passage et carte vers le plus proche, chaque clic suivant passe au suivant (« maître 1 sur 18 »)
+- Onglet BerufeTracker sur la fenêtre des métiers (à côté de l'onglet ATT) : ancre le parcours du métier ouvert à côté
+- Lueur et son seulement pour les métiers de récolte appris ; les cadavres dépeçables avec butin sont reconnus ; compatible avec la pause PNJ de PÄNIK
+- Infobulle des ennemis : « Dépeçage » dans la couleur de compétence pour cette bête ; les bêtes non dépeçables n'affichent plus de cuir
+- L'infobulle des herbes et du minerai affiche la chance actuelle d'un point de compétence
+- La barre de point de passage se trouve désormais à côté de la minicarte
+- Clic sur une étape du parcours ou un matériau fabricable : la fenêtre du métier s'ouvre avec la recette sélectionnée et la quantité saisie (au plus ce que vous pouvez fabriquer) ; recette manquante : point de passage vers le marchand ou le maître
+- Les infobulles des étapes et des matériaux fabricables affichent la chance actuelle d'un point de compétence
+- Clic droit sur le bouton de la minicarte, de la carte ou sur une zone de récolte : afficher ou masquer points et circuits ; votre sélection est conservée
+
 ## 1.4.0
 
 - « Mettre en évidence la récolte » (anciennement « Mettre en évidence minerai/herbes ») est activé automatiquement si le personnage connaît l'herboristerie, le minage ou le dépeçage, avec un effet scintillant bien plus grand : lueur pulsante, rayon de lumière et étoiles qui tournent autour de l'objet

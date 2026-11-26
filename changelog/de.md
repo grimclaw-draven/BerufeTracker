@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.5.0
+
+- Sammelgebiete: Unter Kräuterkunde, Bergbau, Kürschnerei und Angeln zeigt die Route die besten Karten für deinen aktuellen Skill nach Dichte und Nähe, mit dem Skill-Bereich, in dem sie sich lohnen, und eingefärbt nach Schwierigkeit. Klick öffnet die Karte, Rechtsklick blendet alles wieder aus
+- Weltkarte: Fundpunkte und Rundweg für deine Sammelberufe auf jeder Zonenkarte und auf der Minimap; Kräuter als Quadrate, Erze als Rauten
+- Auswahlfeld auf der Weltkarte (Knopf unten links): Kräuterkunde und Bergbau ein/aus, gemeinsamer Rundweg für beide, einzelne Materialien mit Symbol und Skill-Farben (grau bis rot)
+- Beim Überfahren einer Zone auf der Weltkarte steht der Skill-Bereich deiner Sammelberufe dort
+- Fundstellen, die in den Daten fehlen, lernt BerufeTracker beim Sammeln dazu
+- Angeln: Skill-Bereich je Gebiet und Empfehlung des anspruchsvollsten Gebiets, in dem du noch zuverlässig fängst
+- Lehrer: viele fehlende Lehrer ergänzt (andere Titel, Lehrer von WoW Forever); Lehrer lehren einen Rang mehr als in Classic, wie im Spiel beobachtet
+- Klick auf einen Lehrer oder ein Material: Wegpunkt und Karte beim nächsten, jeder weitere Klick springt zum nächsten („Lehrer 1 von 18“)
+- BerufeTracker-Reiter am Berufsfenster (neben dem ATT-Reiter): dockt die Route des offenen Berufs daneben an
+- Leuchten und Ton nur für Sammelberufe, die der Charakter gelernt hat; häutbare Leichen mit Beute werden erkannt; läuft zusammen mit der NPC-Pause von PÄNIK
+- Gegner-Tooltip: „Kürschnern“ in der Skill-Farbe für dieses Tier; nicht häutbare Tiere zeigen kein Leder mehr
+- Tooltip von Kräutern und Erz zeigt die aktuelle Chance auf einen Skillpunkt
+- Wegpunkt-Leiste steht jetzt neben der Minimap
+- Klick auf einen Routen-Schritt oder ein herstellbares Material: Das Berufsfenster öffnet sich mit ausgewähltem Rezept und eingetragener Menge (höchstens so viel, wie du gerade herstellen kannst); fehlt das Rezept: Wegpunkt zum Rezepthändler bzw. Lehrer
+- Tooltips von Routen-Schritten und herstellbaren Materialien zeigen die aktuelle Chance auf einen Skillpunkt beim Herstellen
+- Rechtsklick auf den Minimap-Button, den Kartenknopf oder ein Sammelgebiet blendet Fundpunkte und Rundwege ein oder aus; deine Auswahl bleibt erhalten
+
 ## 1.4.0
 
 - „Sammelbares hervorheben“ (früher „Erze/Kräuter hervorheben“) ist automatisch an, wenn der Charakter Kräuterkunde, Bergbau oder Kürschnerei hat, mit deutlich größerem Glitzereffekt: pulsierender Schein, Lichtstrahl und funkelnde Sterne, die um das Objekt kreisen
