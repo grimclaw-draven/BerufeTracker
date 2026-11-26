@@ -24,7 +24,7 @@ Para **WoW Forever**, en el idioma de tu cliente de juego: inglés, alemán, fra
 - Las visitas al instructor aparecen en el punto adecuado de la ruta, con el instructor más cercano que te enseña el siguiente rango.
 
 **Puntos de ruta**
-- Ctrl+clic izquierdo en un instructor o un material coloca un punto de ruta hacia el instructor o vendedor más cercano.
+- Clic izquierdo en un instructor o un material coloca un punto de ruta hacia el instructor o vendedor más cercano; cada clic adicional pasa al siguiente de la lista. Un clic en un paso o material fabricable abre la ventana de profesión con la receta y la cantidad; si falta la receta, te guía al vendedor o instructor.
 - Una barra con una flecha de dirección y una descripción muestra el destino. Al hacer clic en ella se abre el mapa en el destino.
 - El mapa también muestra una etiqueta. Cuando compartes el marcador del mapa en el chat, la descripción se envía con él.
 - El punto de ruta desaparece en cuanto hablas con el PNJ.
@@ -33,9 +33,10 @@ Para **WoW Forever**, en el idioma de tu cliente de juego: inglés, alemán, fra
 - Las descripciones de objetos (bolsas, banco, casa de subastas, botín) muestran cuánto te falta todavía con tu filtro actual.
 - Los filones de mineral y las hierbas del mundo muestran lo que aún necesitas de ellos y cuántas veces más, aproximadamente, deberías recolectarlos: hasta que se vuelvan grises y para tus profesiones.
 - **Resaltar recolectables** (pestaña Materiales o `/berufe glitzern`): las hierbas, filones y bestias desollables cercanas brillan, intenso si necesitas el material o recolectar aún da puntos, si no gris. Se activa automáticamente si el personaje tiene Herboristería, Minería o Desuello (el juego solo muestra el objeto más cercano, hasta unos 15 m). Por separado, **Sonido** (al lado o `/berufe glitzern ton`) reproduce un aviso suave en cuanto hay algo recolectable cerca. Funciona junto con PÄNIK Gildentools; desactiva allí mineral y hierbas, si no brillan ambos.
+- **Zonas de recolección** (pestaña Ruta, bajo Herboristería, Minería, Desuello y Pesca): los mejores mapas para tu habilidad actual por densidad y cercanía, cada uno con el rango de habilidad en que merece la pena, para ver cuándo cambiar. Clic: abre el mapa con los puntos de aparición y la ruta (también en el minimapa); clic derecho muestra u oculta puntos y rutas (la selección se mantiene). Hierbas, mineral y bestias según los datos de WoW Forever de QuestieDB; pesca según la habilidad mínima de Classic por zona. En el mapa del mundo, al pasar sobre una zona se muestra bajo su nombre el rango de habilidad de las profesiones de recolección que conoce tu personaje. Un panel abajo a la izquierda del mapa del mundo activa o desactiva profesiones (hierbas como cuadrados, mineral como rombos, cada una con su color de ruta), materiales sueltos y colores de habilidad. Los lugares de hierbas y mineral que faltan en los datos se aprenden al recolectar.
 - Los enemigos muestran qué materiales que necesitas sueltan, además del paño de los humanoides y el cuero de las bestias (desuello) de su nivel.
 - Las armas y armaduras muestran qué materiales de encantamiento da aproximadamente desencantarlas, si los necesitas.
-- La ventana de profesión del juego enmarca la receta que tu ruta recomienda a continuación; al pasar el ratón ves qué guía la recomienda, los materiales necesarios y qué personajes los tienen.
+- La ventana de profesión del juego enmarca la receta que tu ruta recomienda a continuación; al pasar el ratón ves qué guía la recomienda, los materiales necesarios y qué personajes los tienen. Una pestaña de BerufeTracker en el lateral de la ventana de profesiones (junto a los iconos de profesión y la pestaña de ATT) acopla la ventana de BerufeTracker al lado con la ruta de esa profesión; otro clic la suelta.
 
 **Ventana**
 - Pestaña Personajes: nivel, hermandad, oro, profesiones y materiales de cada personaje; los bancos de hermandad siguen a los personajes de su hermandad. Tú eliges qué inventario cuenta.

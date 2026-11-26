@@ -24,7 +24,7 @@ For **WoW Forever**, in the language of your game client: English, German, Frenc
 - Trainer visits appear at the right point of the route, with the nearest trainer who teaches you the next rank.
 
 **Waypoints**
-- Ctrl+left-click on a trainer or a material sets a waypoint to the nearest trainer or vendor.
+- Left-click on a trainer or a material sets a waypoint to the nearest trainer or vendor; each further click goes to the next one in the list. Clicking a route step or craftable material opens the profession window with the recipe and amount; if the recipe is missing, it leads you to the recipe vendor or trainer.
 - A bar with a direction arrow and a description shows the target. Clicking it opens the map at the target.
 - The map shows a label as well. When you share the map pin in chat, the description is sent along.
 - The waypoint disappears as soon as you talk to the NPC.
@@ -33,9 +33,10 @@ For **WoW Forever**, in the language of your game client: English, German, Frenc
 - Item tooltips (bags, bank, auction house, loot) show how much you still need under your current filter.
 - Ore veins and herbs in the world show what you still need from them and about how often you still need to gather them: until they turn gray and for your professions.
 - **Highlight gatherables** (Materials tab or `/berufe glitzern`): herbs, ore veins and skinnable beasts nearby glow, bright when you need the material or gathering still gives skill points, otherwise gray. On automatically when the character has Herbalism, Mining or Skinning (the game only reveals the nearest object, up to about 15 m). Separately, **Sound** (next to it or `/berufe glitzern ton`) plays a quiet ping as soon as something you can gather is nearby. Works together with PÄNIK Gildentools; turn off ore and herbs there, otherwise both glow.
+- **Gathering areas** (Route tab, under Herbalism, Mining, Skinning and Fishing): the best maps for your current skill, by density and distance, each with the skill range in which it pays off, so you see when to move on. Click: opens the map with matching spawn points and a loop route (also on the minimap); right-click shows or hides spawn points and routes (your selection is kept). Herbs, ore and beasts from the WoW Forever data of QuestieDB; fishing uses Classic minimum skills per zone. On the world map, hovering a zone shows the skill range of the gathering professions your character has learned below its name. A panel at the bottom left of the world map switches professions (herbs as squares, ore as diamonds, each with its own route color), single materials and skill colors on or off. Herb and ore spots missing from the data are learned when you gather there.
 - Enemies show which of your needed materials they drop, plus cloth from humanoids and leather from beasts (skinning) of their level.
 - Weapons and armor show which enchanting materials disenchanting gives about, if you need them.
-- The game's profession window frames the recipe your route recommends next; hovering it shows which guide recommends it, the materials you need and which characters hold them.
+- The game's profession window frames the recipe your route recommends next; hovering it shows which guide recommends it, the materials you need and which characters hold them. A BerufeTracker tab at the side of the profession window (next to the profession icons and the ATT tab) docks the BerufeTracker window right beside it with the route of that profession; click again to undock.
 
 **Window**
 - Characters tab: level, guild, gold, professions and materials of every character; guild banks follow the characters of their guild. Choose whose stock counts.

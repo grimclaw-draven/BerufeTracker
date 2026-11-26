@@ -24,7 +24,7 @@ Pour **WoW Forever**, dans la langue de votre client de jeu : anglais, allemand,
 - Les visites chez le maître apparaissent au bon moment du parcours, avec le maître le plus proche qui vous enseigne le rang suivant.
 
 **Points de passage**
-- Ctrl+clic gauche sur un maître ou un matériau place un point de passage vers le maître ou le marchand le plus proche.
+- Un clic gauche sur un maître ou un matériau place un point de passage vers le maître ou le marchand le plus proche ; chaque clic suivant passe au suivant de la liste. Un clic sur une étape ou un matériau fabricable ouvre la fenêtre du métier avec la recette et la quantité ; si la recette manque, il vous guide vers le marchand ou le maître.
 - Une barre avec une flèche de direction et une description indique la cible. Un clic dessus ouvre la carte sur la cible.
 - La carte affiche aussi une étiquette. Quand vous partagez le repère de la carte dans la discussion, la description est envoyée avec.
 - Le point de passage disparaît dès que vous parlez au PNJ.
@@ -33,9 +33,10 @@ Pour **WoW Forever**, dans la langue de votre client de jeu : anglais, allemand,
 - Les infobulles d'objets (sacs, banque, hôtel des ventes, butin) indiquent combien il vous en faut encore avec votre filtre actuel.
 - Les filons de minerai et les herbes dans le monde indiquent ce qu'il vous faut encore en tirer et combien de fois environ les récolter encore : jusqu'au gris et pour vos métiers.
 - **Mettre en évidence la récolte** (onglet Composants ou `/berufe glitzern`) : les herbes, filons et bêtes dépeçables proches brillent, vif si vous avez besoin du matériau ou si la récolte rapporte encore des points, sinon gris. Activé automatiquement si le personnage connaît l'herboristerie, le minage ou le dépeçage (le jeu ne révèle que l'objet le plus proche, jusqu'à environ 15 m). Séparément, **Son** (à côté ou `/berufe glitzern ton`) joue un son discret dès qu'une ressource récoltable est proche. Fonctionne avec PÄNIK Gildentools ; désactivez-y le minerai et les herbes, sinon les deux brillent.
+- **Zones de récolte** (onglet Parcours, sous Herboristerie, Minage, Dépeçage et Pêche) : les meilleures cartes pour votre compétence actuelle selon densité et distance, chacune avec la plage de compétence où elle est rentable, pour savoir quand changer. Clic : ouvre la carte avec les points d'apparition et le circuit (aussi sur la minicarte) ; clic droit affiche ou masque points et circuits (la sélection est conservée). Herbes, minerai et bêtes d'après les données WoW Forever de QuestieDB ; pêche selon les compétences minimales Classic par zone. Sur la carte du monde, survoler une zone affiche sous son nom la plage de compétence des métiers de récolte appris par votre personnage. Un panneau en bas à gauche de la carte du monde active ou désactive les métiers (herbes en carrés, minerai en losanges, chacun avec sa couleur de circuit), chaque matériau et les couleurs de compétence. Les emplacements d'herbes et de minerai absents des données sont appris lors de la récolte.
 - Les ennemis indiquent quels matériaux dont vous avez besoin ils laissent tomber, ainsi que le tissu des humanoïdes et le cuir des bêtes (dépeçage) de leur niveau.
 - Les armes et armures indiquent quels matériaux d’enchantement le désenchantement donne environ, si vous en avez besoin.
-- La fenêtre de métier du jeu encadre la recette que votre parcours recommande ensuite ; au survol, vous voyez quel guide la recommande, les matériaux nécessaires et quels personnages les possèdent.
+- La fenêtre de métier du jeu encadre la recette que votre parcours recommande ensuite ; au survol, vous voyez quel guide la recommande, les matériaux nécessaires et quels personnages les possèdent. Un onglet BerufeTracker sur le côté de la fenêtre des métiers (à côté des icônes de métiers et de l'onglet ATT) ancre la fenêtre BerufeTracker juste à côté avec le parcours de ce métier ; un nouveau clic la détache.
 
 **Fenêtre**
 - Onglet Personnages : niveau, guilde, or, métiers et matériaux de chaque personnage ; les banques de guilde suivent les personnages de leur guilde. Vous choisissez quels stocks comptent.

@@ -24,7 +24,7 @@ Per **WoW Forever**, nella lingua del tuo client di gioco: inglese, tedesco, fra
 - Le visite all'istruttore compaiono nel punto giusto del percorso, con l'istruttore più vicino che ti insegna il grado successivo.
 
 **Punti di riferimento**
-- Ctrl+clic sinistro su un istruttore o un materiale imposta un punto di riferimento verso l'istruttore o il mercante più vicino.
+- Clic sinistro su un istruttore o un materiale imposta un punto di riferimento verso l'istruttore o il mercante più vicino; ogni clic successivo passa al successivo della lista. Un clic su un passo o materiale realizzabile apre la finestra della professione con ricetta e quantità; se manca la ricetta, ti guida al mercante o istruttore.
 - Una barra con una freccia di direzione e una descrizione mostra la destinazione. Cliccandola si apre la mappa sulla destinazione.
 - Anche la mappa mostra un'etichetta. Quando condividi il segnalino della mappa in chat, la descrizione viene inviata insieme.
 - Il punto di riferimento scompare non appena parli con il PNG.
@@ -33,9 +33,10 @@ Per **WoW Forever**, nella lingua del tuo client di gioco: inglese, tedesco, fra
 - I tooltip degli oggetti (borse, banca, casa d'aste, bottino) mostrano quanto ti serve ancora con il filtro attuale.
 - Le vene di minerale e le erbe nel mondo mostrano quanto ti serve ancora da esse e quante volte, circa, dovresti ancora raccoglierle: fino al grigio e per le tue professioni.
 - **Evidenzia raccoglibili** (scheda Materiali o `/berufe glitzern`): erbe, vene e bestie scuoiabili vicine brillano, intense se ti serve il materiale o la raccolta dà ancora punti, altrimenti grigie. Attivo automaticamente se il personaggio conosce Erbalismo, Estrazione o Scuoiatura (il gioco mostra solo l'oggetto più vicino, fino a circa 15 m). A parte, **Suono** (accanto o `/berufe glitzern ton`) riproduce un avviso leggero appena c'è qualcosa da raccogliere vicino. Funziona insieme a PÄNIK Gildentools; disattiva lì minerali ed erbe, altrimenti brillano entrambi.
+- **Zone di raccolta** (scheda Percorso, sotto Erbalismo, Estrazione, Scuoiatura e Pesca): le mappe migliori per la tua abilità attuale per densità e vicinanza, ognuna con l'intervallo di abilità in cui conviene, per capire quando spostarti. Clic: apre la mappa con i punti di comparsa e il giro (anche sulla minimappa); clic destro mostra o nasconde punti e percorsi (la selezione resta). Erbe, minerali e bestie dai dati WoW Forever di QuestieDB; pesca secondo l'abilità minima Classic per zona. Sulla mappa del mondo, passando sopra una zona compare sotto il nome l'intervallo di abilità delle professioni di raccolta apprese dal tuo personaggio. Un pannello in basso a sinistra della mappa del mondo attiva o disattiva professioni (erbe come quadrati, minerali come rombi, ciascuna con il proprio colore di percorso), singoli materiali e colori di abilità. I punti di erbe e minerali mancanti nei dati vengono appresi durante la raccolta.
 - I nemici mostrano quali materiali che ti servono lasciano cadere, oltre alla stoffa degli umanoidi e al cuoio delle bestie (scuoiatura) del loro livello.
 - Armi e armature mostrano quali materiali di incantamento si ottengono circa disincantandole, se ti servono.
-- La finestra della professione del gioco incornicia la ricetta che il tuo percorso consiglia come prossima; passandoci sopra vedi quale guida la consiglia, i materiali necessari e quali personaggi li hanno.
+- La finestra della professione del gioco incornicia la ricetta che il tuo percorso consiglia come prossima; passandoci sopra vedi quale guida la consiglia, i materiali necessari e quali personaggi li hanno. Una scheda BerufeTracker a lato della finestra delle professioni (accanto alle icone e alla scheda di ATT) aggancia lì accanto la finestra di BerufeTracker con il percorso di quella professione; un altro clic la sgancia.
 
 **Finestra**
 - Scheda Personaggi: livello, gilda, oro, professioni e materiali di ogni personaggio; le banche di gilda seguono i personaggi della loro gilda. Scegli di chi conta la scorta.

@@ -24,7 +24,7 @@ Für **WoW Forever**, in der Sprache deines Spiel-Clients: Englisch, Deutsch, Fr
 - Lehrer-Besuche erscheinen an der richtigen Stelle der Route, mit dem nächstgelegenen Lehrer, der dir die nächste Stufe beibringt.
 
 **Wegpunkte**
-- Strg+Linksklick auf einen Lehrer oder ein Material setzt einen Wegpunkt zum nächsten Lehrer oder Händler.
+- Linksklick auf einen Lehrer oder ein Material setzt einen Wegpunkt zum nächsten Lehrer oder Händler; jeder weitere Klick springt zum nächsten aus der Liste. Klick auf einen Routen-Schritt oder ein herstellbares Material öffnet das Berufsfenster mit Rezept und Menge; fehlt das Rezept, führt er dich zum Rezepthändler bzw. Lehrer.
 - Eine Leiste mit Richtungspfeil und Beschreibung zeigt das Ziel. Ein Klick darauf öffnet die Karte beim Ziel.
 - Auch auf der Karte steht eine Beschriftung. Wenn du die Kartenmarkierung im Chat teilst, wird die Beschreibung mitgeschickt.
 - Der Wegpunkt verschwindet, sobald du mit dem NPC sprichst.
@@ -33,9 +33,10 @@ Für **WoW Forever**, in der Sprache deines Spiel-Clients: Englisch, Deutsch, Fr
 - Item-Tooltips (Taschen, Bank, Auktionshaus, Beute) zeigen, wie viel du nach deinem aktuellen Filter noch brauchst.
 - Erzadern und Kräuter in der Welt zeigen, was du daraus noch brauchst und wie oft du ungefähr noch sammeln solltest: bis sie grau werden und für deine Berufe.
 - **Sammelbares hervorheben** (Tab Materialien oder `/berufe glitzern`): Kräuter, Erzadern und häutbare Tiere in der Nähe leuchten, hell, wenn du das Material brauchst oder Sammeln noch Skillpunkte bringt, sonst grau. Automatisch an, wenn der Charakter Kräuterkunde, Bergbau oder Kürschnerei hat (das Spiel zeigt nur das nächste Objekt bis ca. 15 m). Getrennt davon spielt **Ton** (daneben oder `/berufe glitzern ton`) einen leisen Hinweiston, sobald etwas Sammelbares in der Nähe ist. Läuft zusammen mit PÄNIK Gildentools; dort Erz und Kräuter ausschalten, sonst leuchten beide.
+- **Sammelgebiete** (Tab Route, unter Kräuterkunde, Bergbau, Kürschnerei und Angeln): die besten Karten für deinen aktuellen Skill nach Dichte und Nähe, jeweils mit dem Skill-Bereich, in dem sie sich lohnen, damit du siehst, wann ein Wechsel ansteht. Klick: öffnet die Karte mit passenden Fundpunkten und Rundweg (auch auf der Minimap); Rechtsklick blendet Fundpunkte und Rundwege ein oder aus (die Auswahl bleibt). Kräuter, Erze und Tiere aus den WoW-Forever-Daten von QuestieDB; Angeln nach Classic-Mindestskill je Gebiet. Auf der Weltkarte steht beim Überfahren einer Zone unter ihrem Namen der Skill-Bereich der Sammelberufe, die dein Charakter gelernt hat. Ein Feld unten links auf der Weltkarte schaltet Berufe (Kräuter als Quadrate, Erze als Rauten, je eigene Wegfarbe), einzelne Materialien und Skill-Farben ein oder aus. Fehlen Kräuter- oder Erzstellen in den Daten, lernt BerufeTracker sie beim Sammeln dazu.
 - Gegner zeigen, welche deiner benötigten Materialien sie fallen lassen, dazu Stoff von Humanoiden und Leder von Wildtieren (Kürschnern) ihrer Stufe.
 - Waffen und Rüstung zeigen, welches Verzauberungsmaterial Entzaubern ungefähr ergibt, wenn du es brauchst.
-- Das Berufsfenster des Spiels umrahmt das Rezept, das deine Route als Nächstes empfiehlt; beim Drüberfahren siehst du, welcher Guide es empfiehlt, die benötigten Materialien und welche Charaktere sie haben.
+- Das Berufsfenster des Spiels umrahmt das Rezept, das deine Route als Nächstes empfiehlt; beim Drüberfahren siehst du, welcher Guide es empfiehlt, die benötigten Materialien und welche Charaktere sie haben. Ein BerufeTracker-Reiter an der Seite des Berufsfensters (neben den Berufssymbolen und dem ATT-Reiter) dockt das BerufeTracker-Fenster mit der Route dieses Berufs direkt daneben an; ein weiterer Klick löst es wieder.
 
 **Fenster**
 - Tab Charaktere: Stufe, Gilde, Gold, Berufe und Materialien jedes Charakters; Gildenbanken stehen in der Reihenfolge der Charaktere ihrer Gilde. Du wählst, wessen Bestand mitzählt.

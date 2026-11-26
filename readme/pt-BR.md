@@ -24,7 +24,7 @@ Para **WoW Forever**, no idioma do seu cliente de jogo: inglês, alemão, franc�
 - As visitas ao instrutor aparecem no ponto certo da rota, com o instrutor mais próximo que ensina o próximo nível.
 
 **Pontos de referência**
-- Ctrl+clique esquerdo em um instrutor ou material define um ponto de referência até o instrutor ou vendedor mais próximo.
+- Clique esquerdo em um instrutor ou material define um ponto de referência até o instrutor ou vendedor mais próximo; cada clique seguinte passa para o próximo da lista. Um clique em uma etapa ou material fabricável abre a janela de profissão com a receita e a quantidade; se faltar a receita, leva você ao vendedor ou instrutor.
 - Uma barra com uma seta de direção e uma descrição mostra o destino. Clicar nela abre o mapa no destino.
 - O mapa também mostra um rótulo. Quando você compartilha o marcador do mapa no bate-papo, a descrição é enviada junto.
 - O ponto de referência desaparece assim que você fala com o PNJ.
@@ -33,9 +33,10 @@ Para **WoW Forever**, no idioma do seu cliente de jogo: inglês, alemão, franc�
 - As dicas de itens (bolsas, banco, Casa de Leilões, saque) mostram quanto você ainda precisa com o filtro atual.
 - Os veios de minério e as ervas no mundo mostram o que você ainda precisa deles e quantas vezes, aproximadamente, ainda deve coletá-los: até ficarem cinza e para suas profissões.
 - **Destacar coletáveis** (aba Materiais ou `/berufe glitzern`): ervas, veios e feras esfoláveis próximos brilham, forte se você precisa do material ou coletar ainda dá pontos, senão cinza. Ligado automaticamente se o personagem tiver Herborismo, Mineração ou Esfolamento (o jogo só revela o objeto mais próximo, até cerca de 15 m). Separadamente, **Som** (ao lado ou `/berufe glitzern ton`) toca um aviso baixo assim que houver algo coletável por perto. Funciona junto com PÄNIK Gildentools; desligue minério e ervas lá, senão os dois brilham.
+- **Áreas de coleta** (aba Rota, em Herborismo, Mineração, Esfolamento e Pesca): os melhores mapas para sua perícia atual por densidade e proximidade, cada um com a faixa de perícia em que compensa, para saber quando mudar. Clique: abre o mapa com os pontos de surgimento e a rota (também no minimapa); clique direito mostra ou oculta pontos e rotas (a seleção é mantida). Ervas, minério e feras pelos dados do WoW Forever do QuestieDB; pesca pela perícia mínima do Classic por zona. No mapa-múndi, ao passar sobre uma zona aparece abaixo do nome a faixa de perícia das profissões de coleta que seu personagem aprendeu. Um painel no canto inferior esquerdo do mapa-múndi liga ou desliga profissões (ervas como quadrados, minério como losangos, cada uma com sua cor de rota), materiais individuais e cores de perícia. Locais de ervas e minério ausentes dos dados são aprendidos ao coletar.
 - Os inimigos mostram quais materiais de que você precisa eles deixam cair, além de tecido de humanoides e couro de feras (esfolamento) do nível deles.
 - Armas e armaduras mostram quais materiais de encantamento o desencantamento rende aproximadamente, se você precisar deles.
-- A janela de profissão do jogo emoldura a receita que sua rota recomenda em seguida; ao passar o mouse você vê qual guia a recomenda, os materiais necessários e quais personagens os têm.
+- A janela de profissão do jogo emoldura a receita que sua rota recomenda em seguida; ao passar o mouse você vê qual guia a recomenda, os materiais necessários e quais personagens os têm. Uma aba do BerufeTracker na lateral da janela de profissões (ao lado dos ícones de profissão e da aba do ATT) encaixa a janela do BerufeTracker ao lado com a rota dessa profissão; outro clique a solta.
 
 **Janela**
 - Aba Personagens: nível, guilda, ouro, profissões e materiais de cada personagem; os bancos de guilda seguem os personagens da guilda. Você escolhe qual estoque conta.
