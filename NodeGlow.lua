@@ -217,16 +217,18 @@ local function Judge(name)
         end
     end
     if not kind then return nil end
+    -- nur, wenn der eingeloggte Charakter (er sammelt ja) diesen Sammelberuf gelernt hat
+    local rec = BT.me and BT.db.chars[BT.me]
+    local skill = rec and rec.skills and rec.skills[kind]
+    if not skill or skill <= 0 then return nil end
     local useful = false
     for _, entry in ipairs(list) do
         local res = BT.result and BT.result[entry.key]
         if res and (res.missing or 0) > 0 then useful = true end
     end
-    local rec = BT.db.chars[(BT.FocusChar and BT.FocusChar()) or BT.me]
-    local skill = rec and rec.skills and rec.skills[kind]
-    if skill and skill >= req and skill < req + 100 then useful = true end -- bringt noch Skillpunkte
-    if skill and skill < req then useful = false end                     -- noch nicht sammelbar
-    return kind, useful, skill ~= nil and skill >= req
+    if skill >= req and skill < req + 100 then useful = true end -- bringt noch Skillpunkte
+    if skill < req then useful = false end                     -- noch nicht sammelbar
+    return kind, useful, skill >= req
 end
 
 -- Häutbare Leiche? Über das Mauszeiger-Symbol des Ziels (Name/GUID von Gegnern sind in WoW Forever geschützt).
@@ -256,12 +258,55 @@ local function SkinCursor(unit)
 end
 BT.SkinCursor = SkinCursor
 
+-- Häutbare Leiche: Mauszeiger "Häuten"; hat die Leiche noch Beute, zeigt das Spiel aber den Plündern-Zeiger -
+-- dann über die Gegner-ID und die Beutedaten (Kürschner-Beute) und die Stufe (reicht der Skill?)
+local function NpcOf(unit)
+    local guid = Safe(UnitGUID, unit)
+    return type(guid) == "string" and tonumber(guid:match("^Creature%-%d+%-%d+%-%d+%-%d+%-(%d+)%-")) or nil
+end
+local function CorpseSkin(unit, skill)
+    local cursor = SkinCursor(unit)
+    if cursor then return cursor end
+    local npc = NpcOf(unit)
+    local drops = npc and BT.MOB_DROPS and BT.MOB_DROPS[npc]
+    local skinnable = false
+    for _, d in ipairs(drops or {}) do if d[5] then skinnable = true end end
+    if not skinnable then return nil end
+    local level = Safe(UnitLevel, unit)
+    if type(level) == "number" and level > 0 and BT.SkinReq and skill and skill < BT.SkinReq(level) then return "unable" end
+    return "able"
+end
+BT.CorpseSkin = CorpseSkin
+
+-- Ein anderes Addon (PÄNIK: "Draußen NPCs als Interaktionsziel überspringen") pausiert die Zielsuche, sobald draußen
+-- eine Einheit gewählt ist - auch eine Leiche. Ist es eine häutbare Leiche und hat der Charakter Kürschnerei, wird die
+-- Suche im selben Moment wieder eingeschaltet; lebende NPCs bleiben unberührt. PÄNIK pausiert während seiner Pause
+-- kein zweites Mal, es gibt also kein Hin und Her.
+local restoring = false
+local function KeepCorpseTarget(name, value)
+    if restoring or name ~= "SoftTargetInteract" or tostring(value) ~= "0" then return end
+    if not (BT.db and BT.NodeGlowConflict() and BT.NodeGlowOn() and not InCombat() and not InInstance()) then return end
+    local rec = BT.me and BT.db.chars[BT.me]
+    if not (rec and rec.skills and (rec.skills.skinning or 0) > 0) then return end
+    if Safe(UnitIsDead, UNIT) ~= true or not CorpseSkin(UNIT, rec.skills.skinning) then return end
+    restoring = true
+    SetCV("SoftTargetInteract", CVARS.SoftTargetInteract)
+    restoring = false
+    BT.glowDebug.kept = (BT.glowDebug.kept or 0) + 1
+end
+local hookedCVar, hookedGlobal
+local function EnsureCVarHook()
+    if not hooksecurefunc then return end
+    if hookedCVar ~= C_CVar and C_CVar and C_CVar.SetCVar then hooksecurefunc(C_CVar, "SetCVar", KeepCorpseTarget) hookedCVar = C_CVar end
+    if not hookedGlobal and SetCVar then hooksecurefunc("SetCVar", KeepCorpseTarget) hookedGlobal = true end
+end
+
 local function JudgeCorpse()
     local rec = BT.me and BT.db.chars[BT.me]
     local skill = rec and rec.skills and rec.skills.skinning
     if not skill or skill <= 0 then return nil end -- ohne Kürschnerei keine Leichen hervorheben
     if Safe(UnitIsDead, UNIT) ~= true then return nil end
-    local cursor = SkinCursor(UNIT)
+    local cursor = CorpseSkin(UNIT, skill)
     if not cursor then return nil end
     return "skinning", cursor == "able", cursor == "able"
 end
@@ -284,7 +329,10 @@ local function Evaluate()
     if not Wanted() or InCombat() then HideEffect() return end
     BT.glowDebug.checks = BT.glowDebug.checks + 1
     -- das andere Addon kann seine Werte zurückgestellt haben (dort alles abgeschaltet)
-    if Coop() and GetCV("SoftTargetInteract") ~= CVARS.SoftTargetInteract then Apply() end
+    -- "0" = das andere Addon pausiert die Zielsuche gerade (PÄNIK: "Draußen NPCs als Interaktionsziel
+    -- überspringen", trifft auch Leichen): nicht dagegen ankämpfen, sonst schalten beide ständig hin und her
+    local interact = GetCV("SoftTargetInteract")
+    if Coop() and interact ~= CVARS.SoftTargetInteract and interact ~= "0" then Apply() end
     local kind, useful, gatherable, name
     if Safe(UnitIsGameObject, UNIT) == true then
         name = Safe(UnitName, UNIT)
@@ -294,6 +342,7 @@ local function Evaluate()
         name = kind and "corpse"
     end
     BT.glowDebug.last = name
+    if kind and kind ~= "skinning" and BT.NoteNodeSeen then BT.NoteNodeSeen(name) end
     MaybeSound(gatherable and (kind .. ":" .. tostring(name)) or nil)
     local glow = BT.NodeGlowOn()
     SetPlate(glow and kind ~= nil)
@@ -303,11 +352,14 @@ local function Evaluate()
     BT.glowDebug.shown = BT.glowDebug.shown + 1
 end
 
+BT.EvaluateNodeGlow = Evaluate
+
 local ticker, pending
 local function Update()
     if InCombat() then pending = true return end
     pending = false
     if Wanted() then
+        EnsureCVarHook()
         Apply()
         plateOpen = nil
         if not ticker and C_Timer and C_Timer.NewTicker then ticker = C_Timer.NewTicker(0.15, Evaluate) end
@@ -369,7 +421,17 @@ function BT.PrintNodeGlowDebug()
         .. "), zusammen mit: " .. tostring(BT.NodeGlowConflict()) .. ", aktiv: " .. tostring(ticker ~= nil)
         .. ", Plakette: " .. tostring(GetCV(PLATE)))
     print(tag .. "Ton: " .. tostring(BT.NodeSoundOn()) .. ", gespielt: " .. (BT.glowDebug.sounds or 0)
+        .. ", Leichen-Pause aufgehoben: " .. (BT.glowDebug.kept or 0)
         .. ", Häuten-Symbol am Ziel: " .. tostring(SkinCursor(UNIT)))
+    -- was das Spiel über das aktuelle Ziel verrät (für Leichen, die nicht erkannt werden)
+    local raw = "-"
+    if probe then
+        local tex = probe:GetTexture()
+        raw = tostring(Plain(tex)) .. (probe.GetAtlas and (" / " .. tostring(Plain(probe:GetAtlas()))) or "")
+    end
+    print(tag .. "Ziel: tot " .. tostring(Safe(UnitIsDead, UNIT)) .. ", Objekt " .. tostring(Safe(UnitIsGameObject, UNIT))
+        .. ", Gegner-ID " .. tostring(NpcOf(UNIT)) .. ", Stufe " .. tostring(Safe(UnitLevel, UNIT)) .. ", Zeiger " .. raw
+        .. ", häutbar " .. tostring(CorpseSkin(UNIT, 300)))
     print(tag .. "Prüfungen: " .. BT.glowDebug.checks .. ", Leuchten gezeigt: " .. BT.glowDebug.shown
         .. ", zuletzt: " .. tostring(BT.glowDebug.last))
 end

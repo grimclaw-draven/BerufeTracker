@@ -264,6 +264,15 @@ local function StepTooltip(row)
             GameTooltip:AddLine(L["Lernbar ab %d, gelb ab %d, grün ab %d, grau ab %d"]:format(step.l, step.y, math.floor((step.y + step.g) / 2), step.g), 0.7, 0.7, 0.7)
         end
     end
+    local craftTpl = BT.CraftTemplateFor and BT.CraftTemplateFor(prof, step)
+    if craftTpl and BT.CraftChanceLine then
+        GameTooltip:AddLine(" ")
+        BT.CraftChanceLine(GameTooltip, craftTpl, prof)
+    end
+    if craftTpl then
+        GameTooltip:AddLine(" ")
+        GameTooltip:AddLine(L["Klick: im Berufsfenster öffnen und Menge eintragen; fehlt das Rezept: Wegpunkt zum Händler bzw. Lehrer"], 0.4, 0.8, 1, true)
+    end
     GameTooltip:Show()
 end
 
@@ -321,7 +330,7 @@ AddSourceLines = function(key)
             GameTooltip:AddDoubleLine("   " .. name, distance or "", 1, 1, 1, 0.7, 0.7, 0.7)
             GameTooltip:AddLine("      " .. place, 0.7, 0.7, 0.7)
         end
-        GameTooltip:AddLine(L["Strg+Linksklick: Wegpunkt zum nächsten Händler"], 0.4, 0.8, 1)
+        GameTooltip:AddLine(L["Klick: Wegpunkt zum nächsten Händler, erneut klicken: der nächste"], 0.4, 0.8, 1, true)
     end
     if not source.h and not source.o and not drops and #vendors == 0 then
         GameTooltip:AddLine(L["Keine Bezugsquelle bekannt"], 0.7, 0.7, 0.7)
@@ -343,7 +352,7 @@ local function TrainerTooltip(row)
     end
     if list[1] then
         GameTooltip:AddLine(" ")
-        GameTooltip:AddLine(L["Strg+Linksklick: Wegpunkt zu %s"]:format(BT.NpcName(list[1].npc)), 0.4, 0.8, 1)
+        GameTooltip:AddLine(L["Klick: Wegpunkt zu %s, erneut klicken: der nächste"]:format(BT.NpcName(list[1].npc)), 0.4, 0.8, 1, true)
     end
     GameTooltip:Show()
 end
@@ -423,14 +432,34 @@ local function CreateRow()
     row.text:SetJustifyH("LEFT")
     row.text:SetWordWrap(false)
 
-    row:SetScript("OnClick", function(self)
-        if self.entry.kind == "trainer" and IsControlKeyDown() then
-            if self.entry.nearest[1] then BT.SetWaypoint(self.entry.nearest[1], self.entry.note) end
+    if row.RegisterForClicks then row:RegisterForClicks("LeftButtonUp", "RightButtonUp") end
+    row:SetScript("OnClick", function(self, button)
+        if button == "RightButton" then
+            if self.entry.onRightClick then
+                self.entry.onRightClick()
+                BT.RefreshUI()
+            end
             return
         end
-        if self.entry.kind == "item" and IsControlKeyDown() then
-            local vendor = ItemVendors(self.entry.key)[1]
-            if vendor then BT.SetWaypoint(vendor, L["Händler für %s"]:format(BT.ItemName(self.entry.key))) end
+        -- Lehrer und Materialien: Wegpunkt zum nächsten Lehrer/Händler, jeder weitere Klick zum nächsten
+        if self.entry.kind == "trainer" then
+            BT.CycleWaypoint("trainer:" .. self.entry.note, self.entry.nearest, self.entry.note, L["Lehrer %d von %d"])
+            BT.RefreshUI()
+            return
+        end
+        if self.entry.kind == "step" and BT.CraftOrFindRecipe then
+            local step, prof = self.entry.step, self.entry.prof
+            if BT.CraftOrFindRecipe(prof, step, nil, BT.StepRemaining(step, prof)) then return end
+        end
+        if self.entry.kind == "item" and BT.RECIPES[self.entry.key] and BT.CraftOrFindRecipe and not IsControlKeyDown() then
+            -- herstellbares Zwischenprodukt: Berufsfenster mit der fehlenden Menge (Strg+Klick: Händler wie bisher)
+            local res = BT.result and BT.result[self.entry.key]
+            local count = res and (res.crafts or res.missing) or 1
+            if BT.CraftOrFindRecipe(nil, nil, self.entry.key, count) then return end
+        end
+        if self.entry.kind == "item" then
+            local vendors = ItemVendors(self.entry.key)
+            if #vendors > 0 then BT.CycleWaypoint("vendor:" .. self.entry.key, vendors, L["Händler für %s"]:format(BT.ItemName(self.entry.key)), L["Händler %d von %d"]) end
             return
         end
         if self.entry.onClick then
@@ -441,7 +470,8 @@ local function CreateRow()
     row:SetScript("OnEnter", function(self)
         if self.entry.kind == "item" then ItemTooltip(self)
         elseif self.entry.kind == "step" then StepTooltip(self)
-        elseif self.entry.kind == "trainer" then TrainerTooltip(self) end
+        elseif self.entry.kind == "trainer" then TrainerTooltip(self)
+        elseif self.entry.tooltip then self.entry.tooltip(self) end
     end)
     row:SetScript("OnLeave", function() GameTooltip:Hide() end)
     return row
@@ -470,7 +500,9 @@ local function ConfigureRow(row, entry)
     local isItem = entry.kind == "item"
     row.check:SetShown(entry.onToggle ~= nil)
     row.check:SetChecked(entry.checked)
-    row:EnableMouse(entry.kind ~= "gap" and entry.kind ~= "divider" and entry.kind ~= "info" and entry.kind ~= "action")
+    -- Infozeilen nur mit eigenem Klick oder Tooltip (z. B. Sammelgebiete) nehmen die Maus an
+    row:EnableMouse((entry.kind ~= "gap" and entry.kind ~= "divider" and entry.kind ~= "info" and entry.kind ~= "action")
+        or (entry.kind == "info" and (entry.onClick ~= nil or entry.tooltip ~= nil)))
     row.actionButton:SetShown(entry.kind == "action")
     if entry.actionText then row.actionButton:SetText(entry.actionText) end
     -- senkrechter Strich: durch alles, was zu einem Beruf gehört, und vom "[-]" des Berufs abwärts
@@ -660,6 +692,79 @@ local function TrainerEntry(prof, rank, current)
     return { kind = "trainer", rank = rank, nearest = nearest, text = text, right = right, learned = learned, note = note }
 end
 
+-- Sammelgebiet in der Route: Name, Skill-Bereich, Fundpunkte bzw. Gegnerstufen, Entfernung; Klick zeigt es auf der Karte
+local function GatherZoneEntry(prof, zone, skill)
+    local key = prof.key
+    local sel = BT.db.opt.gatherMap
+    local active = sel and sel.prof == key and sel.m == zone.m
+    local detail
+    if key == "fishing" then
+        local base = zone.kinds[1].req
+        detail = L["Skill %d-%d"]:format(math.max(1, base), math.max(1, base + 95))
+        if zone.value < 0.95 then detail = detail .. ", " .. L["jetzt %d %%"]:format(math.floor(zone.value * 100 + 0.5)) end
+    elseif key == "skinning" then
+        local lo, hi
+        for _, kind in ipairs(zone.kinds) do
+            if BT.GatherSkillChance(skill, kind.req) > 0 then
+                lo = math.min(lo or kind.lo, kind.lo)
+                hi = math.max(hi or kind.hi, kind.hi)
+            end
+        end
+        detail = L["Skill %d-%d"]:format(zone.lo, zone.hi) .. ", " .. L["Gegner Stufe %d-%d"]:format(lo or 1, hi or 1)
+    else
+        detail = L["Skill %d-%d"]:format(zone.lo, zone.hi) .. ", " .. L["%d Fundpunkte"]:format(zone.count)
+    end
+    local distance = zone.distance and (BT.Format(zone.distance) .. " m") or nil
+    local text = BT.SKILL_COLOR[BT.ZoneColor(key, zone.m, skill)] .. "> " .. BT.MapName(zone.m) .. "|r  " .. detail .. (distance and (" |cff999999(" .. distance .. ")|r") or "")
+        .. (active and ("  |cff33cc33" .. L["auf der Karte"] .. "|r") or "")
+    local function Tooltip(row)
+        GameTooltip:SetOwner(row, "ANCHOR_RIGHT")
+        GameTooltip:AddLine(BT.MapName(zone.m), 1, 1, 1)
+        if key == "fishing" then
+            GameTooltip:AddLine(L["Ab Skill %d fängt man hier etwas, ab %d jedes Mal (Classic-Werte)."]:format(math.max(1, zone.kinds[1].req), math.max(1, zone.kinds[1].req + 95)), 0.8, 0.8, 0.8, true)
+        else
+            GameTooltip:AddLine(L["Gut zum Leveln von Skill %d bis %d."]:format(zone.lo, zone.hi), 0.8, 0.8, 0.8, true)
+            -- je Tier/Vorkommen: Name (Stufe) in der Skill-Farbe, rechts Chance auf einen Skillpunkt und Anzahl
+            GameTooltip:AddLine(L["Rechts: Chance auf einen Skillpunkt, Anzahl auf der Karte"], 0.6, 0.6, 0.6, true)
+            GameTooltip:AddLine(" ")
+            local rows = {}
+            for _, kind in ipairs(zone.kinds) do
+                local chance = BT.GatherSkillChance(skill, kind.req)
+                local name
+                if kind.node then name = BT.NodeName({ n = kind.node.n, id = kind.node.ids[1] })
+                elseif kind.npc then
+                    local info = BT.MOB_INFO and BT.MOB_INFO[kind.npc]
+                    name = BT.MobName(kind.npc, info and info.de or ("#" .. kind.npc)) .. ", " .. L["Stufe %s"]:format(kind.lo .. (kind.hi ~= kind.lo and ("-" .. kind.hi) or ""))
+                end
+                rows[#rows + 1] = { name = name or "?", req = kind.req, count = kind.count, chance = chance, color = BT.GatherKindColor(key, kind, skill) }
+            end
+            table.sort(rows, function(a, b) if a.chance ~= b.chance then return a.chance > b.chance end return a.req < b.req end)
+            local unit = key == "skinning" and L["%d Tiere"] or L["%d Vorkommen"]
+            for i, r in ipairs(rows) do
+                if i > 12 then break end
+                local right
+                if r.color == "red" then right = L["erst ab Skill %d"]:format(r.req)
+                elseif r.color == "gray" then right = L["bringt nichts mehr"]
+                else right = L["%d %% Chance"]:format(math.floor(r.chance * 100 + 0.5)) .. " · " .. unit:format(math.floor(r.count + 0.5)) end
+                GameTooltip:AddDoubleLine(BT.SKILL_COLOR[r.color] .. r.name .. "|r", right, 1, 1, 1, 0.9, 0.9, 0.9)
+            end
+            GameTooltip:AddLine(" ")
+        end
+        if key == "fishing" then
+            GameTooltip:AddLine(L["Klick: Karte öffnen"], 0.2, 1, 0.2, true)
+        else
+            GameTooltip:AddLine(L["Klick: Karte öffnen mit Fundpunkten und Rundweg (auch auf der Minimap)"], 0.2, 1, 0.2, true)
+        end
+        if BT.db.opt.gatherProfs or BT.db.opt.gatherMap then
+            GameTooltip:AddLine(L["Rechtsklick: Fundpunkte und Rundwege ein-/ausblenden"], 0.2, 1, 0.2, true)
+        end
+        GameTooltip:Show()
+    end
+    return { kind = "info", height = 16, text = text, tooltip = Tooltip,
+        onClick = function() BT.ShowGatherZone(key, zone, skill) end,
+        onRightClick = function() BT.ToggleGatherDisplay() end } -- Rechtsklick: Anzeige ein/aus, Auswahl bleibt
+end
+
 local function AddProfession(list, prof, onlyMissing, trainerOnly)
     if trainerOnly then
         -- noch nicht gelernt: nur sagen, wo man ihn lernt
@@ -725,6 +830,13 @@ local function AddProfession(list, prof, onlyMissing, trainerOnly)
     end
     if prof.gather then
         list[#list + 1] = { kind = "info", height = 16, text = "|cff999999" .. L["Ab Skill %d nur noch durchs Sammeln, ohne Materialbedarf"]:format(prof.steps[#prof.steps].t) .. "|r" }
+        -- die besten Sammelgebiete für den aktuellen Skill (Gather.lua)
+        local skill = math.max(1, BT.Skill(prof.key) or 1)
+        local zones = BT.GatherZones and BT.GatherZones(prof.key, skill, 4) or {}
+        if #zones > 0 then
+            list[#list + 1] = { kind = "info", height = 16, text = "|cff999999" .. L["Sammelgebiete für Skill %d (nach Dichte und Nähe; Klick zeigt Wegpunkt und Fundpunkte auf der Karte):"]:format(skill) .. "|r" }
+            for _, zone in ipairs(zones) do list[#list + 1] = GatherZoneEntry(prof, zone, skill) end
+        end
     end
     local ranks = BT.TRAINERS[prof.key]
     -- aktueller Rang = höchster gelernter; bleibt auch bei "Nur Offenes" sichtbar
@@ -1266,6 +1378,9 @@ local function FillMinimapTooltip(tip)
     tip:AddLine(" ")
     tip:AddLine(L["Klicken: Fenster öffnen"], 0.2, 1, 0.2)
     tip:AddLine(L["Ziehen: Symbol verschieben"], 0.2, 1, 0.2)
+    if BT.db and (BT.db.opt.gatherProfs or BT.db.opt.gatherMap) then
+        tip:AddLine(L["Rechtsklick: Fundpunkte und Rundwege ein-/ausblenden"], 0.2, 1, 0.2)
+    end
 end
 
 -- Über LibDBIcon, wenn ein anderes Addon die Bibliothek mitbringt: Minimap-Sammler (Leatrix Plus, MinimapButtonBag …)
@@ -1283,7 +1398,13 @@ local function RegisterLibDBIcon()
             type = "launcher",
             label = "BerufeTracker",
             icon = "Interface\\Icons\\Trade_BlackSmithing",
-            OnClick = function() BT.Toggle() end,
+            OnClick = function(_, button)
+                if button == "RightButton" then
+                    if BT.ToggleGatherDisplay then BT.ToggleGatherDisplay() end -- Anzeige ein/aus, Auswahl bleibt
+                else
+                    BT.Toggle()
+                end
+            end,
             OnTooltipShow = function(tip) if tip and tip.AddLine then FillMinimapTooltip(tip) end end,
         })
         if not icon:IsRegistered("BerufeTracker") then icon:Register("BerufeTracker", obj, opt.minimapIcon) end
@@ -1299,7 +1420,7 @@ local function CreateMinimapButton()
     button:SetSize(31, 31)
     button:SetFrameStrata("MEDIUM")
     button:SetFrameLevel(8)
-    button:RegisterForClicks("LeftButtonUp")
+    button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     button:RegisterForDrag("LeftButton")
     button:SetHighlightTexture("Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight")
 
@@ -1318,7 +1439,13 @@ local function CreateMinimapButton()
         button:ClearAllPoints()
         button:SetPoint("CENTER", Minimap, "CENTER", math.cos(angle) * radius, math.sin(angle) * radius)
     end
-    button:SetScript("OnClick", BT.Toggle)
+    button:SetScript("OnClick", function(_, mouse)
+        if mouse == "RightButton" then
+            if BT.ToggleGatherDisplay then BT.ToggleGatherDisplay() end -- Anzeige ein/aus, Auswahl bleibt
+        else
+            BT.Toggle()
+        end
+    end)
     button:SetScript("OnDragStart", function(self)
         self:SetScript("OnUpdate", function()
             local mx, my = Minimap:GetCenter()
@@ -1385,7 +1512,12 @@ local function CreateWaypointLabel()
     local f = CreateFrame("Frame", "BerufeTrackerWaypointLabel", UIParent)
     waypointLabel = f
     f:SetSize(390, 46)
-    f:SetPoint("TOP", 0, -110)
+    -- Standardplatz: links neben der Minimap, unten bündig (verschoben bleibt, wo der Spieler sie hinzieht)
+    if Minimap then
+        f:SetPoint("BOTTOMRIGHT", Minimap, "BOTTOMLEFT", -12, 0)
+    else
+        f:SetPoint("TOP", 0, -110)
+    end
     f:SetFrameStrata("MEDIUM")
     f:SetMovable(true)
     f:EnableMouse(true)
@@ -1603,13 +1735,15 @@ BT.GATHER_REQ = GATHER_REQ
 -- Sammeln (Classic): orange und gelb (bis Stufe + 50) bringt fast immer einen Punkt, grün (bis + 100) immer
 -- seltener, danach grau. Geschätzt wie beim Herstellen, Chance im Grünen linear fallend (mindestens 20 %).
 local GATHER_YIELD = 2 -- Stück je Sammeln, grob
+local function GatherChance(skill, req)
+    local green, gray = req + 50, req + 100
+    if skill >= gray then return 0 end
+    if skill < green then return 1 end
+    return math.max(0.2, (gray - skill) / (gray - green))
+end
 local function GatherUntilGray(skill, req)
-    local green, gray, total = req + 50, req + 100, 0
-    for s = skill, gray - 1 do
-        local chance = 1
-        if s >= green then chance = math.max(0.2, (gray - s) / (gray - green)) end
-        total = total + 1 / chance
-    end
+    local total = 0
+    for s = skill, req + 99 do total = total + 1 / GatherChance(s, req) end
     return math.ceil(total)
 end
 
@@ -1635,6 +1769,8 @@ local function GatherLine(tip, key)
                 if forCrafts > 0 then
                     tip:AddLine("   " .. L["bis grau ca. %d×, für Berufe ca. %d× (%s Stück)"]:format(toGray, forCrafts, BT.Format(res.missing)), 0.7, 0.7, 0.7)
                 end
+                -- Chance auf einen Skillpunkt beim nächsten Sammeln
+                tip:AddLine("   " .. L["Jetzt ca. %d %% Chance auf einen Skillpunkt"]:format(math.floor(GatherChance(skill, need) * 100 + 0.5)), 0.7, 0.7, 0.7)
             else
                 tip:AddLine(L["%s: grau, keine Skillpunkte mehr"]:format(name), 0.5, 0.5, 0.5)
             end
@@ -1649,6 +1785,11 @@ AddNeedLines = function(tip, key, allProfs)
     local res = BT.result and BT.result[key]
     if not res then return end
     TrackerHeader(tip)
+    -- herstellbar: Chance auf einen Skillpunkt beim Herstellen (eingeloggter Charakter)
+    if BT.CraftTemplateFor and BT.CraftChanceLine then
+        local tpl, prof = BT.CraftTemplateFor(nil, nil, key)
+        if tpl then BT.CraftChanceLine(tip, tpl, prof) end
+    end
     if res.need == 0 then
         -- Sammelberufe brauchen ihr Material trotzdem: zum Skillen
         if not GatherLine(tip, key) then tip:AddLine(L["Wird nicht mehr gebraucht"], 0.6, 0.6, 0.6) end
@@ -1745,10 +1886,21 @@ local function IsCreatureType(unit, typeID)
 end
 
 -- Beute-Eintrag {Material, Chance %, Menge von, bis, Kürschnern} -> "11 %, 1-2" bzw. "39 %, Kürschnern"
-local function DropTag(drop)
+-- skinCode: Farbcode für "Kürschnern" (Skill-Farbe für dieses Tier); danach geht es grau weiter (Klammer)
+local function DropTag(drop, skinCode)
     local chance = (drop[2] >= 10 or drop[2] == math.floor(drop[2])) and ("%.0f"):format(drop[2]) or ("%.1f"):format(drop[2])
     local count = drop[3] == drop[4] and tostring(drop[3]) or (drop[3] .. "-" .. drop[4])
-    return chance .. " %, " .. count .. (drop[5] and (", " .. L["Kürschnern"]) or "")
+    local skin = skinCode and (skinCode .. L["Kürschnern"] .. "|cff999999") or L["Kürschnern"]
+    return chance .. " %, " .. count .. (drop[5] and (", " .. skin) or "")
+end
+
+-- Skill-Farbe des eingeloggten Charakters für das Häuten dieses Gegners (nach Stufe); nil ohne Kürschnerei/Stufe
+local function SkinColorCode(unit)
+    local rec = BT.me and BT.db.chars[BT.me]
+    local skill = rec and rec.skills and rec.skills.skinning
+    local level = UnitLevel and Plain(UnitLevel(unit))
+    if not (skill and skill > 0 and type(level) == "number" and level > 0 and BT.SkinReq and BT.GatherKindColor) then return nil end
+    return BT.SKILL_COLOR[BT.GatherKindColor("skinning", { req = BT.SkinReq(level) }, skill)]
 end
 BT.DropTag = DropTag
 
@@ -1759,8 +1911,27 @@ local function LevelEntries(unit, entries)
     if IsCreatureType(unit, 7) then
         for _, key in ipairs(KeysForLevel(CLOTH_HINT, level)) do entries[#entries + 1] = { key = key } end
     elseif IsCreatureType(unit, 1) then
-        for _, key in ipairs(KeysForLevel(LEATHER_HINT, level)) do entries[#entries + 1] = { key = key, tag = L["Kürschnern"] } end
+        local code = SkinColorCode(unit)
+        for _, key in ipairs(KeysForLevel(LEATHER_HINT, level)) do entries[#entries + 1] = { key = key, tag = code and (code .. L["Kürschnern"] .. "|cff999999") or L["Kürschnern"] } end
     end
+end
+
+-- Kennt cMaNGOS den Gegner? (GatherData.lua, Bereiche "von-bis"; einmal entpackt)
+local classicRanges
+function BT.IsClassicCreature(id)
+    if not classicRanges then
+        classicRanges = {}
+        for a, b in (BT.CM_CREATURES or ""):gmatch("(%d+)%-?(%d*)") do
+            classicRanges[#classicRanges + 1] = { tonumber(a), tonumber(b) or tonumber(a) }
+        end
+    end
+    local lo, hi = 1, #classicRanges
+    while lo <= hi do
+        local mid = math.floor((lo + hi) / 2)
+        local r = classicRanges[mid]
+        if id < r[1] then hi = mid - 1 elseif id > r[2] then lo = mid + 1 else return true end
+    end
+    return false
 end
 
 -- Gegner mit lesbarer GUID: was er laut QuestieDB droppt, dazu Stoff/Leder nach Stufe.
@@ -1770,8 +1941,12 @@ local function AddMobLines(tip, unit, guid)
     if Plain(UnitCanAttack and UnitCanAttack("player", unit)) == false then return end
     local npcID = type(guid) == "string" and tonumber(guid:match("^Creature%-%d+%-%d+%-%d+%-%d+%-(%d+)%-"))
     local entries = {}
-    for _, drop in ipairs(npcID and BT.MOB_DROPS and BT.MOB_DROPS[npcID] or {}) do entries[#entries + 1] = { key = drop[1], tag = DropTag(drop) } end
-    LevelEntries(unit, entries)
+    local known = npcID and BT.MOB_DROPS and BT.MOB_DROPS[npcID]
+    local skinCode = SkinColorCode(unit)
+    for _, drop in ipairs(known or {}) do entries[#entries + 1] = { key = drop[1], tag = DropTag(drop, skinCode) } end
+    -- Stoff/Leder nach Stufe nur für unbekannte Gegner: für bekannte gilt die Beutetabelle (sonst wäre jedes
+    -- Wildtier häutbar, z. B. Strigidkreischer, der laut Daten und im Spiel nicht häutbar ist)
+    if not known and not (npcID and BT.IsClassicCreature(npcID)) then LevelEntries(unit, entries) end
     NeedBlock(tip, entries) -- kein tip:Show() hier: das stößt bei Gegnern die nächste Verarbeitung an (Endlosschleife)
 end
 
@@ -2102,6 +2277,7 @@ local function HookItemTooltips()
         local list = text and ItemsOfNode(text)
         if not list then return end
         nodeDone = true
+        if BT.NoteNodeSeen then BT.NoteNodeSeen(text) end -- zum Dazulernen der Fundstelle beim Sammeln
         local any = false
         for _, entry in ipairs(list) do
             local res = BT.result[entry.key]
@@ -2468,9 +2644,10 @@ local function DecorateRecipeRow(frame, node)
 end
 
 local function RecipeScrollBox()
-    local page = ProfessionsFrame and ProfessionsFrame.CraftingPage
-    local list = page and page.RecipeList
-    return list and list.ScrollBox
+    local page = type(ProfessionsFrame) == "table" and ProfessionsFrame.CraftingPage
+    local list = type(page) == "table" and page.RecipeList
+    local box = type(list) == "table" and list.ScrollBox
+    return type(box) == "table" and box or nil
 end
 
 -- Alle sichtbaren Zeilen neu markieren (z. B. nach einer neuen Route).
@@ -2495,14 +2672,248 @@ local function HookProfessions()
     return ok
 end
 
+-- Reiter am Berufsfenster (wie ATT): Die Seitenleiste ProfessionsFrameTabSideBar teilen sich mehrere Addons
+-- (ATT legt sie an; wer zuerst kommt, legt sie an). Klick dockt das BerufeTracker-Fenster rechts ans Berufsfenster,
+-- zeigt die Route und klappt den offenen Beruf auf; zweiter Klick oder Schließen des Berufsfensters gibt es frei.
+local profTab, docked, dockSaved
+local function OpenProfessionKey()
+    if C_TradeSkillUI and C_TradeSkillUI.GetBaseProfessionInfo then
+        local ok, info = pcall(C_TradeSkillUI.GetBaseProfessionInfo)
+        if ok and type(info) == "table" then
+            local id = Plain(info.professionID)
+            if id and BT.SKILL_LINES[id] then return BT.SKILL_LINES[id] end
+            local name = Plain(info.professionName)
+            if type(name) == "string" and BT.PROF_BY_NAME[name:lower()] then return BT.PROF_BY_NAME[name:lower()] end
+        end
+    end
+    if GetTradeSkillLine then
+        local ok, name = pcall(GetTradeSkillLine)
+        name = ok and Plain(name)
+        if type(name) == "string" then return BT.PROF_BY_NAME[name:lower()] end
+    end
+end
+local function ATTLoaded()
+    local loaded = (C_AddOns and C_AddOns.IsAddOnLoaded) or IsAddOnLoaded
+    return loaded ~= nil and select(2, pcall(loaded, "AllTheThings")) == true
+end
+-- Die gemeinsame Leiste legt BerufeTracker sofort beim Öffnen an (ATT nutzt eine vorhandene Leiste mit, das ist so
+-- vorgesehen; ATT legt seinen Reiter oft erst an, wenn man einen Beruf anklickt - dann rückt unser Reiter nach).
+local attGiveUp = true
+local function SideBar()
+    if not ProfessionsFrame then return nil end
+    -- Mit ATT: die Leiste baut ATT selbst beim ersten Öffnen (es richtet dabei die Forever-Berufssymbole an ihr aus);
+    -- legt man sie vorher an, entsteht der ATT-Reiter nicht. Also warten, bis ATT sie angelegt hat.
+    if not _G.ProfessionsFrameTabSideBar and ATTLoaded() and not attGiveUp then return nil end
+    if not _G.ProfessionsFrameTabSideBar then
+        local bar = CreateFrame("Frame", nil, ProfessionsFrame)
+        bar:SetWidth(1)
+        bar:SetPoint("TOPLEFT", ProfessionsFrame, "TOPRIGHT")
+        bar:SetPoint("BOTTOMLEFT", ProfessionsFrame, "BOTTOMRIGHT")
+        bar.Tabs, bar.selTab = {}, 0
+        _G.ProfessionsFrameTabSideBar = bar
+    end
+    local bar = _G.ProfessionsFrameTabSideBar
+    bar.Tabs = bar.Tabs or {}
+    return bar
+end
+local function TabIndex(bar)
+    for i, t in ipairs(bar.Tabs) do if t == profTab then return i end end
+end
+local function SetDocked(on)
+    local bar = SideBar()
+    if not (bar and profTab and window) or (docked or false) == on then return end
+    docked = on
+    if profTab.SetChecked then pcall(profTab.SetChecked, profTab, on) end
+    if on then
+        -- andere Reiter der Leiste (z. B. ATT) schließen, wie es die gemeinsame Leiste vorsieht
+        local mine = TabIndex(bar)
+        for i, other in ipairs(bar.Tabs) do
+            if bar.selTab == i and other ~= profTab then
+                local script = other:GetScript("OnMouseUp")
+                if script then pcall(script, other) end
+            end
+        end
+        bar.selTab = mine or 0
+        dockSaved = {}
+        local points = window.GetNumPoints and window:GetNumPoints()
+        for i = 1, (type(points) == "number" and points or 0) do dockSaved[i] = { window:GetPoint(i) } end
+        window:ClearAllPoints()
+        window:SetPoint("TOPLEFT", ProfessionsFrame, "TOPRIGHT", 0, 0)
+        tab = ROUTE
+        local key = OpenProfessionKey()
+        if key then expanded[key] = true end
+        window:Show()
+        BT.RefreshUI()
+        bar:ClearAllPoints()
+        bar:SetPoint("TOPLEFT", window, "TOPRIGHT")
+        bar:SetPoint("BOTTOMLEFT", window, "BOTTOMRIGHT")
+    else
+        if bar.selTab == TabIndex(bar) then bar.selTab = 0 end
+        bar:ClearAllPoints()
+        bar:SetPoint("TOPLEFT", ProfessionsFrame, "TOPRIGHT")
+        bar:SetPoint("BOTTOMLEFT", ProfessionsFrame, "BOTTOMRIGHT")
+        window:Hide()
+        if dockSaved and #dockSaved > 0 then
+            window:ClearAllPoints()
+            for _, point in ipairs(dockSaved) do window:SetPoint(unpack(point)) end
+        end
+        dockSaved = nil
+    end
+end
+BT.SetProfessionsDocked = SetDocked
+
+-- Position eines Rahmens (nil, wenn das Spiel keine Zahl liefert)
+local function Edge(frame, method)
+    local fn = type(frame) == "table" and frame[method]
+    if type(fn) ~= "function" then return nil end
+    local ok, value = pcall(fn, frame)
+    return ok and type(value) == "number" and value or nil
+end
+
+-- Unter den untersten sichtbaren Reiter der Leiste (Berufssymbole von WoW Forever, ATT …)
+local function PlaceProfTab()
+    local bar = SideBar()
+    if not (bar and profTab) then return end
+    local candidates = {}
+    for _, n in ipairs({ "Overview", 1, 2, 3, 4, 5, 6, 7 }) do
+        local f = ProfessionsFrame["Professions" .. n .. "Tab"]
+        if type(f) == "table" then candidates[#candidates + 1] = f end
+    end
+    for _, other in ipairs(bar.Tabs) do if other ~= profTab and type(other) == "table" then candidates[#candidates + 1] = other end end
+    -- WoW Forever: freie Plätze = ausgeblendete Berufssymbole. ATT nimmt immer den ersten freien Platz (auch wenn sein
+    -- Reiter erst später entsteht); andere Addon-Reiter der Leiste je einen weiteren. Wir nehmen den Platz danach.
+    local free = {}
+    for _, n in ipairs({ "Overview", 1, 2, 3, 4, 5, 6, 7 }) do
+        local f = ProfessionsFrame["Professions" .. n .. "Tab"]
+        if type(f) == "table" and f.IsShown and not f:IsShown() then free[#free + 1] = f end
+    end
+    local others = 0
+    for _, other in ipairs(bar.Tabs) do if other ~= profTab and type(other) == "table" then others = others + 1 end end
+    -- nur tatsächlich vorhandene Reiter belegen Plätze (kommt ATTs Reiter später, rückt der Wächter nach)
+    local reserved = others
+    local slot = free[reserved + 1]
+    if slot then
+        profTab:ClearAllPoints()
+        profTab:SetPoint("TOPLEFT", slot)
+        return
+    end
+    local lowest, gap = nil, 4
+    local t1, t2 = ProfessionsFrame.Professions1Tab, ProfessionsFrame.Professions2Tab
+    if Edge(t1, "GetBottom") and Edge(t2, "GetTop") then gap = math.max(0, math.min(20, Edge(t1, "GetBottom") - Edge(t2, "GetTop"))) end
+    for _, f in ipairs(candidates) do
+        local bottom = f.IsShown and f:IsShown() and Edge(f, "GetBottom")
+        if bottom and (not lowest or bottom < Edge(lowest, "GetBottom")) then lowest = f end
+    end
+    profTab:ClearAllPoints()
+    if lowest then
+        profTab:SetPoint("TOPLEFT", lowest, "BOTTOMLEFT", 0, -gap)
+    else
+        profTab:SetPoint("TOPLEFT", bar, "TOPRIGHT", -2, -52)
+    end
+end
+
+-- Eintrag in der Leiste sichern und Position nachziehen (siehe Wächter in CreateProfTab)
+function BT.SetProfessionsTabGiveUp(v) attGiveUp = v end -- für Tests
+function BT.KeepProfessionsTab()
+    local current = SideBar()
+    if not (current and profTab) then return end
+    if not TabIndex(current) then
+        current.Tabs[#current.Tabs + 1] = profTab
+        if profTab:GetParent() ~= current then profTab:SetParent(current) end
+    end
+    PlaceProfTab()
+end
+
+local function CreateProfTab()
+    if profTab then
+        -- Leiste neu angelegt (z. B. von einem anderen Addon): dort eintragen
+        local bar = SideBar()
+        if bar and not TabIndex(bar) then
+            bar.Tabs[#bar.Tabs + 1] = profTab
+            profTab:SetParent(bar)
+            PlaceProfTab()
+        end
+        return true
+    end
+    local bar = SideBar()
+    if not bar then return false end
+    local ok, frame = pcall(CreateFrame, "Frame", "BerufeTracker_ProfessionsTab", bar, "QuestLogTabButtonTemplate")
+    if not ok or not frame then
+        frame = CreateFrame("Button", "BerufeTracker_ProfessionsTab", bar)
+        frame:SetSize(32, 32)
+        frame.Icon = frame:CreateTexture(nil, "ARTWORK")
+        frame.Icon:SetPoint("CENTER")
+    end
+    profTab = frame
+    profTab.tooltipText = "BerufeTracker"
+    if profTab.Icon then
+        profTab.Icon:SetTexture("Interface\\Icons\\Trade_BlackSmithing")
+        profTab.Icon:SetSize(24, 24)
+        if profTab.Icon.SetTexCoord then profTab.Icon:SetTexCoord(0.08, 0.92, 0.08, 0.92) end
+    end
+    local function Toggle() SetDocked(not docked) end
+    if profTab.SetCustomOnMouseUpHandler then
+        profTab:SetCustomOnMouseUpHandler(Toggle)
+    else
+        profTab:SetScript("OnMouseUp", Toggle)
+    end
+    if not profTab.SetCustomOnMouseUpHandler or not profTab:GetScript("OnEnter") then
+        profTab:SetScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:AddLine("BerufeTracker")
+            GameTooltip:AddLine(L["Route dieses Berufs neben dem Berufsfenster"], 1, 1, 1, true)
+            GameTooltip:Show()
+        end)
+        profTab:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    end
+    if profTab.SetChecked then pcall(profTab.SetChecked, profTab, false) end
+    bar.Tabs[#bar.Tabs + 1] = profTab
+    ProfessionsFrame:HookScript("OnShow", PlaceProfTab)
+    -- ATT legt seinen Reiter teils erst nach dem Öffnen an und schreibt ihn fest auf Platz 1 der Leiste (überschreibt
+    -- dort einen anderen Eintrag): solange das Berufsfenster offen ist, alle 0,5 s wieder eintragen und unter den
+    -- untersten anderen Reiter rücken, damit nichts übereinander liegt
+    local keeper = CreateFrame("Frame", nil, ProfessionsFrame)
+    local wait = 0
+    keeper:SetScript("OnUpdate", function(_, delta)
+        wait = wait + (delta or 0)
+        if wait < 0.5 then return end
+        wait = 0
+        pcall(BT.KeepProfessionsTab)
+    end)
+    ProfessionsFrame:HookScript("OnHide", function() SetDocked(false) end)
+    window:HookScript("OnHide", function() if docked then SetDocked(false) end end)
+    PlaceProfTab()
+    return true
+end
+BT.CreateProfessionsTab = CreateProfTab
+
+-- Reiter anlegen, sobald die Leiste da ist (mit ATT erst nach dessen Aufbau): beim Öffnen und kurz danach erneut
+local retryHooked
+local function TryProfTab()
+    if not ProfessionsFrame then return end
+    pcall(CreateProfTab)
+    if not retryHooked and ProfessionsFrame.HookScript then
+        retryHooked = true
+        ProfessionsFrame:HookScript("OnShow", function()
+            if profTab then return end
+            pcall(CreateProfTab)
+            if C_Timer and C_Timer.After then
+                for _, delay in ipairs({ 0.2, 1 }) do C_Timer.After(delay, function() if not profTab then pcall(CreateProfTab) end end) end
+            end
+        end)
+    end
+end
+
 function BT.InitProfessionsHook()
-    if HookProfessions() then return end
+    TryProfTab()
+    if HookProfessions() and profTab then return end
     -- Das Berufsfenster wird erst bei Bedarf geladen
     local loader = CreateFrame("Frame")
     loader:RegisterEvent("ADDON_LOADED")
     loader:RegisterEvent("TRADE_SKILL_SHOW")
     loader:SetScript("OnEvent", function(self)
-        if HookProfessions() then
+        TryProfTab()
+        if HookProfessions() and profTab then
             self:UnregisterAllEvents()
             BT.RefreshProfessionMarks()
         end
@@ -2521,6 +2932,14 @@ function BT.PrintProfessionDebug()
     local count = 0
     for _ in pairs(BT.RouteRecipeIndex()) do count = count + 1 end
     print(tag .. "Offene Routen-Rezepte (Namen und Item-IDs): " .. count)
+    local bar = _G.ProfessionsFrameTabSideBar
+    local others = {}
+    for i, other in ipairs(bar and bar.Tabs or {}) do
+        if other ~= profTab then others[#others + 1] = i .. (other.IsShown and other:IsShown() and "" or " (versteckt)") end
+    end
+    print(tag .. "Seitenleiste: " .. tostring(bar ~= nil) .. ", ATT geladen: " .. tostring(ATTLoaded()) .. ", unser Reiter: "
+        .. tostring(profTab ~= nil) .. (bar and profTab and (" auf Platz " .. (TabIndex(bar) or "-")) or "")
+        .. ", andere Reiter: " .. (#others > 0 and table.concat(others, ", ") or "keine"))
 end
 
 function BT.InitUI()

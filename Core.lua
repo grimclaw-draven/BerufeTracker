@@ -762,6 +762,29 @@ function BT.SetWaypoint(entry, note)
     return false
 end
 
+-- Wegpunkt aus einer Liste (Lehrer, Händler …, die nächsten zuerst): erster Klick der erste, jeder weitere Klick
+-- auf dieselbe Liste der nächste, nach dem letzten wieder der erste. Klickt man zwischendurch etwas anderes an
+-- oder ist der Wegpunkt weg, beginnt es wieder vorn.
+local cycle = { key = nil, index = 0 }
+-- countFormat: z. B. L["Lehrer %d von %d"] - steht hinter der Notiz, damit klar ist, dass es weitere gibt
+function BT.CycleWaypoint(key, list, note, countFormat)
+    if not list or #list == 0 then return false end
+    local wp = DB.opt.waypoint
+    local index = 1
+    if cycle.key == key and wp and list[cycle.index] and wp.id == list[cycle.index].npc.id and BT.ActiveWaypoint() then
+        index = cycle.index % #list + 1
+    end
+    cycle.key, cycle.index = key, index
+    local suffix = #list > 1 and (" (" .. (countFormat or "%d/%d"):format(index, #list) .. ")") or ""
+    local ok = BT.SetWaypoint(list[index], (note or "") .. suffix)
+    -- Karte beim Ziel öffnen (wie bei den Sammelgebieten); über C_Map.OpenWorldMap, im Kampf nicht möglich
+    local m = list[index].npc and list[index].npc.m
+    if ok and m and C_Map and C_Map.OpenWorldMap and not (InCombatLockdown and InCombatLockdown()) then
+        pcall(C_Map.OpenWorldMap, m)
+    end
+    return ok
+end
+
 -- raw = nur die Guides aus den Daten, ohne den eigenen "Günstigster Weg" (Bausteine für ihn).
 function BT.GuideList(prof, raw)
     local list = { { key = "metabot", title = "Metabot", url = "https://metabot.gg/en/wow-forever/professions", steps = prof.steps } }
@@ -1188,6 +1211,8 @@ SlashCmdList.BERUFETRACKER = function(input)
         BT.PrintChatDebug()
     elseif cmd == "mobdebug" then
         BT.PrintMobDebug()
+    elseif cmd == "sammeldebug" then
+        BT.PrintGatherDebug(arg1)
     elseif cmd == "profdebug" then
         BT.PrintProfessionDebug()
     elseif cmd == "glitzern" or cmd == "glow" then
